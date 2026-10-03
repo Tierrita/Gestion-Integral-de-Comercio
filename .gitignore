@@ -1,0 +1,36 @@
+# Entorno virtual
+.venv/
+venv/
+env/
+ENV/
+.env
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Archivos de pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Archivos temporales
+*.log
+*.tmp
+*.bak
+
+# Librerías instaladas
+*.egg-info/
+dist/
+build/
