@@ -51,6 +51,10 @@ def insertar_detalle_venta(datos):
 def obtener_producto_por_id(id_producto):
     """
     Obtiene un producto mediante su ID.
+
+    Incluye stock, precio de costo y precio de venta
+    necesarios para registrar correctamente una venta
+    y conservar el costo histórico.
     """
 
     supabase = get_client()
@@ -58,7 +62,13 @@ def obtener_producto_por_id(id_producto):
     response = (
         supabase
         .table("productos")
-        .select("id_producto, nombre_producto, stock")
+        .select(
+            "id_producto, "
+            "nombre_producto, "
+            "stock, "
+            "precio_costo, "
+            "precio_venta"
+        )
         .eq("id_producto", id_producto)
         .execute()
     )
@@ -173,3 +183,23 @@ def actualizar_estado_venta(id_venta, nuevo_estado):
     )
 
     return response.data[0] if response.data else None
+
+
+
+def obtener_ventas_por_cliente(id_cliente):
+    """
+    Obtiene todas las ventas asociadas a un cliente.
+    """
+
+    supabase = get_client()
+
+    response = (
+        supabase
+        .table("ventas")
+        .select("*")
+        .eq("id_cliente", id_cliente)
+        .order("fecha_venta", desc=True)
+        .execute()
+    )
+
+    return response.data

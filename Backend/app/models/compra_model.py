@@ -51,6 +51,9 @@ def insertar_detalle_compra(datos):
 def obtener_producto_por_id(id_producto):
     """
     Obtiene un producto mediante su ID.
+
+    Incluye stock, precio de costo y precio de venta
+    necesarios para procesar una compra.
     """
 
     supabase = get_client()
@@ -58,7 +61,13 @@ def obtener_producto_por_id(id_producto):
     response = (
         supabase
         .table("productos")
-        .select("id_producto, nombre_producto, stock")
+        .select(
+            "id_producto, "
+            "nombre_producto, "
+            "stock, "
+            "precio_costo, "
+            "precio_venta"
+        )
         .eq("id_producto", id_producto)
         .execute()
     )
@@ -77,6 +86,32 @@ def actualizar_stock_producto(id_producto, nuevo_stock):
         supabase
         .table("productos")
         .update({"stock": nuevo_stock})
+        .eq("id_producto", id_producto)
+        .execute()
+    )
+
+    return response.data[0] if response.data else None
+
+
+def actualizar_precios_producto(
+    id_producto,
+    nuevo_precio_costo,
+    nuevo_precio_venta
+):
+    """
+    Actualiza el precio de costo y el precio de venta
+    de un producto.
+    """
+
+    supabase = get_client()
+
+    response = (
+        supabase
+        .table("productos")
+        .update({
+            "precio_costo": nuevo_precio_costo,
+            "precio_venta": nuevo_precio_venta
+        })
         .eq("id_producto", id_producto)
         .execute()
     )
@@ -173,3 +208,22 @@ def actualizar_estado_compra(id_compra, nuevo_estado):
     )
 
     return response.data[0] if response.data else None
+
+
+def obtener_compras_por_proveedor(id_proveedor):
+    """
+    Obtiene todas las compras asociadas a un proveedor.
+    """
+
+    supabase = get_client()
+
+    response = (
+        supabase
+        .table("compras")
+        .select("*")
+        .eq("id_proveedor", id_proveedor)
+        .order("fecha_compra", desc=True)
+        .execute()
+    )
+
+    return response.data
