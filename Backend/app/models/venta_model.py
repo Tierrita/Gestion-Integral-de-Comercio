@@ -203,3 +203,99 @@ def obtener_ventas_por_cliente(id_cliente):
     )
 
     return response.data
+
+
+def registrar_ingreso_venta_rpc(
+    id_venta,
+    id_cuenta,
+    id_usuario,
+    monto
+):
+    """
+    Registra el ingreso de dinero generado por una venta
+    mediante la función RPC 'registrar_ingreso_venta'.
+
+    La función PostgreSQL actualiza el saldo de la cuenta
+    y registra el movimiento financiero dentro de una
+    misma transacción.
+    """
+
+    supabase = get_client()
+
+    parametros = {
+        "p_id_venta": id_venta,
+        "p_id_cuenta": id_cuenta,
+        "p_id_usuario": id_usuario,
+        "p_monto": monto
+    }
+
+    try:
+        response = (
+            supabase
+            .rpc("registrar_ingreso_venta", parametros)
+            .execute()
+        )
+
+        return response.data
+
+    except Exception as error:
+        mensaje = str(error)
+
+        errores_conocidos = [
+            "Cuenta no encontrada",
+            "La cuenta se encuentra inactiva",
+            "El monto debe ser mayor que cero"
+        ]
+
+        for error_conocido in errores_conocidos:
+            if error_conocido in mensaje:
+                raise ValueError(error_conocido)
+
+        raise
+
+
+
+def anular_ingreso_venta_rpc(
+    id_venta,
+    id_usuario
+):
+    """
+    Revierte el ingreso financiero generado por una venta.
+
+    La función RPC descuenta el monto de la cuenta original
+    y registra un movimiento financiero ANULACION_VENTA.
+
+    Si la venta no había generado un ingreso financiero
+    (por ejemplo, CUENTA_CORRIENTE), devuelve None.
+    """
+
+    supabase = get_client()
+
+    parametros = {
+        "p_id_venta": id_venta,
+        "p_id_usuario": id_usuario
+    }
+
+    try:
+        response = (
+            supabase
+            .rpc("anular_ingreso_venta", parametros)
+            .execute()
+        )
+
+        return response.data
+
+    except Exception as error:
+        mensaje = str(error)
+
+        errores_conocidos = [
+            "El ingreso de esta venta ya fue anulado",
+            "Cuenta no encontrada",
+            "Saldo insuficiente en la cuenta para anular la venta"
+        ]
+
+        for error_conocido in errores_conocidos:
+            if error_conocido in mensaje:
+                raise ValueError(error_conocido)
+
+        raise

@@ -14,7 +14,9 @@ from app.models.venta_model import (
     obtener_ventas,
     obtener_venta_por_id,
     obtener_detalles_venta,
-    actualizar_estado_venta
+    actualizar_estado_venta,
+    registrar_ingreso_venta_rpc,
+    anular_ingreso_venta_rpc
 )
 
 
@@ -22,14 +24,14 @@ def crear_venta(datos):
     """
     Registra una venta junto con sus productos.
 
-    Valida la existencia y disponibilidad de stock,
-    obtiene el precio de venta y costo directamente
-    desde el producto, calcula los subtotales y el total,
-    registra la venta, descuenta el stock y genera
-    los movimientos correspondientes en el historial.
+    Valida productos, stock, precios y costos.
+    Guarda el costo histórico de cada producto vendido.
 
-    El costo_unitario queda guardado en detalle_venta
-    como costo histórico al momento de realizar la venta.
+    Si la venta es cobrada en el momento, también registra
+    el ingreso de dinero en la cuenta financiera indicada.
+
+    Si la venta es CUENTA_CORRIENTE, no genera ingreso
+    financiero hasta que posteriormente se registre un cobro.
     """
 
     if not datos:
@@ -108,12 +110,44 @@ def crear_venta(datos):
             "El metodo_pago debe ser texto"
         )
 
-    metodo_pago = metodo_pago.strip()
+    metodo_pago = metodo_pago.strip().upper()
 
     if not metodo_pago:
         raise ValueError(
             "El metodo_pago no puede estar vacío"
         )
+
+    # --------------------------------------------------
+    # VALIDAR CUENTA FINANCIERA
+    # --------------------------------------------------
+
+    id_cuenta = datos.get("id_cuenta")
+
+    # Las ventas cobradas en el momento deben indicar
+    # en qué cuenta ingresó el dinero.
+    #
+    # Las ventas en CUENTA_CORRIENTE todavía no generan
+    # un ingreso financiero.
+    if metodo_pago != "CUENTA_CORRIENTE":
+
+        if id_cuenta is None:
+            raise ValueError(
+                "El campo 'id_cuenta' es obligatorio "
+                "para ventas cobradas en el momento"
+            )
+
+        if (
+            not isinstance(id_cuenta, int)
+            or isinstance(id_cuenta, bool)
+        ):
+            raise ValueError(
+                "El id_cuenta debe ser un número entero"
+            )
+
+        if id_cuenta <= 0:
+            raise ValueError(
+                "El id_cuenta debe ser mayor que cero"
+            )
 
     # --------------------------------------------------
     # VALIDAR PRODUCTOS
@@ -354,12 +388,28 @@ def crear_venta(datos):
         )
 
     # --------------------------------------------------
+    # REGISTRAR INGRESO FINANCIERO
+    # --------------------------------------------------
+
+    movimiento_financiero = None
+
+    if metodo_pago != "CUENTA_CORRIENTE":
+
+        movimiento_financiero = registrar_ingreso_venta_rpc(
+            id_venta=id_venta,
+            id_cuenta=id_cuenta,
+            id_usuario=id_usuario,
+            monto=total_venta
+        )
+
+    # --------------------------------------------------
     # RESPUESTA
     # --------------------------------------------------
 
     return {
         "venta": venta_creada[0],
-        "detalles": detalles_creados
+        "detalles": detalles_creados,
+        "movimiento_financiero": movimiento_financiero
     }
 
 
@@ -405,6 +455,9 @@ def anular_venta(id_venta):
     Devuelve al stock los productos incluidos en la venta,
     registra los movimientos correspondientes en el historial
     y cambia el estado de la venta a 'ANULADA'.
+
+    La reversión financiera de una venta cobrada
+    se implementará posteriormente.
     """
 
     # --------------------------------------------------
@@ -505,12 +558,30 @@ def anular_venta(id_venta):
     # CAMBIAR ESTADO DE LA VENTA
     # --------------------------------------------------
 
+    # --------------------------------------------------
+    # REVERTIR INGRESO FINANCIERO
+    # --------------------------------------------------
+
+    movimiento_financiero = anular_ingreso_venta_rpc(
+        id_venta=id_venta,
+        id_usuario=venta["id_usuario"]
+    )
+
+    # --------------------------------------------------
+    # CAMBIAR ESTADO DE LA VENTA
+    # --------------------------------------------------
+
     venta_actualizada = actualizar_estado_venta(
         id_venta,
         "ANULADA"
     )
 
+    # --------------------------------------------------
+    # RESPUESTA
+    # --------------------------------------------------
+
     return {
         "venta": venta_actualizada,
-        "productos_revertidos": productos_a_revertir
+        "productos_revertidos": productos_a_revertir,
+        "movimiento_financiero": movimiento_financiero
     }
