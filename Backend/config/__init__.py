@@ -30,6 +30,7 @@ load_dotenv(DOTENV_PATH)
 # Variables preparadas para usar por la aplicación
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 
 
 def init_app(app):
@@ -42,4 +43,4 @@ def init_app(app):
 		"""
 		app.config.setdefault("SUPABASE_URL", SUPABASE_URL)
 		app.config.setdefault("SUPABASE_KEY", SUPABASE_KEY)
-
+		app.config.setdefault("JWT_SECRET_KEY", JWT_SECRET_KEY)
