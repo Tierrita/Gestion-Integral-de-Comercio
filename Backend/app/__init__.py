@@ -58,7 +58,8 @@ def create_app():
     from .routes.pago_proveedor_routes import pago_proveedor_bp
     from .routes.cliente_routes import cliente_bp
     from .routes.finanza_routes import finanza_bp
-
+    from app.routes.auth_routes import auth_bp
+    from app.routes.rol_routes import rol_bp
 
 
 
@@ -75,6 +76,8 @@ def create_app():
     app.register_blueprint(pago_proveedor_bp)
     app.register_blueprint(cliente_bp)
     app.register_blueprint(finanza_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(rol_bp)
 
 
     # Devolver aplicación configurada
