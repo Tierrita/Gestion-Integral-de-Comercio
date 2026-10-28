@@ -60,7 +60,7 @@ def create_app():
     from .routes.finanza_routes import finanza_bp
     from app.routes.auth_routes import auth_bp
     from app.routes.rol_routes import rol_bp
-
+    from app.routes.usuario_routes import usuario_bp
 
 
     # Registrar Blueprints
@@ -78,7 +78,7 @@ def create_app():
     app.register_blueprint(finanza_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(rol_bp)
-
+    app.register_blueprint(usuario_bp)
 
     # Devolver aplicación configurada
     return app
