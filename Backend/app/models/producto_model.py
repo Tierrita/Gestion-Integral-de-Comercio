@@ -2,21 +2,10 @@
 Modelo de productos.
 
 Este módulo se encarga del acceso a los datos relacionados
-con la tabla 'producto' almacenada en Supabase.
-
-Controller → maneja la respuesta HTTP/JSON.
-Service → maneja la lógica de negocio.
-Model → maneja el acceso a los datos.
-"""
-
-from core.supabase_client import get_client
-
-
-"""
-Modelo de productos.
-
-Este módulo se encarga del acceso a los datos relacionados
 con la tabla 'productos' almacenada en Supabase.
+
+Todas las consultas y modificaciones de productos
+se encuentran aisladas por comercio.
 
 Controller → maneja la respuesta HTTP/JSON.
 Service → maneja la lógica de negocio.
@@ -28,7 +17,8 @@ from core.supabase_client import get_client
 
 def obtener_productos(id_comercio):
     """
-    Obtiene todos los productos pertenecientes a un comercio.
+    Obtiene todos los productos pertenecientes
+    a un comercio específico.
     """
 
     supabase = get_client()
@@ -47,8 +37,8 @@ def obtener_productos(id_comercio):
 
 def obtener_producto_por_id(id_producto, id_comercio):
     """
-    Obtiene un producto específico verificando que pertenezca
-    al comercio indicado.
+    Obtiene un producto por su ID interno verificando
+    que pertenezca al comercio indicado.
     """
 
     supabase = get_client()
@@ -59,16 +49,22 @@ def obtener_producto_por_id(id_producto, id_comercio):
         .select("*")
         .eq("id_producto", id_producto)
         .eq("id_comercio", id_comercio)
+        .limit(1)
         .execute()
     )
 
-    return response.data
+    if not response.data:
+        return None
+
+    return response.data[0]
 
 
 def obtener_siguiente_numero_producto(id_comercio):
     """
-    Solicita a PostgreSQL el siguiente número visible de producto
+    Obtiene el siguiente número visible de producto
     correspondiente al comercio.
+
+    La numeración es independiente para cada comercio.
     """
 
     supabase = get_client()
@@ -91,6 +87,9 @@ def obtener_siguiente_numero_producto(id_comercio):
 def insertar_producto(datos):
     """
     Inserta un nuevo producto en la tabla 'productos'.
+
+    Los datos deben incluir el id_comercio y
+    numero_producto definidos previamente por el Service.
     """
 
     supabase = get_client()
@@ -102,15 +101,19 @@ def insertar_producto(datos):
         .execute()
     )
 
-    return response.data
+    if not response.data:
+        return None
+
+    return response.data[0]
 
 
-
-
-def obtener_producto_por_id(id_producto):
+def actualizar_producto(id_producto, id_comercio, datos):
     """
-    Obtiene un producto específico de la tabla 'productos'
-    mediante su ID.
+    Actualiza un producto verificando que pertenezca
+    al comercio indicado.
+
+    El filtro por id_comercio evita modificar productos
+    pertenecientes a otro comercio.
     """
 
     supabase = get_client()
@@ -118,26 +121,61 @@ def obtener_producto_por_id(id_producto):
     response = (
         supabase
         .table("productos")
-        .select("*")
+        .update(datos)
         .eq("id_producto", id_producto)
+        .eq("id_comercio", id_comercio)
         .execute()
     )
 
-    return response.data
+    if not response.data:
+        return None
 
-def insertar_producto(datos):
+    return response.data[0]
+
+
+def obtener_categoria_por_id(id_categoria, id_comercio):
     """
-    Inserta un nuevo producto en la tabla 'productos'
-    utilizando los datos recibidos.
+    Obtiene una categoría verificando que pertenezca
+    al mismo comercio.
     """
 
     supabase = get_client()
 
     response = (
         supabase
-        .table("productos")
-        .insert(datos)
+        .table("categorias")
+        .select("*")
+        .eq("id_categoria", id_categoria)
+        .eq("id_comercio", id_comercio)
+        .limit(1)
         .execute()
     )
 
-    return response.data
+    if not response.data:
+        return None
+
+    return response.data[0]
+
+
+def obtener_proveedor_por_id(id_proveedor, id_comercio):
+    """
+    Obtiene un proveedor verificando que pertenezca
+    al mismo comercio.
+    """
+
+    supabase = get_client()
+
+    response = (
+        supabase
+        .table("proveedores")
+        .select("*")
+        .eq("id_proveedor", id_proveedor)
+        .eq("id_comercio", id_comercio)
+        .limit(1)
+        .execute()
+    )
+
+    if not response.data:
+        return None
+
+    return response.data[0]

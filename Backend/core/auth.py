@@ -269,3 +269,73 @@ def permiso_requerido(codigo_permiso):
         return wrapper
 
     return decorator
+
+
+
+
+def usuario_tiene_permiso(codigo_permiso):
+    """
+    Verifica si el usuario autenticado posee un permiso específico.
+
+    A diferencia de permiso_requerido(), esta función no bloquea
+    la petición. Devuelve True o False y permite decidir qué
+    información mostrar dentro de un endpoint.
+
+    El propietario siempre tiene acceso.
+    """
+
+    # El propietario posee todos los permisos.
+    if getattr(g, "es_propietario", False):
+        return True
+
+    id_rol = getattr(g, "id_rol", None)
+    id_comercio = getattr(g, "id_comercio", None)
+
+    if not id_rol or not id_comercio:
+        return False
+
+    supabase = get_client()
+
+    # Verificar que el rol pertenezca al comercio
+    # y continúe activo.
+    rol_response = (
+        supabase
+        .table("roles")
+        .select("id_rol")
+        .eq("id_rol", id_rol)
+        .eq("id_comercio", id_comercio)
+        .eq("estado", True)
+        .limit(1)
+        .execute()
+    )
+
+    if not rol_response.data:
+        return False
+
+    # Buscar el permiso solicitado.
+    permiso_response = (
+        supabase
+        .table("permisos")
+        .select("id_permiso")
+        .eq("codigo", codigo_permiso)
+        .limit(1)
+        .execute()
+    )
+
+    if not permiso_response.data:
+        return False
+
+    id_permiso = permiso_response.data[0]["id_permiso"]
+
+    # Verificar relación rol → permiso.
+    relacion_response = (
+        supabase
+        .table("rol_permiso")
+        .select("id_rol")
+        .eq("id_rol", id_rol)
+        .eq("id_permiso", id_permiso)
+        .limit(1)
+        .execute()
+    )
+
+    return bool(relacion_response.data)
