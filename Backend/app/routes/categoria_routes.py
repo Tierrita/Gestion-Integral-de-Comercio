@@ -1,8 +1,12 @@
 """
 Rutas de categorías.
 
-Este módulo define las rutas HTTP relacionadas
-con las categorías.
+Todas las rutas requieren autenticación.
+
+Los permisos utilizados son:
+
+categorias.ver
+categorias.gestionar
 """
 
 from flask import Blueprint
@@ -15,53 +19,91 @@ from app.controllers.categoria_controller import (
     cambiar_estado_categoria_controller
 )
 
+from core.auth import (
+    login_requerido,
+    permiso_requerido
+)
 
-categoria_bp = Blueprint("categoria", __name__)
+
+categoria_bp = Blueprint(
+    "categoria",
+    __name__
+)
 
 
-@categoria_bp.route("/categorias", methods=["POST"])
+@categoria_bp.route(
+    "/categorias",
+    methods=["POST"]
+)
+@login_requerido
+@permiso_requerido("categorias.gestionar")
 def crear_categoria_route():
     """
-    Crea una nueva categoría.
+    Crea una categoría dentro del comercio autenticado.
     """
 
     return crear_categoria_controller()
 
 
-@categoria_bp.route("/categorias", methods=["GET"])
+@categoria_bp.route(
+    "/categorias",
+    methods=["GET"]
+)
+@login_requerido
+@permiso_requerido("categorias.ver")
 def obtener_categorias_route():
     """
-    Consulta todas las categorías registradas.
+    Consulta las categorías del comercio autenticado.
     """
 
     return obtener_categorias_controller()
 
 
-@categoria_bp.route("/categorias/<int:id_categoria>", methods=["GET"])
+@categoria_bp.route(
+    "/categorias/<int:id_categoria>",
+    methods=["GET"]
+)
+@login_requerido
+@permiso_requerido("categorias.ver")
 def obtener_categoria_route(id_categoria):
     """
-    Consulta una categoría específica mediante su ID.
+    Consulta una categoría específica.
     """
 
-    return obtener_categoria_controller(id_categoria)
+    return obtener_categoria_controller(
+        id_categoria
+    )
 
 
-@categoria_bp.route("/categorias/<int:id_categoria>", methods=["PATCH"])
+@categoria_bp.route(
+    "/categorias/<int:id_categoria>",
+    methods=["PATCH"]
+)
+@login_requerido
+@permiso_requerido("categorias.gestionar")
 def editar_categoria_route(id_categoria):
     """
-    Edita una categoría existente mediante su ID.
+    Modifica una categoría del comercio autenticado.
     """
 
-    return editar_categoria_controller(id_categoria)
+    return editar_categoria_controller(
+        id_categoria
+    )
 
 
 @categoria_bp.route(
     "/categorias/<int:id_categoria>/estado",
     methods=["PATCH"]
 )
-def cambiar_estado_categoria_route(id_categoria):
+@login_requerido
+@permiso_requerido("categorias.gestionar")
+def cambiar_estado_categoria_route(
+    id_categoria
+):
     """
-    Cambia el estado de una categoría mediante su ID.
+    Activa o desactiva una categoría.
     """
 
-    return cambiar_estado_categoria_controller(id_categoria)
+    return cambiar_estado_categoria_controller(
+        id_categoria
+    )

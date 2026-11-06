@@ -3,6 +3,9 @@ Servicio de categorías.
 
 Este módulo contiene la lógica de negocio relacionada
 con las categorías.
+
+Todas las operaciones se realizan dentro del comercio
+del usuario autenticado.
 """
 
 from app.models.categoria_model import (
@@ -10,107 +13,185 @@ from app.models.categoria_model import (
     obtener_categorias,
     obtener_categoria_por_id,
     actualizar_categoria,
-    actualizar_estado_categoria
+    actualizar_estado_categoria,
+    obtener_productos_activos_por_categoria
 )
 
 
-def crear_categoria(datos):
+def crear_categoria(datos, id_comercio):
     """
-    Crea una nueva categoría luego de validar
-    los datos recibidos.
+    Crea una nueva categoría dentro del comercio autenticado.
+
+    El comercio y el estado inicial son controlados
+    exclusivamente por el backend.
     """
 
     if not datos:
-        raise ValueError("No se enviaron datos de la categoría")
+        raise ValueError(
+            "No se enviaron datos de la categoría"
+        )
 
     if "nombre_categoria" not in datos:
-        raise ValueError("El campo 'nombre_categoria' es obligatorio")
+        raise ValueError(
+            "El campo 'nombre_categoria' es obligatorio"
+        )
 
     nombre_categoria = datos["nombre_categoria"]
 
     if not isinstance(nombre_categoria, str):
-        raise ValueError("El nombre de la categoría debe ser texto")
+        raise ValueError(
+            "El nombre de la categoría debe ser texto"
+        )
 
-    if not nombre_categoria.strip():
-        raise ValueError("El nombre de la categoría no puede estar vacío")
+    nombre_categoria = nombre_categoria.strip()
+
+    if not nombre_categoria:
+        raise ValueError(
+            "El nombre de la categoría no puede estar vacío"
+        )
+
+    descripcion = datos.get("descripcion")
+
+    if (
+        descripcion is not None
+        and not isinstance(descripcion, str)
+    ):
+        raise ValueError(
+            "La descripción debe ser texto"
+        )
+
+    if isinstance(descripcion, str):
+        descripcion = descripcion.strip()
 
     datos_categoria = {
-        "nombre_categoria": nombre_categoria.strip(),
-        "descripcion": datos.get("descripcion"),
-        "estado": datos.get("estado", True)
+        "nombre_categoria": nombre_categoria,
+        "descripcion": descripcion,
+        "estado": True,
+        "id_comercio": id_comercio
     }
 
-    categoria_creada = insertar_categoria(datos_categoria)
+    categoria_creada = insertar_categoria(
+        datos_categoria
+    )
+
+    if not categoria_creada:
+        raise ValueError(
+            "No se pudo crear la categoría"
+        )
 
     return categoria_creada[0]
 
-def listar_categorias():
+
+def listar_categorias(id_comercio):
     """
-    Obtiene todas las categorías registradas.
-    """
-
-    categorias = obtener_categorias()
-
-    return categorias
-
-
-def buscar_categoria_por_id(id_categoria):
-    """
-    Obtiene una categoría específica mediante su ID.
+    Obtiene las categorías pertenecientes
+    al comercio autenticado.
     """
 
-    categoria = obtener_categoria_por_id(id_categoria)
+    return obtener_categorias(id_comercio)
+
+
+def buscar_categoria_por_id(
+    id_categoria,
+    id_comercio
+):
+    """
+    Obtiene una categoría específica perteneciente
+    al comercio autenticado.
+    """
+
+    categoria = obtener_categoria_por_id(
+        id_categoria,
+        id_comercio
+    )
 
     if not categoria:
-        raise ValueError("Categoría no encontrada")
+        raise ValueError(
+            "Categoría no encontrada"
+        )
 
     return categoria
 
 
-def editar_categoria(id_categoria, datos):
+def editar_categoria(
+    id_categoria,
+    datos,
+    id_comercio
+):
     """
-    Edita los datos de una categoría existente.
+    Modifica únicamente los campos permitidos
+    de una categoría del comercio autenticado.
 
-    Permite modificar únicamente el nombre y la descripción
-    de la categoría.
+    No permite modificar desde este endpoint:
+    - id_categoria
+    - id_comercio
+    - estado
+    - fecha_alta
     """
 
-    # Verificar que la categoría exista
-    categoria = obtener_categoria_por_id(id_categoria)
+    categoria = obtener_categoria_por_id(
+        id_categoria,
+        id_comercio
+    )
 
     if not categoria:
-        raise ValueError("Categoría no encontrada")
+        raise ValueError(
+            "Categoría no encontrada"
+        )
 
-    # Verificar que se hayan enviado datos
     if not datos:
-        raise ValueError("No se enviaron datos para actualizar")
+        raise ValueError(
+            "No se enviaron datos para actualizar"
+        )
 
     datos_actualizados = {}
 
-    # Actualizar nombre si fue enviado
     if "nombre_categoria" in datos:
 
-        nombre_categoria = datos["nombre_categoria"]
+        nombre_categoria = datos[
+            "nombre_categoria"
+        ]
 
-        if not isinstance(nombre_categoria, str):
+        if not isinstance(
+            nombre_categoria,
+            str
+        ):
             raise ValueError(
                 "El nombre de la categoría debe ser texto"
             )
 
-        if not nombre_categoria.strip():
+        nombre_categoria = (
+            nombre_categoria.strip()
+        )
+
+        if not nombre_categoria:
             raise ValueError(
                 "El nombre de la categoría no puede estar vacío"
             )
 
-        datos_actualizados["nombre_categoria"] = (
-            nombre_categoria.strip()
-        )
+        datos_actualizados[
+            "nombre_categoria"
+        ] = nombre_categoria
 
-    # Actualizar descripción si fue enviada
     if "descripcion" in datos:
-        datos_actualizados["descripcion"] = datos["descripcion"]
 
-    # Verificar que exista algún campo permitido para actualizar
+        descripcion = datos["descripcion"]
+
+        if (
+            descripcion is not None
+            and not isinstance(descripcion, str)
+        ):
+            raise ValueError(
+                "La descripción debe ser texto"
+            )
+
+        if isinstance(descripcion, str):
+            descripcion = descripcion.strip()
+
+        datos_actualizados[
+            "descripcion"
+        ] = descripcion
+
     if not datos_actualizados:
         raise ValueError(
             "No se enviaron campos válidos para actualizar"
@@ -118,45 +199,102 @@ def editar_categoria(id_categoria, datos):
 
     categoria_actualizada = actualizar_categoria(
         id_categoria,
+        id_comercio,
         datos_actualizados
     )
+
+    if not categoria_actualizada:
+        raise ValueError(
+            "No se pudo actualizar la categoría"
+        )
 
     return categoria_actualizada
 
 
-def cambiar_estado_categoria(id_categoria, datos):
+def cambiar_estado_categoria(
+    id_categoria,
+    datos,
+    id_comercio
+):
     """
-    Cambia el estado de una categoría.
+    Activa o desactiva una categoría perteneciente
+    al comercio autenticado.
 
-    Permite activar o desactivar una categoría
-    utilizando un valor booleano.
+    Una categoría no puede desactivarse mientras
+    tenga productos activos asociados.
     """
 
-    # Verificar que la categoría exista
-    categoria = obtener_categoria_por_id(id_categoria)
+    categoria = obtener_categoria_por_id(
+        id_categoria,
+        id_comercio
+    )
 
     if not categoria:
-        raise ValueError("Categoría no encontrada")
+        raise ValueError(
+            "Categoría no encontrada"
+        )
 
-    # Verificar que se hayan enviado datos
     if not datos:
-        raise ValueError("No se enviaron datos")
+        raise ValueError(
+            "No se enviaron datos"
+        )
 
-    # Verificar que exista el campo estado
     if "estado" not in datos:
-        raise ValueError("El campo 'estado' es obligatorio")
+        raise ValueError(
+            "El campo 'estado' es obligatorio"
+        )
 
     nuevo_estado = datos["estado"]
 
-    # El estado debe ser booleano
     if not isinstance(nuevo_estado, bool):
         raise ValueError(
             "El campo 'estado' debe ser true o false"
         )
 
-    categoria_actualizada = actualizar_estado_categoria(
-        id_categoria,
-        nuevo_estado
+    estado_actual = categoria.get(
+        "estado",
+        True
     )
+
+    if estado_actual == nuevo_estado:
+
+        if nuevo_estado:
+            raise ValueError(
+                "La categoría ya se encuentra activa"
+            )
+
+        raise ValueError(
+            "La categoría ya se encuentra inactiva"
+        )
+
+    # Si se intenta desactivar, verificar primero
+    # que no existan productos activos asociados.
+    if nuevo_estado is False:
+
+        productos_activos = (
+            obtener_productos_activos_por_categoria(
+                id_categoria,
+                id_comercio
+            )
+        )
+
+        if productos_activos:
+            raise ValueError(
+                "No se puede desactivar la categoría "
+                "porque tiene productos activos asociados"
+            )
+
+    categoria_actualizada = (
+        actualizar_estado_categoria(
+            id_categoria,
+            id_comercio,
+            nuevo_estado
+        )
+    )
+
+    if not categoria_actualizada:
+        raise ValueError(
+            "No se pudo actualizar el estado de la categoría"
+        )
 
     return categoria_actualizada
