@@ -16,6 +16,7 @@ from app.controllers.producto_controller import (
     obtener_producto_controller,
     crear_producto_controller,
     modificar_producto_controller,
+    cambiar_estado_producto_controller
 )
 
 from core.auth import (
@@ -85,5 +86,23 @@ def modificar_producto(id_producto):
     """
 
     return modificar_producto_controller(
+        id_producto
+    )
+
+
+
+@producto_bp.route(
+    "/productos/<int:id_producto>/estado",
+    methods=["PATCH"]
+)
+@login_requerido
+@permiso_requerido("productos.estado")
+def cambiar_estado_producto(id_producto):
+    """
+    Activa o desactiva un producto perteneciente
+    al comercio autenticado.
+    """
+
+    return cambiar_estado_producto_controller(
         id_producto
     )

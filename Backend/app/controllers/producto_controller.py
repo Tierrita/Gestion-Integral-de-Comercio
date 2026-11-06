@@ -20,6 +20,7 @@ from app.services.producto_service import (
     buscar_producto_por_id,
     crear_producto,
     modificar_producto,
+    cambiar_estado_producto
 )
 
 
@@ -224,6 +225,53 @@ def modificar_producto_controller(id_producto):
             "codigo": error.code,
             "detalle": str(error)
         }), 500
+
+    except Exception as error:
+        return jsonify({
+            "error": str(error)
+        }), 500
+
+
+
+
+def cambiar_estado_producto_controller(id_producto):
+    """
+    Activa o desactiva un producto perteneciente
+    al comercio autenticado.
+
+    El estado se modifica mediante un endpoint
+    independiente del PATCH general de productos.
+    """
+
+    try:
+        datos = request.get_json() or {}
+
+        producto = cambiar_estado_producto(
+            id_producto=id_producto,
+            datos=datos,
+            id_comercio=g.id_comercio
+        )
+
+        producto_seguro = _ocultar_costos_si_corresponde(
+            producto
+        )
+
+        return jsonify({
+            "message": "Estado del producto actualizado correctamente",
+            "producto": producto_seguro
+        }), 200
+
+    except ValueError as error:
+        mensaje = str(error)
+
+        if mensaje == "Producto no encontrado":
+            return jsonify({
+                "error": mensaje
+            }), 404
+
+        return jsonify({
+            "error": mensaje
+        }), 400
 
     except Exception as error:
         return jsonify({

@@ -452,3 +452,88 @@ def modificar_producto(
         )
 
     return producto
+
+
+
+
+def cambiar_estado_producto(
+    id_producto,
+    datos,
+    id_comercio
+):
+    """
+    Activa o desactiva un producto perteneciente
+    al comercio autenticado.
+
+    El producto no se elimina físicamente.
+    Solamente se modifica su estado.
+    """
+
+    # -----------------------------
+    # VERIFICAR PRODUCTO
+    # -----------------------------
+
+    producto_actual = obtener_producto_por_id(
+        id_producto,
+        id_comercio
+    )
+
+    if not producto_actual:
+        raise ValueError("Producto no encontrado")
+
+    # -----------------------------
+    # VALIDAR BODY
+    # -----------------------------
+
+    if not datos or "estado" not in datos:
+        raise ValueError(
+            "El estado es obligatorio"
+        )
+
+    nuevo_estado = datos["estado"]
+
+    # bool se valida explícitamente para evitar
+    # valores como 1, 0, "true" o "false".
+    if not isinstance(nuevo_estado, bool):
+        raise ValueError(
+            "El estado debe ser true o false"
+        )
+
+    # -----------------------------
+    # EVITAR OPERACIÓN INNECESARIA
+    # -----------------------------
+
+    estado_actual = producto_actual.get(
+        "estado",
+        True
+    )
+
+    if estado_actual == nuevo_estado:
+
+        if nuevo_estado:
+            raise ValueError(
+                "El producto ya se encuentra activo"
+            )
+
+        raise ValueError(
+            "El producto ya se encuentra inactivo"
+        )
+
+    # -----------------------------
+    # ACTUALIZAR ESTADO
+    # -----------------------------
+
+    producto = actualizar_producto(
+        id_producto,
+        id_comercio,
+        {
+            "estado": nuevo_estado
+        }
+    )
+
+    if not producto:
+        raise ValueError(
+            "No se pudo actualizar el estado del producto"
+        )
+
+    return producto
