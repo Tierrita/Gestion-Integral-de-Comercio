@@ -1,12 +1,8 @@
 """
 Controlador de compras.
-
-Este módulo recibe las solicitudes relacionadas con compras,
-se comunica con la capa de servicios y prepara las respuestas
-HTTP que serán enviadas al cliente.
 """
 
-from flask import jsonify, request
+from flask import jsonify, request, g
 from postgrest.exceptions import APIError
 
 from app.services.compra_service import (
@@ -17,17 +13,15 @@ from app.services.compra_service import (
 )
 
 
-
 def crear_compra_controller():
-    """
-    Recibe los datos de una compra, los envía a la capa
-    de servicios y devuelve la respuesta correspondiente.
-    """
-
     try:
-        datos = request.get_json()
+        datos = request.get_json(silent=True)
 
-        compra = crear_compra(datos)
+        compra = crear_compra(
+            datos,
+            g.id_comercio,
+            g.id_usuario
+        )
 
         return jsonify({
             "message": "Compra registrada correctamente",
@@ -39,40 +33,32 @@ def crear_compra_controller():
             "error": str(error)
         }), 400
 
-    except APIError as error:
+    except APIError:
         return jsonify({
-            "error": "Error al registrar la compra",
-            "detalle": str(error)
+            "error": "Error al registrar la compra"
         }), 500
 
 
-
 def obtener_compras_controller():
-    """
-    Obtiene todas las compras mediante la capa de servicios
-    y devuelve una respuesta en formato JSON.
-    """
-
     try:
-        compras = listar_compras()
+        compras = listar_compras(
+            g.id_comercio
+        )
 
         return jsonify(compras), 200
 
-    except APIError as error:
+    except APIError:
         return jsonify({
-            "error": "Error al obtener las compras",
-            "detalle": str(error)
+            "error": "Error al obtener las compras"
         }), 500
 
 
 def obtener_compra_controller(id_compra):
-    """
-    Obtiene una compra específica mediante su ID,
-    junto con todos sus detalles.
-    """
-
     try:
-        compra = buscar_compra_por_id(id_compra)
+        compra = buscar_compra_por_id(
+            id_compra,
+            g.id_comercio
+        )
 
         return jsonify(compra), 200
 
@@ -81,24 +67,19 @@ def obtener_compra_controller(id_compra):
             "error": str(error)
         }), 404
 
-    except APIError as error:
+    except APIError:
         return jsonify({
-            "error": "Error al obtener la compra",
-            "detalle": str(error)
+            "error": "Error al obtener la compra"
         }), 500
 
 
-
 def anular_compra_controller(id_compra):
-    """
-    Anula una compra mediante su ID.
-
-    La lógica de reversión de stock y registro
-    de movimientos se realiza en la capa de servicios.
-    """
-
     try:
-        resultado = anular_compra(id_compra)
+        resultado = anular_compra(
+            id_compra,
+            g.id_comercio,
+            g.id_usuario
+        )
 
         return jsonify({
             "message": "Compra anulada correctamente",
@@ -110,8 +91,7 @@ def anular_compra_controller(id_compra):
             "error": str(error)
         }), 400
 
-    except APIError as error:
+    except APIError:
         return jsonify({
-            "error": "Error al anular la compra",
-            "detalle": str(error)
+            "error": "Error al anular la compra"
         }), 500

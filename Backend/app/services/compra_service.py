@@ -1,13 +1,15 @@
 """
 Servicio de compras.
 
-Este módulo contiene la lógica de negocio relacionada
-con las compras.
+Contiene las reglas de negocio del módulo de compras
+adaptadas a autenticación, permisos y multicomercio.
 """
 
 from app.models.compra_model import (
     insertar_compra,
     insertar_detalle_compra,
+    obtener_siguiente_numero_compra,
+    obtener_proveedor_por_id,
     obtener_producto_por_id,
     actualizar_stock_producto,
     actualizar_precios_producto,
@@ -19,64 +21,31 @@ from app.models.compra_model import (
 )
 
 
-def crear_compra(datos):
+def _es_entero_positivo(valor):
+    return (
+        isinstance(valor, int)
+        and not isinstance(valor, bool)
+        and valor > 0
+    )
+
+
+def crear_compra(datos, id_comercio, id_usuario):
     """
-    Registra una compra junto con sus productos.
+    Registra una compra dentro del comercio autenticado.
 
-    Calcula los subtotales y el total de la compra,
-    actualiza el stock y registra los movimientos.
-
-    Si el nuevo costo de compra de un producto es mayor
-    al costo actual, actualiza el precio de costo y
-    recalcula el precio de venta manteniendo el mismo
-    porcentaje de recargo (markup).
-
-    Si el nuevo costo es menor o igual al actual,
-    mantiene los precios actuales.
+    id_comercio e id_usuario provienen del JWT y nunca
+    del Body enviado por el frontend.
     """
 
-    if not datos:
+    if not datos or not isinstance(datos, dict):
         raise ValueError("No se enviaron datos de la compra")
 
-    # --------------------------------------------------
-    # VALIDAR DATOS GENERALES
-    # --------------------------------------------------
+    id_proveedor = datos.get("id_proveedor")
+    productos = datos.get("productos")
 
-    if "id_proveedor" not in datos:
-        raise ValueError(
-            "El campo 'id_proveedor' es obligatorio"
-        )
-
-    if "id_usuario" not in datos:
-        raise ValueError(
-            "El campo 'id_usuario' es obligatorio"
-        )
-
-    if "productos" not in datos:
-        raise ValueError(
-            "El campo 'productos' es obligatorio"
-        )
-
-    id_proveedor = datos["id_proveedor"]
-    id_usuario = datos["id_usuario"]
-    productos = datos["productos"]
-
-    if (
-        not isinstance(id_proveedor, int)
-        or isinstance(id_proveedor, bool)
-        or id_proveedor <= 0
-    ):
+    if not _es_entero_positivo(id_proveedor):
         raise ValueError(
             "El id_proveedor debe ser un número entero mayor que cero"
-        )
-
-    if (
-        not isinstance(id_usuario, int)
-        or isinstance(id_usuario, bool)
-        or id_usuario <= 0
-    ):
-        raise ValueError(
-            "El id_usuario debe ser un número entero mayor que cero"
         )
 
     if not isinstance(productos, list) or len(productos) == 0:
@@ -85,98 +54,91 @@ def crear_compra(datos):
         )
 
     # --------------------------------------------------
+    # VALIDAR PROVEEDOR
+    # --------------------------------------------------
+
+    proveedor = obtener_proveedor_por_id(
+        id_proveedor,
+        id_comercio
+    )
+
+    if not proveedor:
+        raise ValueError(
+            "Proveedor no encontrado en el comercio autenticado"
+        )
+
+    if not proveedor.get("estado"):
+        raise ValueError(
+            "No se puede registrar una compra con un proveedor inactivo"
+        )
+
+    # --------------------------------------------------
     # PREPARAR PRODUCTOS
     # --------------------------------------------------
 
     detalles = []
-    total_compra = 0
+    total_compra = 0.0
+    ids_productos = set()
 
     for producto_compra in productos:
 
-        if "id_producto" not in producto_compra:
+        if not isinstance(producto_compra, dict):
             raise ValueError(
-                "Cada producto debe tener 'id_producto'"
+                "Cada producto de la compra debe ser un objeto válido"
             )
 
-        if "cantidad" not in producto_compra:
-            raise ValueError(
-                "Cada producto debe tener 'cantidad'"
-            )
+        id_producto = producto_compra.get("id_producto")
+        cantidad = producto_compra.get("cantidad")
+        precio_unitario = producto_compra.get("precio_unitario")
 
-        if "precio_unitario" not in producto_compra:
-            raise ValueError(
-                "Cada producto debe tener 'precio_unitario'"
-            )
-
-        id_producto = producto_compra["id_producto"]
-        cantidad = producto_compra["cantidad"]
-        precio_unitario = producto_compra["precio_unitario"]
-
-        # --------------------------------------------------
-        # VALIDAR ID PRODUCTO
-        # --------------------------------------------------
-
-        if (
-            not isinstance(id_producto, int)
-            or isinstance(id_producto, bool)
-            or id_producto <= 0
-        ):
+        if not _es_entero_positivo(id_producto):
             raise ValueError(
                 "El id_producto debe ser un número entero mayor que cero"
             )
 
-        # --------------------------------------------------
-        # VALIDAR CANTIDAD
-        # --------------------------------------------------
-
-        if (
-            not isinstance(cantidad, int)
-            or isinstance(cantidad, bool)
-        ):
+        if id_producto in ids_productos:
             raise ValueError(
-                "La cantidad debe ser un número entero"
+                f"El producto con ID {id_producto} está repetido en la compra"
             )
 
-        if cantidad <= 0:
-            raise ValueError(
-                "La cantidad debe ser mayor a 0"
-            )
+        ids_productos.add(id_producto)
 
-        # --------------------------------------------------
-        # VALIDAR PRECIO DE COMPRA
-        # --------------------------------------------------
+        if not _es_entero_positivo(cantidad):
+            raise ValueError(
+                "La cantidad debe ser un número entero mayor a 0"
+            )
 
         if (
             not isinstance(precio_unitario, (int, float))
             or isinstance(precio_unitario, bool)
+            or precio_unitario <= 0
         ):
             raise ValueError(
-                "El precio unitario debe ser numérico"
-            )
-
-        if precio_unitario <= 0:
-            raise ValueError(
-                "El precio unitario debe ser mayor a 0"
+                "El precio unitario debe ser numérico y mayor a 0"
             )
 
         # --------------------------------------------------
-        # CONSULTAR PRODUCTO
+        # PRODUCTO DEL MISMO COMERCIO
         # --------------------------------------------------
 
         producto_actual = obtener_producto_por_id(
-            id_producto
+            id_producto,
+            id_comercio
         )
 
         if not producto_actual:
             raise ValueError(
-                f"El producto con ID {id_producto} no existe"
+                f"El producto con ID {id_producto} no existe "
+                f"en el comercio autenticado"
             )
 
-        # --------------------------------------------------
-        # OBTENER DATOS ACTUALES
-        # --------------------------------------------------
+        if not producto_actual.get("estado"):
+            raise ValueError(
+                f"El producto {producto_actual['nombre_producto']} "
+                f"se encuentra inactivo"
+            )
 
-        stock_actual = producto_actual["stock"]
+        stock_actual = int(producto_actual["stock"])
 
         if producto_actual.get("precio_costo") is None:
             raise ValueError(
@@ -200,28 +162,27 @@ def crear_compra(datos):
 
         precio_compra = float(precio_unitario)
 
-        # --------------------------------------------------
-        # CALCULAR SUBTOTAL
-        # --------------------------------------------------
+        subtotal = round(
+            cantidad * precio_compra,
+            2
+        )
 
-        subtotal = cantidad * precio_compra
-
-        total_compra += subtotal
+        total_compra = round(
+            total_compra + subtotal,
+            2
+        )
 
         # --------------------------------------------------
-        # CALCULAR POSIBLE ACTUALIZACIÓN DE PRECIOS
+        # ACTUALIZACIÓN DE COSTO/PRECIO
         # --------------------------------------------------
 
         actualizar_precio = False
-
         nuevo_costo = costo_actual
         nuevo_precio_venta = precio_venta_actual
         markup = None
 
         if precio_compra > costo_actual:
 
-            # Para mantener el porcentaje actual necesitamos
-            # que exista un costo válido mayor a cero.
             if costo_actual <= 0:
                 raise ValueError(
                     f"No se puede calcular el porcentaje de recargo "
@@ -229,12 +190,6 @@ def crear_compra(datos):
                     f"porque su costo actual es 0"
                 )
 
-            # Ejemplo:
-            # costo = 500
-            # venta = 900
-            #
-            # markup = (900 - 500) / 500
-            # markup = 0.80 = 80 %
             markup = (
                 precio_venta_actual - costo_actual
             ) / costo_actual
@@ -248,16 +203,6 @@ def crear_compra(datos):
 
             actualizar_precio = True
 
-        # --------------------------------------------------
-        # CALCULAR NUEVO STOCK
-        # --------------------------------------------------
-
-        stock_nuevo = stock_actual + cantidad
-
-        # --------------------------------------------------
-        # GUARDAR INFORMACIÓN PREPARADA
-        # --------------------------------------------------
-
         detalles.append({
             "id_producto": id_producto,
             "nombre_producto": producto_actual["nombre_producto"],
@@ -266,7 +211,7 @@ def crear_compra(datos):
             "subtotal": subtotal,
 
             "stock_anterior": stock_actual,
-            "stock_nuevo": stock_nuevo,
+            "stock_nuevo": stock_actual + cantidad,
 
             "costo_anterior": costo_actual,
             "precio_venta_anterior": precio_venta_actual,
@@ -279,20 +224,30 @@ def crear_compra(datos):
         })
 
     # --------------------------------------------------
-    # CREAR COMPRA PRINCIPAL
+    # NUMERACIÓN LOCAL
+    # --------------------------------------------------
+
+    numero_compra = obtener_siguiente_numero_compra(
+        id_comercio
+    )
+
+    if numero_compra is None:
+        raise ValueError(
+            "No se pudo generar el número de compra"
+        )
+
+    # --------------------------------------------------
+    # CREAR COMPRA
     # --------------------------------------------------
 
     datos_compra = {
         "id_proveedor": id_proveedor,
         "id_usuario": id_usuario,
+        "id_comercio": id_comercio,
+        "numero_compra": numero_compra,
         "total_compra": total_compra,
-        "estado": datos.get(
-            "estado",
-            "COMPLETADA"
-        ),
-        "observaciones": datos.get(
-            "observaciones"
-        )
+        "estado": "COMPLETADA",
+        "observaciones": datos.get("observaciones")
     }
 
     compra_creada = insertar_compra(
@@ -304,79 +259,54 @@ def crear_compra(datos):
             "No se pudo registrar la compra"
         )
 
-    id_compra = compra_creada[0]["id_compra"]
-
-    # --------------------------------------------------
-    # REGISTRAR PRODUCTOS DE LA COMPRA
-    # --------------------------------------------------
+    compra = compra_creada[0]
+    id_compra = compra["id_compra"]
 
     detalles_creados = []
     productos_actualizados = []
 
+    # --------------------------------------------------
+    # DETALLES + STOCK + HISTORIAL
+    # --------------------------------------------------
+
     for detalle in detalles:
 
-        # --------------------------------------------------
-        # CREAR DETALLE DE COMPRA
-        # --------------------------------------------------
-
-        datos_detalle = {
+        detalle_creado = insertar_detalle_compra({
             "id_compra": id_compra,
             "id_producto": detalle["id_producto"],
             "cantidad": detalle["cantidad"],
             "precio_unitario": detalle["precio_unitario"],
             "subtotal": detalle["subtotal"]
-        }
+        })
 
-        detalle_creado = insertar_detalle_compra(
-            datos_detalle
-        )
-
-        detalles_creados.extend(
-            detalle_creado
-        )
-
-        # --------------------------------------------------
-        # ACTUALIZAR PRECIOS SI EL COSTO AUMENTÓ
-        # --------------------------------------------------
+        detalles_creados.extend(detalle_creado)
 
         if detalle["actualizar_precio"]:
-
             actualizar_precios_producto(
                 detalle["id_producto"],
+                id_comercio,
                 detalle["nuevo_costo"],
                 detalle["nuevo_precio_venta"]
             )
 
-        # --------------------------------------------------
-        # ACTUALIZAR STOCK
-        # --------------------------------------------------
-
         actualizar_stock_producto(
             detalle["id_producto"],
+            id_comercio,
             detalle["stock_nuevo"]
         )
 
-        # --------------------------------------------------
-        # REGISTRAR MOVIMIENTO DE STOCK
-        # --------------------------------------------------
-
-        datos_movimiento = {
+        registrar_movimiento_stock({
             "id_producto": detalle["id_producto"],
             "id_usuario": id_usuario,
             "tipo_movimiento": "COMPRA",
             "cantidad": detalle["cantidad"],
             "stock_anterior": detalle["stock_anterior"],
             "stock_nuevo": detalle["stock_nuevo"],
-            "observaciones": f"Compra #{id_compra}"
-        }
-
-        registrar_movimiento_stock(
-            datos_movimiento
-        )
-
-        # --------------------------------------------------
-        # INFORMACIÓN PARA LA RESPUESTA
-        # --------------------------------------------------
+            "observaciones": (
+                f"Compra #{numero_compra} "
+                f"(ID global {id_compra})"
+            )
+        })
 
         productos_actualizados.append({
             "id_producto": detalle["id_producto"],
@@ -386,13 +316,11 @@ def crear_compra(datos):
             "costo_compra": detalle["precio_unitario"],
             "costo_actual": detalle["nuevo_costo"],
 
-            "precio_venta_anterior": detalle[
-                "precio_venta_anterior"
-            ],
+            "precio_venta_anterior":
+                detalle["precio_venta_anterior"],
 
-            "precio_venta_actual": detalle[
-                "nuevo_precio_venta"
-            ],
+            "precio_venta_actual":
+                detalle["nuevo_precio_venta"],
 
             "markup_porcentaje": (
                 round(detalle["markup"] * 100, 2)
@@ -400,43 +328,39 @@ def crear_compra(datos):
                 else None
             ),
 
-            "precio_actualizado": detalle[
-                "actualizar_precio"
-            ],
+            "precio_actualizado":
+                detalle["actualizar_precio"],
 
-            "stock_anterior": detalle["stock_anterior"],
-            "stock_actual": detalle["stock_nuevo"]
+            "stock_anterior":
+                detalle["stock_anterior"],
+
+            "stock_actual":
+                detalle["stock_nuevo"]
         })
 
-    # --------------------------------------------------
-    # RESPUESTA
-    # --------------------------------------------------
-
     return {
-        "compra": compra_creada[0],
+        "compra": compra,
         "detalles": detalles_creados,
         "productos_actualizados": productos_actualizados
     }
 
 
-def listar_compras():
+def listar_compras(id_comercio):
     """
-    Obtiene todas las compras registradas.
+    Lista solamente compras del comercio autenticado.
     """
 
-    compras = obtener_compras()
-
-    return compras
+    return obtener_compras(id_comercio)
 
 
-def buscar_compra_por_id(id_compra):
+def buscar_compra_por_id(id_compra, id_comercio):
     """
-    Obtiene una compra específica junto con
-    todos sus detalles.
+    Busca una compra dentro del comercio autenticado.
     """
 
     compra = obtener_compra_por_id(
-        id_compra
+        id_compra,
+        id_comercio
     )
 
     if not compra:
@@ -454,24 +378,21 @@ def buscar_compra_por_id(id_compra):
     }
 
 
-def anular_compra(id_compra):
+def anular_compra(
+    id_compra,
+    id_comercio,
+    id_usuario_anulacion
+):
     """
-    Anula una compra registrada.
+    Anula una compra del comercio autenticado.
 
-    Revierte el stock de los productos incluidos en la compra,
-    registra los movimientos correspondientes en el historial
-    y cambia el estado de la compra a 'ANULADA'.
-
-    La anulación NO reduce automáticamente el precio de costo
-    ni el precio de venta actual del producto.
+    La autorización para esta operación es exclusiva
+    del propietario y se controla desde la ruta.
     """
-
-    # --------------------------------------------------
-    # BUSCAR COMPRA
-    # --------------------------------------------------
 
     compra = obtener_compra_por_id(
-        id_compra
+        id_compra,
+        id_comercio
     )
 
     if not compra:
@@ -479,18 +400,10 @@ def anular_compra(id_compra):
             "Compra no encontrada"
         )
 
-    # --------------------------------------------------
-    # EVITAR DOBLE ANULACIÓN
-    # --------------------------------------------------
-
-    if compra["estado"].upper() == "ANULADA":
+    if str(compra["estado"]).upper() == "ANULADA":
         raise ValueError(
             "La compra ya se encuentra anulada"
         )
-
-    # --------------------------------------------------
-    # OBTENER PRODUCTOS DE LA COMPRA
-    # --------------------------------------------------
 
     detalles = obtener_detalles_compra(
         id_compra
@@ -504,23 +417,25 @@ def anular_compra(id_compra):
     productos_a_revertir = []
 
     # --------------------------------------------------
-    # VALIDAR TODOS LOS PRODUCTOS
+    # VALIDAR TODO ANTES DE MODIFICAR
     # --------------------------------------------------
 
     for detalle in detalles:
 
         producto = obtener_producto_por_id(
-            detalle["id_producto"]
+            detalle["id_producto"],
+            id_comercio
         )
 
         if not producto:
             raise ValueError(
                 f"El producto con ID "
-                f"{detalle['id_producto']} no existe"
+                f"{detalle['id_producto']} no existe "
+                f"en el comercio autenticado"
             )
 
-        stock_actual = producto["stock"]
-        cantidad = detalle["cantidad"]
+        stock_actual = int(producto["stock"])
+        cantidad = int(detalle["cantidad"])
 
         if stock_actual < cantidad:
             raise ValueError(
@@ -544,29 +459,26 @@ def anular_compra(id_compra):
 
         actualizar_stock_producto(
             producto["id_producto"],
+            id_comercio,
             producto["stock_nuevo"]
         )
 
-        datos_movimiento = {
+        registrar_movimiento_stock({
             "id_producto": producto["id_producto"],
-            "id_usuario": compra["id_usuario"],
+            "id_usuario": id_usuario_anulacion,
             "tipo_movimiento": "ANULACION_COMPRA",
             "cantidad": producto["cantidad"],
             "stock_anterior": producto["stock_anterior"],
             "stock_nuevo": producto["stock_nuevo"],
-            "observaciones": f"Anulación Compra #{id_compra}"
-        }
-
-        registrar_movimiento_stock(
-            datos_movimiento
-        )
-
-    # --------------------------------------------------
-    # CAMBIAR ESTADO DE LA COMPRA
-    # --------------------------------------------------
+            "observaciones": (
+                f"Anulación Compra #{compra['numero_compra']} "
+                f"(ID global {id_compra})"
+            )
+        })
 
     compra_actualizada = actualizar_estado_compra(
         id_compra,
+        id_comercio,
         "ANULADA"
     )
 
