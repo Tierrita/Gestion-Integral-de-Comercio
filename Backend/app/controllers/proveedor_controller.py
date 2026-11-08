@@ -1,13 +1,8 @@
 """
 Controlador de proveedores.
-
-Este módulo recibe las solicitudes relacionadas con proveedores,
-se comunica con la capa de servicios y prepara las respuestas
-HTTP que serán enviadas al cliente.
 """
 
-from flask import jsonify, request
-from postgrest.exceptions import APIError
+from flask import jsonify, request, g
 
 from app.services.proveedor_service import (
     crear_proveedor,
@@ -15,24 +10,18 @@ from app.services.proveedor_service import (
     buscar_proveedor_por_id,
     editar_proveedor,
     cambiar_estado_proveedor
-
 )
 
 
 def crear_proveedor_controller():
-    """
-    Recibe los datos de un proveedor, los envía a la capa
-    de servicios y devuelve la respuesta correspondiente.
-    """
+    datos = request.get_json(silent=True) or {}
 
     try:
-        # Obtener datos enviados en formato JSON
-        datos = request.get_json()
+        proveedor = crear_proveedor(
+            datos,
+            g.id_comercio
+        )
 
-        # Enviar datos a la capa de servicios
-        proveedor = crear_proveedor(datos)
-
-        # Respuesta exitosa
         return jsonify({
             "message": "Proveedor creado correctamente",
             "proveedor": proveedor
@@ -43,41 +32,32 @@ def crear_proveedor_controller():
             "error": str(error)
         }), 400
 
-    except APIError as error:
+    except Exception:
         return jsonify({
-            "error": "Error al crear el proveedor",
-            "detalle": str(error)
+            "error": "Error interno del servidor"
         }), 500
-
 
 
 def obtener_proveedores_controller():
-    """
-    Obtiene todos los proveedores mediante la capa de servicios
-    y devuelve una respuesta en formato JSON.
-    """
-
     try:
-        proveedores = listar_proveedores()
+        proveedores = listar_proveedores(
+            g.id_comercio
+        )
 
         return jsonify(proveedores), 200
 
-    except APIError as error:
+    except Exception:
         return jsonify({
-            "error": "Error al obtener los proveedores",
-            "detalle": str(error)
+            "error": "Error interno del servidor"
         }), 500
 
 
-
-
 def obtener_proveedor_controller(id_proveedor):
-    """
-    Obtiene un proveedor específico mediante su ID.
-    """
-
     try:
-        proveedor = buscar_proveedor_por_id(id_proveedor)
+        proveedor = buscar_proveedor_por_id(
+            id_proveedor,
+            g.id_comercio
+        )
 
         return jsonify(proveedor), 200
 
@@ -86,25 +66,20 @@ def obtener_proveedor_controller(id_proveedor):
             "error": str(error)
         }), 404
 
-    except APIError as error:
+    except Exception:
         return jsonify({
-            "error": "Error al obtener el proveedor",
-            "detalle": str(error)
+            "error": "Error interno del servidor"
         }), 500
 
 
-
 def editar_proveedor_controller(id_proveedor):
-    """
-    Edita un proveedor existente mediante su ID.
-    """
+    datos = request.get_json(silent=True) or {}
 
     try:
-        datos = request.get_json()
-
         proveedor = editar_proveedor(
             id_proveedor,
-            datos
+            datos,
+            g.id_comercio
         )
 
         return jsonify({
@@ -113,42 +88,53 @@ def editar_proveedor_controller(id_proveedor):
         }), 200
 
     except ValueError as error:
+        mensaje = str(error)
+
+        if mensaje == "Proveedor no encontrado":
+            return jsonify({
+                "error": mensaje
+            }), 404
+
         return jsonify({
-            "error": str(error)
+            "error": mensaje
         }), 400
 
-    except APIError as error:
+    except Exception:
         return jsonify({
-            "error": "Error al actualizar el proveedor",
-            "detalle": str(error)
+            "error": "Error interno del servidor"
         }), 500
 
 
 def cambiar_estado_proveedor_controller(id_proveedor):
-    """
-    Cambia el estado de un proveedor mediante su ID.
-    """
+    datos = request.get_json(silent=True) or {}
 
     try:
-        datos = request.get_json()
-
         proveedor = cambiar_estado_proveedor(
             id_proveedor,
-            datos
+            datos,
+            g.id_comercio
         )
 
         return jsonify({
-            "message": "Estado de proveedor actualizado correctamente",
+            "message": (
+                "Estado de proveedor actualizado correctamente"
+            ),
             "proveedor": proveedor
         }), 200
 
     except ValueError as error:
+        mensaje = str(error)
+
+        if mensaje == "Proveedor no encontrado":
+            return jsonify({
+                "error": mensaje
+            }), 404
+
         return jsonify({
-            "error": str(error)
+            "error": mensaje
         }), 400
 
-    except APIError as error:
+    except Exception:
         return jsonify({
-            "error": "Error al actualizar el estado del proveedor",
-            "detalle": str(error)
+            "error": "Error interno del servidor"
         }), 500

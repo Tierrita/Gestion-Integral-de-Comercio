@@ -1,22 +1,14 @@
 """
 Modelo de pagos a proveedores.
 
-Este módulo se encarga del acceso a los datos relacionados
-con los pagos realizados a proveedores almacenados en Supabase.
-
-Controller → maneja la respuesta HTTP/JSON.
-Service → maneja la lógica de negocio.
-Model → maneja el acceso a los datos.
+Los pagos se aíslan por comercio mediante la relación
+con el proveedor al que pertenecen.
 """
 
 from core.supabase_client import get_client
 
 
 def insertar_pago_proveedor(datos):
-    """
-    Registra un nuevo pago realizado a un proveedor.
-    """
-
     supabase = get_client()
 
     response = (
@@ -26,20 +18,33 @@ def insertar_pago_proveedor(datos):
         .execute()
     )
 
-    return response.data
+    return response.data[0] if response.data else None
 
 
-def obtener_pagos_proveedor():
-    """
-    Obtiene todos los pagos a proveedores registrados.
-    """
-
+def obtener_pagos_proveedor(id_comercio):
     supabase = get_client()
+
+    proveedores = (
+        supabase
+        .table("proveedores")
+        .select("id_proveedor")
+        .eq("id_comercio", id_comercio)
+        .execute()
+    )
+
+    ids = [
+        proveedor["id_proveedor"]
+        for proveedor in proveedores.data
+    ]
+
+    if not ids:
+        return []
 
     response = (
         supabase
         .table("pagos_proveedor")
         .select("*")
+        .in_("id_proveedor", ids)
         .order("fecha_pago", desc=True)
         .execute()
     )
@@ -47,30 +52,38 @@ def obtener_pagos_proveedor():
     return response.data
 
 
-def obtener_pago_proveedor_por_id(id_pago):
-    """
-    Obtiene un pago específico mediante su ID.
-    """
-
+def obtener_pago_proveedor_por_id(
+    id_pago,
+    id_comercio
+):
     supabase = get_client()
 
-    response = (
+    pagos = obtener_pagos_proveedor(id_comercio)
+
+    for pago in pagos:
+        if pago["id_pago"] == id_pago:
+            return pago
+
+    return None
+
+
+def obtener_pagos_por_proveedor(
+    id_proveedor,
+    id_comercio
+):
+    supabase = get_client()
+
+    proveedor = (
         supabase
-        .table("pagos_proveedor")
-        .select("*")
-        .eq("id_pago", id_pago)
+        .table("proveedores")
+        .select("id_proveedor")
+        .eq("id_proveedor", id_proveedor)
+        .eq("id_comercio", id_comercio)
         .execute()
     )
 
-    return response.data[0] if response.data else None
-
-
-def obtener_pagos_por_proveedor(id_proveedor):
-    """
-    Obtiene todos los pagos asociados a un proveedor.
-    """
-
-    supabase = get_client()
+    if not proveedor.data:
+        return None
 
     response = (
         supabase
@@ -84,12 +97,20 @@ def obtener_pagos_por_proveedor(id_proveedor):
     return response.data
 
 
-def actualizar_pago_proveedor(id_pago, datos):
-    """
-    Actualiza los datos de un pago a proveedor.
-    """
-
+def actualizar_pago_proveedor(
+    id_pago,
+    id_comercio,
+    datos
+):
     supabase = get_client()
+
+    pago = obtener_pago_proveedor_por_id(
+        id_pago,
+        id_comercio
+    )
+
+    if not pago:
+        return None
 
     response = (
         supabase
@@ -100,3 +121,24 @@ def actualizar_pago_proveedor(id_pago, datos):
     )
 
     return response.data[0] if response.data else None
+
+
+def obtener_compras_proveedor(
+    id_proveedor,
+    id_comercio
+):
+    supabase = get_client()
+
+    response = (
+        supabase
+        .table("compras")
+        .select(
+            "id_compra, id_proveedor, id_comercio, "
+            "total_compra, estado"
+        )
+        .eq("id_proveedor", id_proveedor)
+        .eq("id_comercio", id_comercio)
+        .execute()
+    )
+
+    return response.data

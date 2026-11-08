@@ -1,12 +1,8 @@
 """
-Controller de pagos a proveedores.
-
-Este módulo se encarga de recibir las solicitudes HTTP
-relacionadas con los pagos a proveedores y devolver
-las respuestas correspondientes en formato JSON.
+Controlador de pagos a proveedores.
 """
 
-from flask import request, jsonify
+from flask import request, jsonify, g
 
 from app.services.pago_proveedor_service import (
     registrar_pago_proveedor,
@@ -19,56 +15,62 @@ from app.services.pago_proveedor_service import (
 
 
 def registrar_pago_proveedor_controller():
-    """
-    Registra un nuevo pago a proveedor.
-    """
+    datos = request.get_json(silent=True) or {}
 
     try:
-        datos = request.get_json()
-
-        pago = registrar_pago_proveedor(datos)
+        pago = registrar_pago_proveedor(
+            datos=datos,
+            id_usuario=g.id_usuario,
+            id_comercio=g.id_comercio
+        )
 
         return jsonify({
-            "message": "Pago a proveedor registrado correctamente",
+            "message": (
+                "Pago a proveedor registrado correctamente"
+            ),
             "pago": pago
         }), 201
 
     except ValueError as error:
+        mensaje = str(error)
+
+        if mensaje == "Proveedor no encontrado":
+            return jsonify({
+                "error": mensaje
+            }), 404
+
         return jsonify({
-            "error": str(error)
+            "error": mensaje
         }), 400
 
-    except Exception as error:
+    except Exception:
         return jsonify({
-            "error": "Error interno del servidor",
-            "detalle": str(error)
+            "error": "Error interno del servidor"
         }), 500
 
 
 def listar_pagos_proveedor_controller():
-    """
-    Obtiene todos los pagos realizados a proveedores.
-    """
-
     try:
-        pagos = listar_pagos_proveedor()
+        pagos = listar_pagos_proveedor(
+            g.id_comercio
+        )
 
         return jsonify(pagos), 200
 
-    except Exception as error:
+    except Exception:
         return jsonify({
-            "error": "Error interno del servidor",
-            "detalle": str(error)
+            "error": "Error interno del servidor"
         }), 500
 
 
-def consultar_pago_proveedor_por_id_controller(id_pago):
-    """
-    Obtiene un pago específico mediante su ID.
-    """
-
+def consultar_pago_proveedor_por_id_controller(
+    id_pago
+):
     try:
-        pago = consultar_pago_proveedor_por_id(id_pago)
+        pago = consultar_pago_proveedor_por_id(
+            id_pago,
+            g.id_comercio
+        )
 
         return jsonify(pago), 200
 
@@ -84,20 +86,20 @@ def consultar_pago_proveedor_por_id_controller(id_pago):
             "error": mensaje
         }), 400
 
-    except Exception as error:
+    except Exception:
         return jsonify({
-            "error": "Error interno del servidor",
-            "detalle": str(error)
+            "error": "Error interno del servidor"
         }), 500
 
 
-def consultar_pagos_por_proveedor_controller(id_proveedor):
-    """
-    Obtiene todos los pagos asociados a un proveedor.
-    """
-
+def consultar_pagos_por_proveedor_controller(
+    id_proveedor
+):
     try:
-        pagos = consultar_pagos_por_proveedor(id_proveedor)
+        pagos = consultar_pagos_por_proveedor(
+            id_proveedor,
+            g.id_comercio
+        )
 
         return jsonify(pagos), 200
 
@@ -113,25 +115,27 @@ def consultar_pagos_por_proveedor_controller(id_proveedor):
             "error": mensaje
         }), 400
 
-    except Exception as error:
+    except Exception:
         return jsonify({
-            "error": "Error interno del servidor",
-            "detalle": str(error)
+            "error": "Error interno del servidor"
         }), 500
 
 
 def anular_pago_proveedor_controller(id_pago):
-    """
-    Anula un pago realizado a un proveedor.
-    """
+    datos = request.get_json(silent=True) or {}
 
     try:
-        datos = request.get_json()
-
-        pago = anular_pago_proveedor(id_pago, datos)
+        pago = anular_pago_proveedor(
+            id_pago=id_pago,
+            datos=datos,
+            id_usuario=g.id_usuario,
+            id_comercio=g.id_comercio
+        )
 
         return jsonify({
-            "message": "Pago a proveedor anulado correctamente",
+            "message": (
+                "Pago a proveedor anulado correctamente"
+            ),
             "pago": pago
         }), 200
 
@@ -147,20 +151,20 @@ def anular_pago_proveedor_controller(id_pago):
             "error": mensaje
         }), 400
 
-    except Exception as error:
+    except Exception:
         return jsonify({
-            "error": "Error interno del servidor",
-            "detalle": str(error)
+            "error": "Error interno del servidor"
         }), 500
 
 
-def consultar_saldo_proveedor_controller(id_proveedor):
-    """
-    Obtiene la cuenta corriente de un proveedor.
-    """
-
+def consultar_saldo_proveedor_controller(
+    id_proveedor
+):
     try:
-        saldo = consultar_saldo_proveedor(id_proveedor)
+        saldo = consultar_saldo_proveedor(
+            id_proveedor,
+            g.id_comercio
+        )
 
         return jsonify(saldo), 200
 
@@ -168,12 +172,15 @@ def consultar_saldo_proveedor_controller(id_proveedor):
         mensaje = str(error)
 
         if mensaje == "Proveedor no encontrado":
-            return jsonify({"error": mensaje}), 404
+            return jsonify({
+                "error": mensaje
+            }), 404
 
-        return jsonify({"error": mensaje}), 400
-
-    except Exception as error:
         return jsonify({
-            "error": "Error interno del servidor",
-            "detalle": str(error)
+            "error": mensaje
+        }), 400
+
+    except Exception:
+        return jsonify({
+            "error": "Error interno del servidor"
         }), 500
