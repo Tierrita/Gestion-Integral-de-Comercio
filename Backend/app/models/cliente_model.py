@@ -1,21 +1,72 @@
 """
 Modelo de clientes.
 
-Este módulo se encarga del acceso a los datos relacionados
-con los clientes almacenados en Supabase.
+Acceso a datos del módulo de clientes.
+Todas las operaciones se encuentran aisladas por comercio.
 
-Controller → maneja la respuesta HTTP/JSON.
-Service → maneja la lógica de negocio.
-Model → maneja el acceso a los datos.
+Route → Controller → Service → Model → Supabase
 """
 
 from core.supabase_client import get_client
 
 
+def obtener_clientes(id_comercio):
+    """Obtiene los clientes pertenecientes al comercio autenticado."""
+
+    supabase = get_client()
+
+    response = (
+        supabase
+        .table("clientes")
+        .select("*")
+        .eq("id_comercio", id_comercio)
+        .order("numero_cliente")
+        .execute()
+    )
+
+    return response.data
+
+
+def obtener_cliente_por_id(id_cliente, id_comercio):
+    """Obtiene un cliente verificando que pertenezca al comercio."""
+
+    supabase = get_client()
+
+    response = (
+        supabase
+        .table("clientes")
+        .select("*")
+        .eq("id_cliente", id_cliente)
+        .eq("id_comercio", id_comercio)
+        .limit(1)
+        .execute()
+    )
+
+    return response.data[0] if response.data else None
+
+
+def obtener_siguiente_numero_cliente(id_comercio):
+    """Obtiene el siguiente número local de cliente del comercio."""
+
+    supabase = get_client()
+
+    response = (
+        supabase
+        .rpc(
+            "obtener_siguiente_numero",
+            {
+                "p_id_comercio": id_comercio,
+                "p_entidad": "CLIENTE"
+            }
+        )
+        .execute()
+    )
+
+    return response.data
+
+
 def insertar_cliente(datos):
-    """
-    Inserta un nuevo cliente en la tabla 'clientes'.
-    """
+    """Inserta un cliente."""
 
     supabase = get_client()
 
@@ -26,49 +77,11 @@ def insertar_cliente(datos):
         .execute()
     )
 
-    return response.data
-
-
-def obtener_clientes():
-    """
-    Obtiene todos los clientes registrados.
-    """
-
-    supabase = get_client()
-
-    response = (
-        supabase
-        .table("clientes")
-        .select("*")
-        .order("id_cliente")
-        .execute()
-    )
-
-    return response.data
-
-
-def obtener_cliente_por_id(id_cliente):
-    """
-    Obtiene un cliente específico mediante su ID.
-    """
-
-    supabase = get_client()
-
-    response = (
-        supabase
-        .table("clientes")
-        .select("*")
-        .eq("id_cliente", id_cliente)
-        .execute()
-    )
-
     return response.data[0] if response.data else None
 
 
-def actualizar_cliente(id_cliente, datos):
-    """
-    Actualiza los datos de un cliente mediante su ID.
-    """
+def actualizar_cliente(id_cliente, id_comercio, datos):
+    """Actualiza un cliente perteneciente al comercio."""
 
     supabase = get_client()
 
@@ -77,33 +90,17 @@ def actualizar_cliente(id_cliente, datos):
         .table("clientes")
         .update(datos)
         .eq("id_cliente", id_cliente)
+        .eq("id_comercio", id_comercio)
         .execute()
     )
 
     return response.data[0] if response.data else None
 
 
-def actualizar_estado_cliente(id_cliente, nuevo_estado):
+def obtener_ventas_cliente(id_cliente, id_comercio):
     """
-    Actualiza el estado activo/inactivo de un cliente.
-    """
-
-    supabase = get_client()
-
-    response = (
-        supabase
-        .table("clientes")
-        .update({"estado": nuevo_estado})
-        .eq("id_cliente", id_cliente)
-        .execute()
-    )
-
-    return response.data[0] if response.data else None
-
-
-def obtener_ventas_cliente(id_cliente):
-    """
-    Obtiene todas las ventas asociadas a un cliente.
+    Obtiene las ventas del cliente verificando también
+    el comercio al que pertenecen.
     """
 
     supabase = get_client()
@@ -113,6 +110,7 @@ def obtener_ventas_cliente(id_cliente):
         .table("ventas")
         .select("*")
         .eq("id_cliente", id_cliente)
+        .eq("id_comercio", id_comercio)
         .order("fecha_venta", desc=True)
         .execute()
     )
@@ -121,9 +119,7 @@ def obtener_ventas_cliente(id_cliente):
 
 
 def obtener_detalles_venta_cliente(id_venta):
-    """
-    Obtiene los productos asociados a una venta.
-    """
+    """Obtiene los detalles asociados a una venta."""
 
     supabase = get_client()
 
