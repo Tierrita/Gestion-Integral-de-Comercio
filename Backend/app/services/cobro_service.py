@@ -1,8 +1,6 @@
 """
 Servicio de cobros.
-
-Este módulo contiene la lógica de negocio relacionada
-con los cobros realizados por los clientes.
+Reglas de negocio, seguridad y aislamiento multicomercio.
 """
 
 from app.models.cobro_model import (
@@ -15,192 +13,115 @@ from app.models.cobro_model import (
 
 from app.models.cliente_model import obtener_cliente_por_id
 from app.models.venta_model import obtener_ventas_por_cliente
+from app.models.cuenta_model import obtener_cuenta_por_id
 
 
-def registrar_cobro(datos):
-    """
-    Valida los datos recibidos y registra un cobro.
+def _entero_positivo(valor):
+    return (
+        isinstance(valor, int)
+        and not isinstance(valor, bool)
+        and valor > 0
+    )
 
-    El registro definitivo se realiza mediante una función RPC
-    de Supabase que registra el cobro, actualiza el saldo
-    de la cuenta financiera y genera el movimiento financiero.
-    """
 
-    # --------------------------------------------------
-    # VALIDAR DATOS
-    # --------------------------------------------------
-
-    if not datos:
+def registrar_cobro(datos, id_comercio, id_usuario):
+    if not isinstance(datos, dict):
         raise ValueError("No se enviaron datos")
 
-    campos_obligatorios = [
-        "id_cliente",
-        "id_cuenta",
-        "id_usuario",
-        "monto"
-    ]
-
-    for campo in campos_obligatorios:
-        if campo not in datos:
-            raise ValueError(
-                f"El campo '{campo}' es obligatorio"
-            )
-
-    id_cliente = datos["id_cliente"]
-    id_cuenta = datos["id_cuenta"]
-    id_usuario = datos["id_usuario"]
-    monto = datos["monto"]
-
+    id_cliente = datos.get("id_cliente")
+    id_cuenta = datos.get("id_cuenta")
+    monto = datos.get("monto")
     observaciones = datos.get("observaciones")
 
-    # --------------------------------------------------
-    # VALIDAR CLIENTE
-    # --------------------------------------------------
-
-    if (
-        not isinstance(id_cliente, int)
-        or isinstance(id_cliente, bool)
-    ):
+    if not _entero_positivo(id_cliente):
         raise ValueError(
-            "El id_cliente debe ser un número entero"
+            "El id_cliente debe ser un número entero mayor que cero"
         )
 
-    if id_cliente <= 0:
+    if not _entero_positivo(id_cuenta):
         raise ValueError(
-            "El id_cliente debe ser mayor que cero"
+            "El id_cuenta debe ser un número entero mayor que cero"
         )
-
-    # --------------------------------------------------
-    # VALIDAR CUENTA
-    # --------------------------------------------------
-
-    if (
-        not isinstance(id_cuenta, int)
-        or isinstance(id_cuenta, bool)
-    ):
-        raise ValueError(
-            "El id_cuenta debe ser un número entero"
-        )
-
-    if id_cuenta <= 0:
-        raise ValueError(
-            "El id_cuenta debe ser mayor que cero"
-        )
-
-    # --------------------------------------------------
-    # VALIDAR USUARIO
-    # --------------------------------------------------
-
-    if (
-        not isinstance(id_usuario, int)
-        or isinstance(id_usuario, bool)
-    ):
-        raise ValueError(
-            "El id_usuario debe ser un número entero"
-        )
-
-    if id_usuario <= 0:
-        raise ValueError(
-            "El id_usuario debe ser mayor que cero"
-        )
-
-    # --------------------------------------------------
-    # VALIDAR MONTO
-    # --------------------------------------------------
 
     if (
         not isinstance(monto, (int, float))
         or isinstance(monto, bool)
+        or monto <= 0
     ):
-        raise ValueError(
-            "El monto debe ser numérico"
-        )
+        raise ValueError("El monto debe ser mayor que cero")
 
-    if monto <= 0:
-        raise ValueError(
-            "El monto debe ser mayor que cero"
-        )
+    cliente = obtener_cliente_por_id(
+        id_cliente,
+        id_comercio
+    )
 
-    # --------------------------------------------------
-    # VALIDAR OBSERVACIONES
-    # --------------------------------------------------
+    if not cliente:
+        raise ValueError("Cliente no encontrado")
+
+    if not cliente["estado"]:
+        raise ValueError("El cliente se encuentra inactivo")
+
+    cuenta = obtener_cuenta_por_id(
+        id_cuenta,
+        id_comercio
+    )
+
+    if not cuenta:
+        raise ValueError("Cuenta no encontrada")
+
+    if not cuenta["estado"]:
+        raise ValueError("La cuenta se encuentra inactiva")
 
     if observaciones is not None:
-
         if not isinstance(observaciones, str):
             raise ValueError(
                 "Las observaciones deben ser texto"
             )
 
-        observaciones = observaciones.strip()
+        observaciones = observaciones.strip() or None
 
-        if not observaciones:
-            observaciones = None
-
-    # --------------------------------------------------
-    # REGISTRAR COBRO
-    # --------------------------------------------------
-
-    resultado = registrar_cobro_rpc(
+    return registrar_cobro_rpc(
         id_cliente=id_cliente,
         id_cuenta=id_cuenta,
         id_usuario=id_usuario,
+        id_comercio=id_comercio,
         monto=monto,
         observaciones=observaciones
     )
 
-    if not resultado:
-        raise ValueError(
-            "No se pudo registrar el cobro"
-        )
 
-    return resultado
+def listar_cobros(id_comercio):
+    return obtener_cobros(id_comercio)
 
 
-def listar_cobros():
-    """
-    Obtiene todos los cobros registrados en el sistema.
-    """
+def consultar_cobro_por_id(id_cobro, id_comercio):
+    cobros = obtener_cobro_por_id(
+        id_cobro,
+        id_comercio
+    )
 
-    return obtener_cobros()
-
-
-def consultar_cobro_por_id(id_cobro):
-    """
-    Obtiene un cobro específico mediante su ID.
-    """
-
-    cobro = obtener_cobro_por_id(id_cobro)
-
-    if not cobro:
+    if not cobros:
         raise ValueError("Cobro no encontrado")
 
-    return cobro[0]
+    return cobros[0]
 
 
-def consultar_cobros_por_cliente(id_cliente):
-    """
-    Obtiene el historial de cobros de un cliente.
-    """
-
-    # --------------------------------------------------
-    # VERIFICAR CLIENTE
-    # --------------------------------------------------
-
-    cliente = obtener_cliente_por_id(id_cliente)
+def consultar_cobros_por_cliente(
+    id_cliente,
+    id_comercio
+):
+    cliente = obtener_cliente_por_id(
+        id_cliente,
+        id_comercio
+    )
 
     if not cliente:
         raise ValueError("Cliente no encontrado")
 
-    # obtener_cliente_por_id() ya devuelve
-    # directamente un diccionario.
-    # NO debemos utilizar cliente[0].
-
-    # --------------------------------------------------
-    # OBTENER COBROS
-    # --------------------------------------------------
-
-    cobros = obtener_cobros_por_cliente(id_cliente)
+    cobros = obtener_cobros_por_cliente(
+        id_cliente,
+        id_comercio
+    )
 
     return {
         "cliente": {
@@ -212,125 +133,67 @@ def consultar_cobros_por_cliente(id_cliente):
     }
 
 
-def anular_cobro(id_cobro, datos):
-    """
-    Valida los datos recibidos y anula un cobro.
-
-    La anulación se ejecuta mediante una función RPC
-    de Supabase que modifica el estado del cobro,
-    revierte el saldo de la cuenta financiera
-    y registra el movimiento correspondiente.
-    """
-
-    # --------------------------------------------------
-    # VALIDAR DATOS
-    # --------------------------------------------------
-
-    if not datos:
+def anular_cobro(
+    id_cobro,
+    datos,
+    id_comercio,
+    id_usuario
+):
+    if not isinstance(datos, dict):
         raise ValueError("No se enviaron datos")
 
-    campos_obligatorios = [
-        "id_usuario",
-        "motivo_anulacion"
-    ]
+    motivo = datos.get("motivo_anulacion")
 
-    for campo in campos_obligatorios:
-        if campo not in datos:
-            raise ValueError(
-                f"El campo '{campo}' es obligatorio"
-            )
-
-    id_usuario = datos["id_usuario"]
-    motivo_anulacion = datos["motivo_anulacion"]
-
-    # --------------------------------------------------
-    # VALIDAR USUARIO
-    # --------------------------------------------------
-
-    if (
-        not isinstance(id_usuario, int)
-        or isinstance(id_usuario, bool)
-    ):
-        raise ValueError(
-            "El id_usuario debe ser un número entero"
-        )
-
-    if id_usuario <= 0:
-        raise ValueError(
-            "El id_usuario debe ser mayor que cero"
-        )
-
-    # --------------------------------------------------
-    # VALIDAR MOTIVO
-    # --------------------------------------------------
-
-    if not isinstance(motivo_anulacion, str):
+    if not isinstance(motivo, str):
         raise ValueError(
             "El motivo de anulación debe ser texto"
         )
 
-    motivo_anulacion = motivo_anulacion.strip()
+    motivo = motivo.strip()
 
-    if len(motivo_anulacion) < 5:
+    if len(motivo) < 5:
         raise ValueError(
             "El motivo de anulación debe tener al menos 5 caracteres"
         )
 
-    # --------------------------------------------------
-    # ANULAR COBRO
-    # --------------------------------------------------
-
-    resultado = anular_cobro_rpc(
-        id_cobro=id_cobro,
-        id_usuario=id_usuario,
-        motivo_anulacion=motivo_anulacion
+    # Verificación previa multicomercio
+    cobro = obtener_cobro_por_id(
+        id_cobro,
+        id_comercio
     )
 
-    if not resultado:
-        raise ValueError(
-            "No se pudo anular el cobro"
-        )
+    if not cobro:
+        raise ValueError("Cobro no encontrado")
 
-    return resultado
+    return anular_cobro_rpc(
+        id_cobro=id_cobro,
+        id_usuario=id_usuario,
+        id_comercio=id_comercio,
+        motivo_anulacion=motivo
+    )
 
 
-def consultar_saldo_cliente(id_cliente):
-    """
-    Calcula el saldo financiero actual de un cliente.
-
-    Saldo =
-    total de ventas válidas
-    -
-    total de cobros completados
-
-    Saldo positivo → DEUDA
-    Saldo cero     → AL_DIA
-    Saldo negativo → SALDO_A_FAVOR
-    """
-
-    # --------------------------------------------------
-    # VERIFICAR CLIENTE
-    # --------------------------------------------------
-
-    cliente = obtener_cliente_por_id(id_cliente)
+def consultar_saldo_cliente(
+    id_cliente,
+    id_comercio
+):
+    cliente = obtener_cliente_por_id(
+        id_cliente,
+        id_comercio
+    )
 
     if not cliente:
         raise ValueError("Cliente no encontrado")
 
-    # obtener_cliente_por_id() ya devuelve
-    # directamente un diccionario.
-    # NO debemos utilizar cliente[0].
+    ventas = obtener_ventas_por_cliente(
+        id_cliente,
+        id_comercio
+    )
 
-    # --------------------------------------------------
-    # OBTENER VENTAS Y COBROS
-    # --------------------------------------------------
-
-    ventas = obtener_ventas_por_cliente(id_cliente)
-    cobros = obtener_cobros_por_cliente(id_cliente)
-
-    # --------------------------------------------------
-    # CALCULAR TOTAL DE VENTAS
-    # --------------------------------------------------
+    cobros = obtener_cobros_por_cliente(
+        id_cliente,
+        id_comercio
+    )
 
     total_ventas = sum(
         float(venta["total"])
@@ -338,38 +201,20 @@ def consultar_saldo_cliente(id_cliente):
         if venta["estado"].upper() != "ANULADA"
     )
 
-    # --------------------------------------------------
-    # CALCULAR TOTAL DE COBROS
-    # --------------------------------------------------
-
     total_cobros = sum(
         float(cobro["monto"])
         for cobro in cobros
         if cobro["estado"].upper() == "COMPLETADO"
     )
 
-    # --------------------------------------------------
-    # CALCULAR SALDO
-    # --------------------------------------------------
-
     saldo = total_ventas - total_cobros
-
-    # --------------------------------------------------
-    # DETERMINAR SITUACIÓN FINANCIERA
-    # --------------------------------------------------
 
     if saldo > 0:
         situacion = "DEUDA"
-
     elif saldo < 0:
         situacion = "SALDO_A_FAVOR"
-
     else:
         situacion = "AL_DIA"
-
-    # --------------------------------------------------
-    # RESPUESTA
-    # --------------------------------------------------
 
     return {
         "cliente": {

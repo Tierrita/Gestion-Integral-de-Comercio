@@ -1,13 +1,16 @@
 """
-Controlador de finanzas.
+Controlador de finanzas multicomercio.
 
 Recibe las solicitudes HTTP relacionadas con el módulo
 financiero y devuelve las respuestas JSON.
 
+El comercio se obtiene exclusivamente del usuario
+autenticado mediante JWT.
+
 Controller → Service
 """
 
-from flask import jsonify, request
+from flask import jsonify, request, g
 
 from app.services.finanza_service import (
     calcular_rentabilidad,
@@ -28,8 +31,8 @@ from app.services.finanza_service import (
 
 def obtener_rentabilidad():
     """
-    Obtiene los indicadores de rentabilidad según
-    el período solicitado.
+    Obtiene los indicadores de rentabilidad
+    del comercio autenticado.
     """
 
     try:
@@ -38,6 +41,7 @@ def obtener_rentabilidad():
         hasta = request.args.get("hasta")
 
         rentabilidad = calcular_rentabilidad(
+            g.id_comercio,
             periodo=periodo,
             desde=desde,
             hasta=hasta
@@ -48,14 +52,14 @@ def obtener_rentabilidad():
             "rentabilidad": rentabilidad
         }), 200
 
-    except ValueError as e:
+    except ValueError as error:
         return jsonify({
-            "error": str(e)
+            "error": str(error)
         }), 400
 
-    except Exception as e:
+    except Exception as error:
         return jsonify({
-            "error": str(e)
+            "error": str(error)
         }), 500
 
 
@@ -65,8 +69,8 @@ def obtener_rentabilidad():
 
 def obtener_caja():
     """
-    Obtiene los indicadores de caja según
-    el período solicitado.
+    Obtiene los indicadores de caja
+    del comercio autenticado.
     """
 
     try:
@@ -75,6 +79,7 @@ def obtener_caja():
         hasta = request.args.get("hasta")
 
         caja = calcular_caja(
+            g.id_comercio,
             periodo=periodo,
             desde=desde,
             hasta=hasta
@@ -85,14 +90,14 @@ def obtener_caja():
             "caja": caja
         }), 200
 
-    except ValueError as e:
+    except ValueError as error:
         return jsonify({
-            "error": str(e)
+            "error": str(error)
         }), 400
 
-    except Exception as e:
+    except Exception as error:
         return jsonify({
-            "error": str(e)
+            "error": str(error)
         }), 500
 
 
@@ -103,7 +108,7 @@ def obtener_caja():
 def obtener_estadisticas_ventas():
     """
     Obtiene las estadísticas generales de ventas
-    según el período solicitado.
+    del comercio autenticado.
     """
 
     try:
@@ -112,6 +117,7 @@ def obtener_estadisticas_ventas():
         hasta = request.args.get("hasta")
 
         ventas = calcular_estadisticas_ventas(
+            g.id_comercio,
             periodo=periodo,
             desde=desde,
             hasta=hasta
@@ -122,14 +128,14 @@ def obtener_estadisticas_ventas():
             "ventas": ventas
         }), 200
 
-    except ValueError as e:
+    except ValueError as error:
         return jsonify({
-            "error": str(e)
+            "error": str(error)
         }), 400
 
-    except Exception as e:
+    except Exception as error:
         return jsonify({
-            "error": str(e)
+            "error": str(error)
         }), 500
 
 
@@ -139,8 +145,8 @@ def obtener_estadisticas_ventas():
 
 def obtener_evolucion_ventas():
     """
-    Obtiene la evolución de las ventas
-    según el período solicitado.
+    Obtiene la evolución de ventas
+    del comercio autenticado.
     """
 
     try:
@@ -149,6 +155,7 @@ def obtener_evolucion_ventas():
         hasta = request.args.get("hasta")
 
         evolucion = calcular_evolucion_ventas(
+            g.id_comercio,
             periodo=periodo,
             desde=desde,
             hasta=hasta
@@ -159,17 +166,15 @@ def obtener_evolucion_ventas():
             "ventas": evolucion
         }), 200
 
-    except ValueError as e:
+    except ValueError as error:
         return jsonify({
-            "error": str(e)
+            "error": str(error)
         }), 400
 
-    except Exception as e:
+    except Exception as error:
         return jsonify({
-            "error": str(e)
+            "error": str(error)
         }), 500
-
-
 
 
 # ======================================================
@@ -179,7 +184,7 @@ def obtener_evolucion_ventas():
 def obtener_estadisticas_productos():
     """
     Obtiene las estadísticas y rankings de productos
-    según el período solicitado.
+    del comercio autenticado.
     """
 
     try:
@@ -188,6 +193,7 @@ def obtener_estadisticas_productos():
         hasta = request.args.get("hasta")
 
         productos = calcular_estadisticas_productos(
+            g.id_comercio,
             periodo=periodo,
             desde=desde,
             hasta=hasta
@@ -198,16 +204,15 @@ def obtener_estadisticas_productos():
             "productos": productos
         }), 200
 
-    except ValueError as e:
+    except ValueError as error:
         return jsonify({
-            "error": str(e)
+            "error": str(error)
         }), 400
 
-    except Exception as e:
+    except Exception as error:
         return jsonify({
-            "error": str(e)
+            "error": str(error)
         }), 500
-
 
 
 # ======================================================
@@ -217,7 +222,7 @@ def obtener_estadisticas_productos():
 def obtener_estadisticas_proveedores():
     """
     Obtiene las estadísticas y ranking de proveedores
-    según el período solicitado.
+    del comercio autenticado.
     """
 
     try:
@@ -226,6 +231,7 @@ def obtener_estadisticas_proveedores():
         hasta = request.args.get("hasta")
 
         proveedores = calcular_estadisticas_proveedores(
+            g.id_comercio,
             periodo=periodo,
             desde=desde,
             hasta=hasta
@@ -236,16 +242,15 @@ def obtener_estadisticas_proveedores():
             "proveedores": proveedores
         }), 200
 
-    except ValueError as e:
+    except ValueError as error:
         return jsonify({
-            "error": str(e)
+            "error": str(error)
         }), 400
 
-    except Exception as e:
+    except Exception as error:
         return jsonify({
-            "error": str(e)
+            "error": str(error)
         }), 500
-
 
 
 # ======================================================
@@ -255,7 +260,7 @@ def obtener_estadisticas_proveedores():
 def obtener_estadisticas_clientes():
     """
     Obtiene las estadísticas comerciales de los clientes
-    para el período solicitado.
+    del comercio autenticado.
     """
 
     try:
@@ -264,26 +269,25 @@ def obtener_estadisticas_clientes():
         hasta = request.args.get("hasta")
 
         clientes = calcular_estadisticas_clientes(
+            g.id_comercio,
             periodo=periodo,
             desde=desde,
             hasta=hasta
         )
 
         return jsonify({
-            "message":
-                "Estadísticas de clientes obtenidas correctamente",
-            "clientes":
-                clientes
+            "message": "Estadísticas de clientes obtenidas correctamente",
+            "clientes": clientes
         }), 200
 
-    except ValueError as e:
+    except ValueError as error:
         return jsonify({
-            "error": str(e)
+            "error": str(error)
         }), 400
 
-    except Exception as e:
+    except Exception as error:
         return jsonify({
-            "error": str(e)
+            "error": str(error)
         }), 500
 
 
@@ -293,8 +297,8 @@ def obtener_estadisticas_clientes():
 
 def obtener_estadisticas_stock_controller():
     """
-    Obtiene la valorización financiera del stock actual
-    y analiza su rotación según el período solicitado.
+    Obtiene la valorización financiera del stock
+    del comercio autenticado.
     """
 
     try:
@@ -303,6 +307,7 @@ def obtener_estadisticas_stock_controller():
         hasta = request.args.get("hasta")
 
         resultado = calcular_estadisticas_stock(
+            g.id_comercio,
             periodo=periodo,
             desde=desde,
             hasta=hasta
@@ -311,13 +316,11 @@ def obtener_estadisticas_stock_controller():
         return jsonify(resultado), 200
 
     except ValueError as error:
-
         return jsonify({
             "error": str(error)
         }), 400
 
     except Exception as error:
-
         return jsonify({
             "error": str(error)
         }), 500
@@ -329,16 +332,17 @@ def obtener_estadisticas_stock_controller():
 
 def obtener_dashboard_financiero_controller():
     """
-    Obtiene el resumen principal del módulo financiero.
+    Obtiene el dashboard financiero
+    del comercio autenticado.
     """
 
     try:
-
         periodo = request.args.get("periodo")
         desde = request.args.get("desde")
         hasta = request.args.get("hasta")
 
         resultado = calcular_dashboard_financiero(
+            g.id_comercio,
             periodo=periodo,
             desde=desde,
             hasta=hasta
@@ -347,13 +351,11 @@ def obtener_dashboard_financiero_controller():
         return jsonify(resultado), 200
 
     except ValueError as error:
-
         return jsonify({
             "error": str(error)
         }), 400
 
     except Exception as error:
-
         return jsonify({
             "error": str(error)
         }), 500

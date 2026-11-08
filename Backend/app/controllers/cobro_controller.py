@@ -1,12 +1,4 @@
-"""
-Controlador de cobros.
-
-Este módulo se encarga de recibir las solicitudes HTTP
-relacionadas con los cobros realizados por los clientes
-y devolver las respuestas correspondientes en formato JSON.
-"""
-
-from flask import request, jsonify
+from flask import request, jsonify, g
 
 from app.services.cobro_service import (
     registrar_cobro,
@@ -19,16 +11,14 @@ from app.services.cobro_service import (
 
 
 def registrar_cobro_controller():
-    """
-    Controlador para registrar un nuevo cobro de cliente.
-    """
-
     try:
-        # Obtener datos enviados en el body
         datos = request.get_json(silent=True)
 
-        # Ejecutar lógica de negocio
-        resultado = registrar_cobro(datos)
+        resultado = registrar_cobro(
+            datos,
+            g.id_comercio,
+            g.id_usuario
+        )
 
         return jsonify({
             "message": "Cobro registrado correctamente",
@@ -38,126 +28,78 @@ def registrar_cobro_controller():
     except ValueError as error:
         mensaje = str(error)
 
-        # Recursos inexistentes
         if mensaje in [
             "Cliente no encontrado",
-            "Cuenta no encontrada"
+            "Cuenta no encontrada",
+            "Cobro no encontrado"
         ]:
-            return jsonify({
-                "error": mensaje
-            }), 404
+            return jsonify({"error": mensaje}), 404
 
-        # Errores de validación o reglas de negocio
-        return jsonify({
-            "error": mensaje
-        }), 400
+        return jsonify({"error": mensaje}), 400
 
-    except Exception as error:
+    except Exception:
         return jsonify({
-            "error": "Error interno del servidor",
-            "detalle": str(error)
+            "error": "Error interno del servidor"
         }), 500
 
 
-
 def listar_cobros_controller():
-    """
-    Controlador para consultar todos los cobros
-    registrados en el sistema.
-    """
-
     try:
-        cobros = listar_cobros()
-
         return jsonify({
-            "cobros": cobros
+            "cobros": listar_cobros(g.id_comercio)
         }), 200
 
-    except Exception as error:
+    except Exception:
         return jsonify({
-            "error": "Error interno del servidor",
-            "detalle": str(error)
+            "error": "Error interno del servidor"
         }), 500
 
 
 def consultar_cobro_por_id_controller(id_cobro):
-    """
-    Controlador para consultar un cobro específico
-    mediante su ID.
-    """
-
     try:
-        cobro = consultar_cobro_por_id(id_cobro)
+        cobro = consultar_cobro_por_id(
+            id_cobro,
+            g.id_comercio
+        )
 
-        return jsonify({
-            "cobro": cobro
-        }), 200
+        return jsonify({"cobro": cobro}), 200
 
     except ValueError as error:
-        mensaje = str(error)
+        return jsonify({"error": str(error)}), 404
 
-        if mensaje == "Cobro no encontrado":
-            return jsonify({
-                "error": mensaje
-            }), 404
-
+    except Exception:
         return jsonify({
-            "error": mensaje
-        }), 400
-
-    except Exception as error:
-        return jsonify({
-            "error": "Error interno del servidor",
-            "detalle": str(error)
+            "error": "Error interno del servidor"
         }), 500
 
 
 def consultar_cobros_por_cliente_controller(id_cliente):
-    """
-    Controlador para consultar el historial
-    de cobros de un cliente.
-    """
-
     try:
-        resultado = consultar_cobros_por_cliente(id_cliente)
+        resultado = consultar_cobros_por_cliente(
+            id_cliente,
+            g.id_comercio
+        )
 
         return jsonify(resultado), 200
 
     except ValueError as error:
-        mensaje = str(error)
+        return jsonify({"error": str(error)}), 404
 
-        if mensaje == "Cliente no encontrado":
-            return jsonify({
-                "error": mensaje
-            }), 404
-
+    except Exception:
         return jsonify({
-            "error": mensaje
-        }), 400
-
-    except Exception as error:
-        return jsonify({
-            "error": "Error interno del servidor",
-            "detalle": str(error)
+            "error": "Error interno del servidor"
         }), 500
 
 
 def anular_cobro_controller(id_cobro):
-    """
-    Controlador para anular un cobro.
-
-    La anulación revierte el dinero de la cuenta financiera
-    y registra el movimiento financiero correspondiente.
-    """
-
     try:
-        # Obtener datos enviados en el body
         datos = request.get_json(silent=True)
 
-        # Ejecutar lógica de negocio
         resultado = anular_cobro(
             id_cobro,
-            datos
+            datos,
+            g.id_comercio,
+            g.id_usuario
         )
 
         return jsonify({
@@ -168,52 +110,33 @@ def anular_cobro_controller(id_cobro):
     except ValueError as error:
         mensaje = str(error)
 
-        # Recursos inexistentes
         if mensaje in [
             "Cobro no encontrado",
             "Cuenta no encontrada"
         ]:
-            return jsonify({
-                "error": mensaje
-            }), 404
+            return jsonify({"error": mensaje}), 404
 
-        # Errores de validación o reglas de negocio
-        return jsonify({
-            "error": mensaje
-        }), 400
+        return jsonify({"error": mensaje}), 400
 
-    except Exception as error:
+    except Exception:
         return jsonify({
-            "error": "Error interno del servidor",
-            "detalle": str(error)
+            "error": "Error interno del servidor"
         }), 500
 
 
 def consultar_saldo_cliente_controller(id_cliente):
-    """
-    Controlador para consultar el saldo financiero
-    actual de un cliente.
-    """
-
     try:
-        resultado = consultar_saldo_cliente(id_cliente)
+        resultado = consultar_saldo_cliente(
+            id_cliente,
+            g.id_comercio
+        )
 
         return jsonify(resultado), 200
 
     except ValueError as error:
-        mensaje = str(error)
+        return jsonify({"error": str(error)}), 404
 
-        if mensaje == "Cliente no encontrado":
-            return jsonify({
-                "error": mensaje
-            }), 404
-
+    except Exception:
         return jsonify({
-            "error": mensaje
-        }), 400
-
-    except Exception as error:
-        return jsonify({
-            "error": "Error interno del servidor",
-            "detalle": str(error)
+            "error": "Error interno del servidor"
         }), 500

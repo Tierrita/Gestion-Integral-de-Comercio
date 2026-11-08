@@ -281,6 +281,7 @@ def _crear_periodo_respuesta(
 # ======================================================
 
 def calcular_rentabilidad(
+    id_comercio,
     periodo=None,
     desde=None,
     hasta=None
@@ -310,6 +311,7 @@ def calcular_rentabilidad(
     )
 
     ventas = obtener_ventas_completadas(
+        id_comercio, 
         fecha_desde.isoformat(),
         fecha_hasta.isoformat()
     )
@@ -436,6 +438,7 @@ def calcular_rentabilidad(
 # ======================================================
 
 def calcular_caja(
+    id_comercio,
     periodo=None,
     desde=None,
     hasta=None
@@ -464,6 +467,7 @@ def calcular_caja(
     )
 
     movimientos = obtener_movimientos_financieros(
+        id_comercio,
         fecha_desde,
         fecha_hasta
     )
@@ -624,6 +628,7 @@ def calcular_caja(
 # ======================================================
 
 def calcular_estadisticas_ventas(
+    id_comercio,
     periodo=None,
     desde=None,
     hasta=None
@@ -647,6 +652,7 @@ def calcular_estadisticas_ventas(
     )
 
     ventas = obtener_ventas_completadas(
+        id_comercio,
         fecha_desde.isoformat(),
         fecha_hasta.isoformat()
     )
@@ -718,6 +724,7 @@ def calcular_estadisticas_ventas(
 # ======================================================
 
 def calcular_evolucion_ventas(
+    id_comercio,
     periodo=None,
     desde=None,
     hasta=None
@@ -748,6 +755,7 @@ def calcular_evolucion_ventas(
     )
 
     ventas = obtener_ventas_completadas(
+        id_comercio,
         fecha_desde.isoformat(),
         fecha_hasta.isoformat()
     )
@@ -889,6 +897,7 @@ def calcular_evolucion_ventas(
 # ======================================================
 
 def calcular_estadisticas_productos(
+    id_comercio,
     periodo=None,
     desde=None,
     hasta=None
@@ -917,6 +926,7 @@ def calcular_estadisticas_productos(
     )
 
     ventas = obtener_ventas_completadas(
+        id_comercio,
         fecha_desde.isoformat(),
         fecha_hasta.isoformat()
     )
@@ -1160,6 +1170,7 @@ def calcular_estadisticas_productos(
 # ======================================================
 
 def calcular_estadisticas_proveedores(
+    id_comercio,
     periodo=None,
     desde=None,
     hasta=None
@@ -1194,6 +1205,7 @@ def calcular_estadisticas_proveedores(
     # --------------------------------------------------
 
     compras = obtener_compras_completadas(
+        id_comercio,
         fecha_desde.isoformat(),
         fecha_hasta.isoformat()
     )
@@ -1678,130 +1690,70 @@ def calcular_estadisticas_proveedores(
     # DEUDA ACTUAL CON PROVEEDORES
     # ==================================================
 
-    todos_proveedores = obtener_proveedores()
+    todos_proveedores = obtener_proveedores(id_comercio)
 
     deudas_proveedores = []
-
     deuda_total_proveedores = 0.0
 
     for proveedor in todos_proveedores:
+        id_proveedor = proveedor["id_proveedor"]
 
-        id_proveedor = proveedor[
-            "id_proveedor"
-        ]
-
-        saldo_proveedor = (
-            consultar_saldo_proveedor(
-                id_proveedor
-            )
+        saldo_proveedor = consultar_saldo_proveedor(
+            id_proveedor,
+            id_comercio
         )
 
-        saldo = float(
-            saldo_proveedor["saldo"]
-        )
+        saldo = float(saldo_proveedor["saldo"])
 
         if saldo > 0:
-
             deuda_total_proveedores += saldo
 
             deudas_proveedores.append({
-                "id_proveedor":
-                    id_proveedor,
-
-                "nombre_proveedor":
-                    proveedor[
-                        "nombre_proveedor"
-                    ],
-
+                "id_proveedor": id_proveedor,
+                "nombre_proveedor": proveedor["nombre_proveedor"],
                 "total_compras": round(
-                    float(
-                        saldo_proveedor[
-                            "total_compras"
-                        ]
-                    ),
+                    float(saldo_proveedor["total_compras"]),
                     2
                 ),
-
                 "total_pagos": round(
-                    float(
-                        saldo_proveedor[
-                            "total_pagos"
-                        ]
-                    ),
+                    float(saldo_proveedor["total_pagos"]),
                     2
                 ),
-
-                "saldo_pendiente": round(
-                    saldo,
-                    2
-                )
+                "saldo_pendiente": round(saldo, 2)
             })
 
     deudas_proveedores = sorted(
         deudas_proveedores,
-        key=lambda proveedor:
-            proveedor["saldo_pendiente"],
+        key=lambda proveedor: proveedor["saldo_pendiente"],
         reverse=True
     )
 
-    # ==================================================
-    # PERÍODO DE RESPUESTA
-    # ==================================================
-
-    periodo_respuesta = (
-        _crear_periodo_respuesta(
-            tipo_periodo,
-            fecha_desde,
-            fecha_hasta
-        )
+    periodo_respuesta = _crear_periodo_respuesta(
+        tipo_periodo,
+        fecha_desde,
+        fecha_hasta
     )
 
-    # ==================================================
-    # RESPUESTA
-    # ==================================================
-
     return {
-        "periodo":
-            periodo_respuesta,
-
-        "total_comprado": round(
-            total_comprado,
-            2
-        ),
-
-        "cantidad_compras":
-            len(compras),
-
-        "cantidad_proveedores":
-            len(datos_proveedores),
-
-        "ranking_proveedores":
-            ranking,
-
-        "deuda_total_proveedores": round(
-            deuda_total_proveedores,
-            2
-        ),
-
-        "deudas_proveedores":
-            deudas_proveedores,
-
-        "cantidad_productos_comprados":
-            len(productos_comprados),
-
-        "productos_comprados":
-            productos_comprados,
-
-        "evolucion_costos":
-            evolucion_costos_respuesta
+        "periodo": periodo_respuesta,
+        "total_comprado": round(total_comprado, 2),
+        "cantidad_compras": len(compras),
+        "cantidad_proveedores": len(datos_proveedores),
+        "ranking_proveedores": ranking,
+        "deuda_total_proveedores": round(deuda_total_proveedores, 2),
+        "deudas_proveedores": deudas_proveedores,
+        "cantidad_productos_comprados": len(productos_comprados),
+        "productos_comprados": productos_comprados,
+        "evolucion_costos": evolucion_costos_respuesta
     }
 
 
-    # ======================================================
+# ======================================================
 # ESTADÍSTICAS DE CLIENTES
 # ======================================================
 
 def calcular_estadisticas_clientes(
+    id_comercio,
     periodo=None,
     desde=None,
     hasta=None
@@ -1827,6 +1779,7 @@ def calcular_estadisticas_clientes(
     )
 
     ventas = obtener_ventas_completadas(
+        id_comercio,
         fecha_desde.isoformat(),
         fecha_hasta.isoformat()
     )
@@ -1963,7 +1916,8 @@ def calcular_estadisticas_clientes(
             continue
 
         saldo_cliente = consultar_saldo_cliente(
-            id_cliente
+            id_cliente,
+            id_comercio
         )
 
         saldo = float(
@@ -2030,6 +1984,7 @@ def calcular_estadisticas_clientes(
 # ======================================================
 
 def calcular_estadisticas_stock(
+    id_comercio,
     periodo=None,
     desde=None,
     hasta=None
@@ -2056,9 +2011,12 @@ def calcular_estadisticas_stock(
     # OBTENER PRODUCTOS Y VENTAS
     # --------------------------------------------------
 
-    productos = obtener_productos()
+    productos = obtener_productos(
+        id_comercio
+    )
 
     ventas = obtener_ventas_completadas(
+        id_comercio,
         fecha_desde.isoformat(),
         fecha_hasta.isoformat()
     )
@@ -2424,6 +2382,7 @@ def calcular_estadisticas_stock(
 # ======================================================
 
 def calcular_dashboard_financiero(
+    id_comercio,
     periodo=None,
     desde=None,
     hasta=None
@@ -2450,42 +2409,49 @@ def calcular_dashboard_financiero(
     # --------------------------------------------------
 
     ventas = calcular_estadisticas_ventas(
+        id_comercio,
         periodo=periodo,
         desde=desde,
         hasta=hasta
     )
 
     rentabilidad = calcular_rentabilidad(
+        id_comercio,
         periodo=periodo,
         desde=desde,
         hasta=hasta
     )
 
     caja = calcular_caja(
+        id_comercio,
         periodo=periodo,
         desde=desde,
         hasta=hasta
     )
 
     productos = calcular_estadisticas_productos(
+        id_comercio,
         periodo=periodo,
         desde=desde,
         hasta=hasta
     )
 
     proveedores = calcular_estadisticas_proveedores(
+        id_comercio,
         periodo=periodo,
         desde=desde,
         hasta=hasta
     )
 
     clientes = calcular_estadisticas_clientes(
+        id_comercio,
         periodo=periodo,
         desde=desde,
         hasta=hasta
     )
 
     stock = calcular_estadisticas_stock(
+        id_comercio,
         periodo=periodo,
         desde=desde,
         hasta=hasta

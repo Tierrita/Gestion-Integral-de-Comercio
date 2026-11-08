@@ -1,28 +1,21 @@
 """
-Modelo de cuentas financieras.
-
-Este módulo se encarga del acceso a los datos relacionados
-con la tabla 'cuentas' almacenada en Supabase.
-
-Controller → maneja la respuesta HTTP/JSON.
-Service → maneja la lógica de negocio.
-Model → maneja el acceso a los datos.
+Modelo de cuentas financieras multicomercio.
 """
 
 from core.supabase_client import get_client
 
 
-def obtener_cuenta_por_nombre(nombre_cuenta):
-    """
-    Busca una cuenta financiera mediante su nombre.
-    """
-
+def obtener_cuenta_por_nombre(
+    nombre_cuenta,
+    id_comercio
+):
     supabase = get_client()
 
     response = (
         supabase
         .table("cuentas")
         .select("*")
+        .eq("id_comercio", id_comercio)
         .ilike("nombre_cuenta", nombre_cuenta)
         .execute()
     )
@@ -31,10 +24,6 @@ def obtener_cuenta_por_nombre(nombre_cuenta):
 
 
 def insertar_cuenta(datos):
-    """
-    Inserta una nueva cuenta financiera en la tabla 'cuentas'.
-    """
-
     supabase = get_client()
 
     response = (
@@ -47,17 +36,14 @@ def insertar_cuenta(datos):
     return response.data
 
 
-def obtener_cuentas():
-    """
-    Obtiene todas las cuentas financieras registradas.
-    """
-
+def obtener_cuentas(id_comercio):
     supabase = get_client()
 
     response = (
         supabase
         .table("cuentas")
         .select("*")
+        .eq("id_comercio", id_comercio)
         .order("id_cuenta")
         .execute()
     )
@@ -65,11 +51,10 @@ def obtener_cuentas():
     return response.data
 
 
-def obtener_cuenta_por_id(id_cuenta):
-    """
-    Obtiene una cuenta financiera mediante su ID.
-    """
-
+def obtener_cuenta_por_id(
+    id_cuenta,
+    id_comercio
+):
     supabase = get_client()
 
     response = (
@@ -77,18 +62,21 @@ def obtener_cuenta_por_id(id_cuenta):
         .table("cuentas")
         .select("*")
         .eq("id_cuenta", id_cuenta)
+        .eq("id_comercio", id_comercio)
         .execute()
     )
 
-    return response.data
+    if not response.data:
+        return None
+
+    return response.data[0]
 
 
-def actualizar_cuenta(id_cuenta, datos):
-    """
-    Actualiza los datos permitidos de una cuenta financiera
-    mediante su ID.
-    """
-
+def actualizar_cuenta(
+    id_cuenta,
+    id_comercio,
+    datos
+):
     supabase = get_client()
 
     response = (
@@ -96,17 +84,18 @@ def actualizar_cuenta(id_cuenta, datos):
         .table("cuentas")
         .update(datos)
         .eq("id_cuenta", id_cuenta)
+        .eq("id_comercio", id_comercio)
         .execute()
     )
 
     return response.data
 
 
-def actualizar_estado_cuenta(id_cuenta, nuevo_estado):
-    """
-    Actualiza el estado de una cuenta financiera.
-    """
-
+def actualizar_estado_cuenta(
+    id_cuenta,
+    id_comercio,
+    nuevo_estado
+):
     supabase = get_client()
 
     response = (
@@ -114,6 +103,7 @@ def actualizar_estado_cuenta(id_cuenta, nuevo_estado):
         .table("cuentas")
         .update({"estado": nuevo_estado})
         .eq("id_cuenta", id_cuenta)
+        .eq("id_comercio", id_comercio)
         .execute()
     )
 
@@ -127,15 +117,6 @@ def ajustar_saldo_cuenta_rpc(
     id_usuario,
     observaciones
 ):
-    """
-    Ejecuta un ajuste manual sobre el saldo de una cuenta financiera
-    mediante la función RPC 'ajustar_saldo_cuenta' de Supabase.
-
-    La función PostgreSQL actualiza el saldo de la cuenta y registra
-    el movimiento financiero correspondiente dentro de una misma
-    operación transaccional.
-    """
-
     supabase = get_client()
 
     parametros = {
@@ -158,19 +139,18 @@ def ajustar_saldo_cuenta_rpc(
     except Exception as error:
         mensaje = str(error)
 
-        if "Fondos insuficientes para realizar el ajuste" in mensaje:
-            raise ValueError(
-                "Fondos insuficientes para realizar el ajuste"
-            )
+        errores = [
+            "Fondos insuficientes para realizar el ajuste",
+            "Cuenta no encontrada",
+            "La cuenta se encuentra inactiva",
+            "La cantidad debe ser mayor que cero",
+            "El tipo de ajuste debe ser AUMENTAR o DISMINUIR",
+            "El usuario es obligatorio",
+            "Las observaciones deben tener al menos 3 caracteres"
+        ]
 
-        if "Cuenta no encontrada" in mensaje:
-            raise ValueError(
-                "Cuenta no encontrada"
-            )
-
-        if "La cuenta se encuentra inactiva" in mensaje:
-            raise ValueError(
-                "La cuenta se encuentra inactiva"
-            )
+        for error_conocido in errores:
+            if error_conocido in mensaje:
+                raise ValueError(error_conocido)
 
         raise

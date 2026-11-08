@@ -1,8 +1,8 @@
 """
-Modelo de finanzas.
+Modelo de finanzas multicomercio.
 
-Este módulo se encarga del acceso a los datos necesarios
-para realizar cálculos financieros del negocio.
+Toda consulta financiera queda limitada al comercio
+del usuario autenticado.
 
 Model → Supabase
 """
@@ -10,15 +10,11 @@ Model → Supabase
 from core.supabase_client import get_client
 
 
-def obtener_ventas_completadas(desde=None, hasta=None):
-    """
-    Obtiene las ventas completadas junto con sus detalles
-    y la información básica de los productos vendidos.
-
-    Opcionalmente permite filtrar las ventas por un rango
-    de fechas utilizando fecha_venta.
-    """
-
+def obtener_ventas_completadas(
+    id_comercio,
+    desde=None,
+    hasta=None
+):
     supabase = get_client()
 
     query = (
@@ -31,9 +27,10 @@ def obtener_ventas_completadas(desde=None, hasta=None):
             total,
             estado,
             id_cliente,
+            id_comercio,
             clientes (
                 nombre_completo
-            ), 
+            ),
             detalle_venta (
                 id_detalle_venta,
                 id_producto,
@@ -47,6 +44,7 @@ def obtener_ventas_completadas(desde=None, hasta=None):
             )
             """
         )
+        .eq("id_comercio", id_comercio)
         .eq("estado", "COMPLETADA")
     )
 
@@ -67,16 +65,33 @@ def obtener_ventas_completadas(desde=None, hasta=None):
     return response.data
 
 
-def obtener_movimientos_financieros(desde=None, hasta=None):
+def obtener_movimientos_financieros(
+    id_comercio,
+    desde=None,
+    hasta=None
+):
     """
-    Obtiene los movimientos financieros registrados
-    dentro de un período determinado.
-
-    Si desde y hasta son None, devuelve todos los
-    movimientos financieros.
+    Obtiene únicamente movimientos correspondientes
+    a cuentas del comercio autenticado.
     """
 
     supabase = get_client()
+
+    cuentas_response = (
+        supabase
+        .table("cuentas")
+        .select("id_cuenta")
+        .eq("id_comercio", id_comercio)
+        .execute()
+    )
+
+    ids_cuentas = [
+        cuenta["id_cuenta"]
+        for cuenta in cuentas_response.data
+    ]
+
+    if not ids_cuentas:
+        return []
 
     query = (
         supabase
@@ -94,18 +109,31 @@ def obtener_movimientos_financieros(desde=None, hasta=None):
             "fecha_movimiento,"
             "observaciones"
         )
+        .in_("id_cuenta", ids_cuentas)
     )
 
     if desde is not None:
+        fecha_desde = (
+            desde.isoformat()
+            if hasattr(desde, "isoformat")
+            else desde
+        )
+
         query = query.gte(
             "fecha_movimiento",
-            desde.isoformat()
+            fecha_desde
         )
 
     if hasta is not None:
+        fecha_hasta = (
+            hasta.isoformat()
+            if hasattr(hasta, "isoformat")
+            else hasta
+        )
+
         query = query.lt(
             "fecha_movimiento",
-            hasta.isoformat()
+            fecha_hasta
         )
 
     response = (
@@ -120,22 +148,11 @@ def obtener_movimientos_financieros(desde=None, hasta=None):
     return response.data
 
 
-
-# ======================================================
-# COMPRAS PARA ANÁLISIS FINANCIERO
-# ======================================================
-
-def obtener_compras_completadas(desde=None, hasta=None):
-    """
-    Obtiene las compras completadas junto con:
-    - Información del proveedor.
-    - Detalles de la compra.
-    - Información básica de los productos comprados.
-
-    Opcionalmente permite filtrar las compras
-    por un rango de fechas.
-    """
-
+def obtener_compras_completadas(
+    id_comercio,
+    desde=None,
+    hasta=None
+):
     supabase = get_client()
 
     query = (
@@ -146,6 +163,7 @@ def obtener_compras_completadas(desde=None, hasta=None):
             id_compra,
             fecha_compra,
             id_proveedor,
+            id_comercio,
             total_compra,
             estado,
             proveedores (
@@ -163,6 +181,7 @@ def obtener_compras_completadas(desde=None, hasta=None):
             )
             """
         )
+        .eq("id_comercio", id_comercio)
         .eq("estado", "COMPLETADA")
     )
 
