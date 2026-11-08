@@ -1,14 +1,18 @@
 """
 Servicio de ventas.
 
-Este módulo contiene la lógica de negocio relacionada
-con las ventas.
+Contiene la lógica de negocio del módulo de ventas,
+incluyendo seguridad multicomercio, stock y movimientos
+financieros.
 """
 
 from app.models.venta_model import (
     insertar_venta,
     insertar_detalle_venta,
+    obtener_siguiente_numero_venta,
+    obtener_cliente_por_id,
     obtener_producto_por_id,
+    obtener_cuenta_por_id,
     actualizar_stock_producto,
     registrar_movimiento_stock,
     obtener_ventas,
@@ -20,90 +24,74 @@ from app.models.venta_model import (
 )
 
 
-def crear_venta(datos):
+def _es_entero_positivo(valor):
     """
-    Registra una venta junto con sus productos.
-
-    Valida productos, stock, precios y costos.
-    Guarda el costo histórico de cada producto vendido.
-
-    Si la venta es cobrada en el momento, también registra
-    el ingreso de dinero en la cuenta financiera indicada.
-
-    Si la venta es CUENTA_CORRIENTE, no genera ingreso
-    financiero hasta que posteriormente se registre un cobro.
+    Indica si un valor es un entero positivo.
+    bool se excluye porque en Python hereda de int.
     """
 
-    if not datos:
-        raise ValueError("No se enviaron datos de la venta")
+    return (
+        isinstance(valor, int)
+        and not isinstance(valor, bool)
+        and valor > 0
+    )
 
-    # --------------------------------------------------
-    # VALIDAR DATOS GENERALES
-    # --------------------------------------------------
 
-    if "id_usuario" not in datos:
+def crear_venta(
+    datos,
+    id_comercio,
+    id_usuario
+):
+    """
+    Registra una venta dentro del comercio autenticado.
+
+    Los campos sensibles son controlados por el backend:
+    id_usuario, id_comercio, numero_venta, total y estado.
+
+    Los precios y costos se obtienen directamente
+    desde los productos almacenados en la base de datos.
+    """
+
+    if not datos or not isinstance(datos, dict):
         raise ValueError(
-            "El campo 'id_usuario' es obligatorio"
+            "No se enviaron datos válidos de la venta"
         )
 
-    if "id_cliente" not in datos:
+    # ==================================================
+    # CLIENTE
+    # ==================================================
+
+    id_cliente = datos.get(
+        "id_cliente"
+    )
+
+    if not _es_entero_positivo(id_cliente):
         raise ValueError(
-            "El campo 'id_cliente' es obligatorio"
+            "El id_cliente debe ser un número entero mayor que cero"
         )
 
-    if "metodo_pago" not in datos:
+    cliente = obtener_cliente_por_id(
+        id_cliente,
+        id_comercio
+    )
+
+    if not cliente:
         raise ValueError(
-            "El campo 'metodo_pago' es obligatorio"
+            "Cliente no encontrado en el comercio actual"
         )
 
-    if "productos" not in datos:
+    if cliente.get("estado") is not True:
         raise ValueError(
-            "El campo 'productos' es obligatorio"
+            "El cliente se encuentra inactivo"
         )
 
-    # --------------------------------------------------
-    # VALIDAR ID USUARIO
-    # --------------------------------------------------
+    # ==================================================
+    # MÉTODO DE PAGO
+    # ==================================================
 
-    id_usuario = datos["id_usuario"]
-
-    if (
-        not isinstance(id_usuario, int)
-        or isinstance(id_usuario, bool)
-    ):
-        raise ValueError(
-            "El id_usuario debe ser un número entero"
-        )
-
-    if id_usuario <= 0:
-        raise ValueError(
-            "El id_usuario debe ser mayor que cero"
-        )
-
-    # --------------------------------------------------
-    # VALIDAR ID CLIENTE
-    # --------------------------------------------------
-
-    id_cliente = datos["id_cliente"]
-
-    if (
-        not isinstance(id_cliente, int)
-        or isinstance(id_cliente, bool)
-    ):
-        raise ValueError(
-            "El id_cliente debe ser un número entero"
-        )
-
-    if id_cliente <= 0:
-        raise ValueError(
-            "El id_cliente debe ser mayor que cero"
-        )
-
-    # --------------------------------------------------
-    # VALIDAR MÉTODO DE PAGO
-    # --------------------------------------------------
-
-    metodo_pago = datos["metodo_pago"]
+    metodo_pago = datos.get(
+        "metodo_pago"
+    )
 
     if not isinstance(metodo_pago, str):
         raise ValueError(
@@ -117,134 +105,156 @@ def crear_venta(datos):
             "El metodo_pago no puede estar vacío"
         )
 
-    # --------------------------------------------------
-    # VALIDAR CUENTA FINANCIERA
-    # --------------------------------------------------
+    # ==================================================
+    # CUENTA FINANCIERA
+    # ==================================================
 
-    id_cuenta = datos.get("id_cuenta")
+    id_cuenta = datos.get(
+        "id_cuenta"
+    )
 
-    # Las ventas cobradas en el momento deben indicar
-    # en qué cuenta ingresó el dinero.
-    #
-    # Las ventas en CUENTA_CORRIENTE todavía no generan
-    # un ingreso financiero.
     if metodo_pago != "CUENTA_CORRIENTE":
 
-        if id_cuenta is None:
+        if not _es_entero_positivo(id_cuenta):
             raise ValueError(
-                "El campo 'id_cuenta' es obligatorio "
-                "para ventas cobradas en el momento"
+                "El id_cuenta es obligatorio para ventas "
+                "cobradas en el momento"
             )
 
-        if (
-            not isinstance(id_cuenta, int)
-            or isinstance(id_cuenta, bool)
-        ):
+        cuenta = obtener_cuenta_por_id(
+            id_cuenta,
+            id_comercio
+        )
+
+        if not cuenta:
             raise ValueError(
-                "El id_cuenta debe ser un número entero"
+                "Cuenta financiera no encontrada en el comercio actual"
             )
 
-        if id_cuenta <= 0:
+        if cuenta.get("estado") is not True:
             raise ValueError(
-                "El id_cuenta debe ser mayor que cero"
+                "La cuenta financiera se encuentra inactiva"
             )
 
-    # --------------------------------------------------
-    # VALIDAR PRODUCTOS
-    # --------------------------------------------------
+    # ==================================================
+    # PRODUCTOS
+    # ==================================================
 
-    productos = datos["productos"]
+    productos = datos.get(
+        "productos"
+    )
 
-    if not isinstance(productos, list) or len(productos) == 0:
+    if (
+        not isinstance(productos, list)
+        or len(productos) == 0
+    ):
         raise ValueError(
             "La venta debe contener al menos un producto"
         )
 
-    # --------------------------------------------------
-    # PREPARAR PRODUCTOS Y VALIDAR STOCK
-    # --------------------------------------------------
-
     detalles = []
-    total_venta = 0
+    productos_utilizados = set()
+    total_venta = 0.0
 
     for producto_venta in productos:
 
-        if "id_producto" not in producto_venta:
+        if not isinstance(producto_venta, dict):
             raise ValueError(
-                "Cada producto debe tener 'id_producto'"
+                "Cada producto de la venta debe ser un objeto válido"
             )
 
-        if "cantidad" not in producto_venta:
+        id_producto = producto_venta.get(
+            "id_producto"
+        )
+
+        cantidad = producto_venta.get(
+            "cantidad"
+        )
+
+        if not _es_entero_positivo(id_producto):
             raise ValueError(
-                "Cada producto debe tener 'cantidad'"
+                "El id_producto debe ser un número entero mayor que cero"
             )
 
-        id_producto = producto_venta["id_producto"]
-        cantidad = producto_venta["cantidad"]
-
-        # --------------------------------------------------
-        # VALIDAR ID PRODUCTO
-        # --------------------------------------------------
-
-        if (
-            not isinstance(id_producto, int)
-            or isinstance(id_producto, bool)
-        ):
+        if not _es_entero_positivo(cantidad):
             raise ValueError(
-                "El id_producto debe ser un número entero"
+                "La cantidad debe ser un número entero mayor que cero"
             )
 
-        if id_producto <= 0:
+        # ----------------------------------------------
+        # EVITAR PRODUCTOS DUPLICADOS
+        # ----------------------------------------------
+
+        if id_producto in productos_utilizados:
             raise ValueError(
-                "El id_producto debe ser mayor que cero"
+                f"El producto con ID {id_producto} "
+                "está repetido en la venta"
             )
 
-        # --------------------------------------------------
-        # VALIDAR CANTIDAD
-        # --------------------------------------------------
+        productos_utilizados.add(
+            id_producto
+        )
 
-        if (
-            not isinstance(cantidad, int)
-            or isinstance(cantidad, bool)
-        ):
-            raise ValueError(
-                "La cantidad debe ser un número entero"
-            )
-
-        if cantidad <= 0:
-            raise ValueError(
-                "La cantidad debe ser mayor a 0"
-            )
-
-        # --------------------------------------------------
-        # CONSULTAR PRODUCTO
-        # --------------------------------------------------
+        # ----------------------------------------------
+        # PRODUCTO DEL COMERCIO
+        # ----------------------------------------------
 
         producto = obtener_producto_por_id(
-            id_producto
+            id_producto,
+            id_comercio
         )
 
         if not producto:
             raise ValueError(
-                f"El producto con ID {id_producto} no existe"
+                f"El producto con ID {id_producto} "
+                "no existe en el comercio actual"
             )
 
-        # --------------------------------------------------
-        # OBTENER DATOS ACTUALES DEL PRODUCTO
-        # --------------------------------------------------
+        if producto.get("estado") is not True:
+            raise ValueError(
+                f"El producto {producto['nombre_producto']} "
+                "se encuentra inactivo"
+            )
 
-        stock_actual = producto["stock"]
+        # ----------------------------------------------
+        # STOCK
+        # ----------------------------------------------
+
+        stock_actual = producto.get(
+            "stock"
+        )
+
+        if stock_actual is None:
+            raise ValueError(
+                f"El producto {producto['nombre_producto']} "
+                "no posee stock válido"
+            )
+
+        stock_actual = int(
+            stock_actual
+        )
+
+        if stock_actual < cantidad:
+            raise ValueError(
+                f"Stock insuficiente para el producto "
+                f"{producto['nombre_producto']}. "
+                f"Stock disponible: {stock_actual}"
+            )
+
+        # ----------------------------------------------
+        # PRECIOS REALES DESDE LA BD
+        # ----------------------------------------------
 
         if producto.get("precio_venta") is None:
             raise ValueError(
                 f"El producto {producto['nombre_producto']} "
-                f"no posee precio de venta"
+                "no posee precio de venta"
             )
 
         if producto.get("precio_costo") is None:
             raise ValueError(
                 f"El producto {producto['nombre_producto']} "
-                f"no posee precio de costo"
+                "no posee precio de costo"
             )
 
         precio_unitario = float(
@@ -258,67 +268,67 @@ def crear_venta(datos):
         if precio_unitario <= 0:
             raise ValueError(
                 f"El producto {producto['nombre_producto']} "
-                f"posee un precio de venta inválido"
+                "posee un precio de venta inválido"
             )
 
         if costo_unitario < 0:
             raise ValueError(
                 f"El producto {producto['nombre_producto']} "
-                f"posee un precio de costo inválido"
+                "posee un precio de costo inválido"
             )
 
-        # --------------------------------------------------
-        # VALIDAR STOCK
-        # --------------------------------------------------
+        # ----------------------------------------------
+        # SUBTOTAL
+        # ----------------------------------------------
 
-        if stock_actual < cantidad:
-            raise ValueError(
-                f"Stock insuficiente para el producto "
-                f"{producto['nombre_producto']}. "
-                f"Stock disponible: {stock_actual}"
-            )
-
-        # --------------------------------------------------
-        # CALCULAR SUBTOTAL
-        # --------------------------------------------------
-
-        subtotal = cantidad * precio_unitario
+        subtotal = round(
+            cantidad * precio_unitario,
+            2
+        )
 
         total_venta += subtotal
 
-        # --------------------------------------------------
-        # PREPARAR DETALLE
-        # --------------------------------------------------
-
         detalles.append({
             "id_producto": id_producto,
+            "nombre_producto": producto["nombre_producto"],
             "cantidad": cantidad,
-
-            # Precio histórico de venta
             "precio_unitario": precio_unitario,
-
-            # Costo histórico del producto
             "costo_unitario": costo_unitario,
-
             "subtotal": subtotal,
-
             "stock_anterior": stock_actual,
             "stock_nuevo": stock_actual - cantidad
         })
 
-    # --------------------------------------------------
-    # CREAR VENTA PRINCIPAL
-    # --------------------------------------------------
+    total_venta = round(
+        total_venta,
+        2
+    )
+
+    # ==================================================
+    # NÚMERO LOCAL
+    # ==================================================
+
+    numero_venta = obtener_siguiente_numero_venta(
+        id_comercio
+    )
+
+    if numero_venta is None:
+        raise ValueError(
+            "No se pudo generar el número de venta"
+        )
+
+    # ==================================================
+    # CREAR VENTA
+    # ==================================================
 
     datos_venta = {
         "id_usuario": id_usuario,
         "id_cliente": id_cliente,
+        "id_comercio": id_comercio,
+        "numero_venta": numero_venta,
         "total": total_venta,
         "metodo_pago": metodo_pago,
-        "estado": datos.get(
-            "estado",
-            "COMPLETADA"
-        ),
+        "estado": "COMPLETADA",
         "observaciones": datos.get(
             "observaciones"
         )
@@ -333,13 +343,18 @@ def crear_venta(datos):
             "No se pudo registrar la venta"
         )
 
-    id_venta = venta_creada[0]["id_venta"]
+    venta = venta_creada[0]
 
-    # --------------------------------------------------
-    # REGISTRAR DETALLES
-    # --------------------------------------------------
+    id_venta = venta[
+        "id_venta"
+    ]
+
+    # ==================================================
+    # DETALLES + STOCK + HISTORIAL
+    # ==================================================
 
     detalles_creados = []
+    productos_actualizados = []
 
     for detalle in detalles:
 
@@ -360,36 +375,52 @@ def crear_venta(datos):
             detalle_creado
         )
 
-        # --------------------------------------------------
+        # ----------------------------------------------
         # DESCONTAR STOCK
-        # --------------------------------------------------
+        # ----------------------------------------------
 
-        actualizar_stock_producto(
+        producto_actualizado = actualizar_stock_producto(
             detalle["id_producto"],
+            id_comercio,
             detalle["stock_nuevo"]
         )
 
-        # --------------------------------------------------
-        # REGISTRAR MOVIMIENTO DE STOCK
-        # --------------------------------------------------
+        if not producto_actualizado:
+            raise ValueError(
+                f"No se pudo actualizar el stock del producto "
+                f"{detalle['nombre_producto']}"
+            )
 
-        datos_movimiento = {
+        # ----------------------------------------------
+        # HISTORIAL
+        # ----------------------------------------------
+
+        registrar_movimiento_stock({
             "id_producto": detalle["id_producto"],
             "id_usuario": id_usuario,
             "tipo_movimiento": "VENTA",
             "cantidad": detalle["cantidad"],
             "stock_anterior": detalle["stock_anterior"],
             "stock_nuevo": detalle["stock_nuevo"],
-            "observaciones": f"Venta #{id_venta}"
-        }
+            "observaciones": (
+                f"Venta #{numero_venta} "
+                f"(ID global {id_venta})"
+            )
+        })
 
-        registrar_movimiento_stock(
-            datos_movimiento
-        )
+        productos_actualizados.append({
+            "id_producto": detalle["id_producto"],
+            "nombre_producto": detalle["nombre_producto"],
+            "cantidad": detalle["cantidad"],
+            "stock_anterior": detalle["stock_anterior"],
+            "stock_actual": detalle["stock_nuevo"],
+            "precio_unitario": detalle["precio_unitario"],
+            "costo_unitario": detalle["costo_unitario"]
+        })
 
-    # --------------------------------------------------
-    # REGISTRAR INGRESO FINANCIERO
-    # --------------------------------------------------
+    # ==================================================
+    # MOVIMIENTO FINANCIERO
+    # ==================================================
 
     movimiento_financiero = None
 
@@ -402,35 +433,41 @@ def crear_venta(datos):
             monto=total_venta
         )
 
-    # --------------------------------------------------
+    # ==================================================
     # RESPUESTA
-    # --------------------------------------------------
+    # ==================================================
 
     return {
-        "venta": venta_creada[0],
+        "venta": venta,
         "detalles": detalles_creados,
+        "productos_actualizados": productos_actualizados,
         "movimiento_financiero": movimiento_financiero
     }
 
 
-def listar_ventas():
+def listar_ventas(id_comercio):
     """
-    Obtiene todas las ventas registradas.
+    Obtiene únicamente las ventas
+    del comercio autenticado.
     """
 
-    ventas = obtener_ventas()
+    return obtener_ventas(
+        id_comercio
+    )
 
-    return ventas
 
-
-def buscar_venta_por_id(id_venta):
+def buscar_venta_por_id(
+    id_venta,
+    id_comercio
+):
     """
-    Obtiene una venta específica junto con
-    todos sus detalles.
+    Obtiene una venta específica del comercio
+    junto con sus detalles.
     """
 
     venta = obtener_venta_por_id(
-        id_venta
+        id_venta,
+        id_comercio
     )
 
     if not venta:
@@ -448,24 +485,28 @@ def buscar_venta_por_id(id_venta):
     }
 
 
-def anular_venta(id_venta):
+def anular_venta(
+    id_venta,
+    id_comercio,
+    id_usuario_anulacion
+):
     """
-    Anula una venta registrada.
+    Anula una venta perteneciente al comercio autenticado.
 
-    Devuelve al stock los productos incluidos en la venta,
-    registra los movimientos correspondientes en el historial
-    y cambia el estado de la venta a 'ANULADA'.
+    Devuelve los productos al stock y revierte el ingreso
+    financiero cuando la venta había sido cobrada.
 
-    La reversión financiera de una venta cobrada
-    se implementará posteriormente.
+    El usuario que queda registrado en la anulación
+    es quien ejecuta actualmente la operación.
     """
 
-    # --------------------------------------------------
+    # ==================================================
     # BUSCAR VENTA
-    # --------------------------------------------------
+    # ==================================================
 
     venta = obtener_venta_por_id(
-        id_venta
+        id_venta,
+        id_comercio
     )
 
     if not venta:
@@ -473,18 +514,23 @@ def anular_venta(id_venta):
             "Venta no encontrada"
         )
 
-    # --------------------------------------------------
+    # ==================================================
     # EVITAR DOBLE ANULACIÓN
-    # --------------------------------------------------
+    # ==================================================
 
-    if venta["estado"].upper() == "ANULADA":
+    if (
+        str(
+            venta.get("estado", "")
+        ).upper()
+        == "ANULADA"
+    ):
         raise ValueError(
             "La venta ya se encuentra anulada"
         )
 
-    # --------------------------------------------------
-    # OBTENER PRODUCTOS VENDIDOS
-    # --------------------------------------------------
+    # ==================================================
+    # DETALLES
+    # ==================================================
 
     detalles = obtener_detalles_venta(
         id_venta
@@ -497,91 +543,116 @@ def anular_venta(id_venta):
 
     productos_a_revertir = []
 
-    # --------------------------------------------------
-    # PREPARAR DEVOLUCIÓN DE STOCK
-    # --------------------------------------------------
-
     for detalle in detalles:
 
         producto = obtener_producto_por_id(
-            detalle["id_producto"]
+            detalle["id_producto"],
+            id_comercio
         )
 
         if not producto:
             raise ValueError(
                 f"El producto con ID "
-                f"{detalle['id_producto']} no existe"
+                f"{detalle['id_producto']} no existe "
+                "en el comercio actual"
             )
 
-        stock_actual = producto["stock"]
-        cantidad = detalle["cantidad"]
+        stock_actual = int(
+            producto["stock"]
+        )
+
+        cantidad = int(
+            detalle["cantidad"]
+        )
 
         productos_a_revertir.append({
             "id_producto": detalle["id_producto"],
+            "nombre_producto": producto["nombre_producto"],
             "cantidad": cantidad,
             "stock_anterior": stock_actual,
             "stock_nuevo": stock_actual + cantidad
         })
 
-    # --------------------------------------------------
-    # DEVOLVER PRODUCTOS AL STOCK
-    # --------------------------------------------------
+    # ==================================================
+    # REVERTIR MOVIMIENTO FINANCIERO
+    # ==================================================
+    #
+    # Primero se revierte el dinero.
+    #
+    # Si la cuenta no posee fondos suficientes para
+    # realizar la anulación, la operación se detiene
+    # antes de modificar el stock.
+    #
+    # Para CUENTA_CORRIENTE la RPC devuelve None porque
+    # la venta no generó un ingreso financiero inmediato.
+    # ==================================================
+
+    movimiento_financiero = anular_ingreso_venta_rpc(
+        id_venta=id_venta,
+        id_usuario=id_usuario_anulacion
+    )
+
+    # ==================================================
+    # DEVOLVER STOCK
+    # ==================================================
+
+    productos_revertidos = []
 
     for producto in productos_a_revertir:
 
-        actualizar_stock_producto(
+        producto_actualizado = actualizar_stock_producto(
             producto["id_producto"],
+            id_comercio,
             producto["stock_nuevo"]
         )
 
-        # --------------------------------------------------
-        # REGISTRAR MOVIMIENTO DE ANULACIÓN
-        # --------------------------------------------------
+        if not producto_actualizado:
+            raise ValueError(
+                f"No se pudo devolver el stock del producto "
+                f"{producto['nombre_producto']}"
+            )
 
-        datos_movimiento = {
+        registrar_movimiento_stock({
             "id_producto": producto["id_producto"],
-            "id_usuario": venta["id_usuario"],
+            "id_usuario": id_usuario_anulacion,
             "tipo_movimiento": "ANULACION_VENTA",
             "cantidad": producto["cantidad"],
             "stock_anterior": producto["stock_anterior"],
             "stock_nuevo": producto["stock_nuevo"],
             "observaciones": (
-                f"Anulación Venta #{id_venta}"
+                f"Anulación Venta #{venta['numero_venta']} "
+                f"(ID global {id_venta})"
             )
-        }
+        })
 
-        registrar_movimiento_stock(
-            datos_movimiento
-        )
+        productos_revertidos.append({
+            "id_producto": producto["id_producto"],
+            "cantidad": producto["cantidad"],
+            "stock_anterior": producto["stock_anterior"],
+            "stock_nuevo": producto["stock_nuevo"]
+        })
 
-    # --------------------------------------------------
-    # CAMBIAR ESTADO DE LA VENTA
-    # --------------------------------------------------
-
-    # --------------------------------------------------
-    # REVERTIR INGRESO FINANCIERO
-    # --------------------------------------------------
-
-    movimiento_financiero = anular_ingreso_venta_rpc(
-        id_venta=id_venta,
-        id_usuario=venta["id_usuario"]
-    )
-
-    # --------------------------------------------------
-    # CAMBIAR ESTADO DE LA VENTA
-    # --------------------------------------------------
+    # ==================================================
+    # CAMBIAR ESTADO
+    # ==================================================
 
     venta_actualizada = actualizar_estado_venta(
         id_venta,
+        id_comercio,
         "ANULADA"
     )
 
-    # --------------------------------------------------
+    if not venta_actualizada:
+        raise ValueError(
+            "No se pudo actualizar el estado de la venta"
+        )
+
+    # ==================================================
     # RESPUESTA
-    # --------------------------------------------------
+    # ==================================================
 
     return {
         "venta": venta_actualizada,
-        "productos_revertidos": productos_a_revertir,
+        "productos_revertidos": productos_revertidos,
         "movimiento_financiero": movimiento_financiero
     }
