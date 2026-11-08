@@ -6,9 +6,10 @@ se comunica con la capa de servicios y prepara las respuestas
 HTTP que serán enviadas al cliente.
 """
 
-from flask import jsonify, request
+from flask import jsonify, request, g
+
 from app.services.stock_service import (
-    ajustar_stock, 
+    ajustar_stock,
     consultar_stock_general,
     consultar_alertas_stock
 )
@@ -16,11 +17,13 @@ from app.services.stock_service import (
 
 def ajustar_stock_controller(id_producto):
     """
-    Recibe los datos necesarios para realizar
-    un ajuste manual de stock.
+    Realiza un ajuste manual de stock.
+
+    id_usuario e id_comercio se obtienen exclusivamente
+    del usuario autenticado.
     """
 
-    datos = request.get_json()
+    datos = request.get_json(silent=True) or {}
 
     if not datos:
         return jsonify({
@@ -29,19 +32,22 @@ def ajustar_stock_controller(id_producto):
 
     cantidad = datos.get("cantidad")
     tipo_ajuste = datos.get("tipo_ajuste")
-    id_usuario = datos.get("id_usuario")
 
-    if cantidad is None or tipo_ajuste is None or id_usuario is None:
+    if cantidad is None or tipo_ajuste is None:
         return jsonify({
-            "error": "Faltan datos obligatorios"
+            "error": (
+                "Los campos 'cantidad' y "
+                "'tipo_ajuste' son obligatorios"
+            )
         }), 400
 
     try:
         resultado = ajustar_stock(
-            id_producto,
-            cantidad,
-            tipo_ajuste,
-            id_usuario
+            id_producto=id_producto,
+            cantidad=cantidad,
+            tipo_ajuste=tipo_ajuste,
+            id_usuario=g.id_usuario,
+            id_comercio=g.id_comercio
         )
 
         return jsonify({
@@ -50,26 +56,67 @@ def ajustar_stock_controller(id_producto):
         }), 200
 
     except ValueError as error:
+        mensaje = str(error)
+
+        if mensaje == "Producto no encontrado":
+            return jsonify({
+                "error": mensaje
+            }), 404
+
         return jsonify({
-            "error": str(error)
+            "error": mensaje
         }), 400
 
+    except Exception:
+        return jsonify({
+            "error": "Error interno del servidor"
+        }), 500
 
 
 def consultar_stock_general_controller():
     """
-    Devuelve el stock general o filtra por nombre si llega ?buscar=.
+    Devuelve el stock del comercio autenticado.
+
+    Permite filtrar mediante:
+    GET /stock?buscar=texto
     """
+
     buscar = request.args.get("buscar")
-    productos = consultar_stock_general(buscar)
 
-    return jsonify(productos), 200
+    try:
+        productos = consultar_stock_general(
+            id_comercio=g.id_comercio,
+            buscar=buscar
+        )
 
+        return jsonify(productos), 200
+
+    except ValueError as error:
+        return jsonify({
+            "error": str(error)
+        }), 400
+
+    except Exception:
+        return jsonify({
+            "error": "Error interno del servidor"
+        }), 500
 
 
 def consultar_alertas_stock_controller():
     """
-    Devuelve los productos con alerta de stock en formato JSON.
+    Devuelve los productos activos del comercio
+    autenticado que alcanzaron o superaron hacia abajo
+    su stock mínimo.
     """
-    alertas = consultar_alertas_stock()
-    return jsonify(alertas), 200
+
+    try:
+        alertas = consultar_alertas_stock(
+            id_comercio=g.id_comercio
+        )
+
+        return jsonify(alertas), 200
+
+    except Exception:
+        return jsonify({
+            "error": "Error interno del servidor"
+        }), 500
