@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { api, clearToken, readToken, saveToken } from './shared/api/client.js'
+import PrivateLayout from './app/PrivateLayout.jsx'
 
 function Login({ notice, onLogin }) {
   const [submitting, setSubmitting] = useState(false)
@@ -158,17 +159,39 @@ function SessionRoutes() {
         )}
       />
       <Route
-        path="/inicio"
-        element={profile ? (
-          <main>
-            <h1>Gestión Integral de Comercio</h1>
-            <p>
-              Acceso verificado para {profile.usuario.nombre_completo || profile.usuario.email}
-              {' en '}{profile.comercio.nombre_comercio}.
-            </p>
-          </main>
-        ) : <Navigate to="/login" replace />}
-      />
+  element={profile ? <PrivateLayout profile={profile} /> : <Navigate to="/login" replace />}
+>
+  <Route
+    path="/inicio"
+    element={
+      <section>
+        <h1>Inicio</h1>
+        <p>Comercio activo: {profile?.comercio.nombre_comercio}</p>
+      </section>
+    }
+  />
+  <Route
+    path="/perfil"
+    element={
+      <section>
+        <h1>Mi perfil</h1>
+        <dl>
+          <dt>Nombre</dt>
+          <dd>{profile?.usuario.nombre_completo || profile?.usuario.email}</dd>
+
+          <dt>Correo electrónico</dt>
+          <dd>{profile?.usuario.email}</dd>
+
+          <dt>Comercio</dt>
+          <dd>{profile?.comercio.nombre_comercio}</dd>
+
+          <dt>Tipo de cuenta</dt>
+          <dd>{profile?.usuario.es_propietario ? 'Propietario' : 'Empleado'}</dd>
+        </dl>
+      </section>
+    }
+  />
+</Route>
       <Route path="/" element={<Navigate to={profile ? '/inicio' : '/login'} replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
