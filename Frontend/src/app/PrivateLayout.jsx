@@ -1,8 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import styles from './PrivateLayout.module.css'
 
-export default function PrivateLayout({ profile }) {
-  const { usuario, comercio } = profile
+export default function PrivateLayout({ profile, onLogout }) {  const { usuario, comercio } = profile
 
   return (
     <div className={styles.layout}>
@@ -18,6 +17,9 @@ export default function PrivateLayout({ profile }) {
         <header className={styles.header}>
           <strong>{comercio.nombre_comercio}</strong>
           <span>{usuario.nombre_completo || usuario.email}</span>
+        <button className={styles.logout} type="button" onClick={onLogout}>
+        Cerrar sesión
+        </button>
         </header>
 
         <main className={styles.content}>

@@ -129,6 +129,15 @@ function SessionRoutes() {
     setToken(newToken)
   }
 
+  function handleLogout() {
+  clearToken()
+  setToken(null)
+  setProfile(null)
+  setValidationError('')
+  setNotice('Cerraste sesión.')
+}
+
+
   function retryValidation() {
     setValidationError('')
     setAttempt((previous) => previous + 1)
@@ -159,7 +168,7 @@ function SessionRoutes() {
         )}
       />
       <Route
-  element={profile ? <PrivateLayout profile={profile} /> : <Navigate to="/login" replace />}
+  element={profile ? <PrivateLayout profile={profile} onLogout={handleLogout} /> : <Navigate to="/login" replace />}
 >
   <Route
     path="/inicio"
