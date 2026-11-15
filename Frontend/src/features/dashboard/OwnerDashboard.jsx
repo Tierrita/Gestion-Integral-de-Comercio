@@ -29,6 +29,7 @@ export default function OwnerDashboard() {
       try {
         const { data } = await api.get('/finanzas/dashboard', {
           params: { periodo: 'mes' },
+          timeout: 30000,
           signal: controller.signal,
         })
         const montos = [
@@ -52,6 +53,8 @@ export default function OwnerDashboard() {
           setError('Tu sesión ya no es válida. Cerrá sesión y volvé a ingresar.')
         } else if (status === 403) {
           setError('Tu cuenta no tiene acceso al resumen financiero.')
+        } else if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+          setError('El resumen financiero tardó demasiado en responder.')
         } else {
           setError('No pudimos cargar el resumen financiero.')
         }
