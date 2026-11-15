@@ -80,3 +80,15 @@ button {
   margin: 0.75rem 0 0;
   color: var(--color-text-muted);
 }
+:root {
+  --color-background: #090f1d;
+  --color-surface: #111d30;
+  --color-border: #2a3c55;
+  --color-focus: #64e6ee;
+  --color-primary: #1d55bb;
+}
+
+body {
+  background: radial-gradient(ellipse at top right, #152b45, transparent 48%), var(--color-background);
+  min-height: 100vh;
+}
