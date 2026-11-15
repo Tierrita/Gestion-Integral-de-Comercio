@@ -101,7 +101,7 @@ export function Ventas() {
         <>
           <form className={styles.panel} onSubmit={registrar}>
             <h2>Nueva venta en cuenta corriente</h2>
-            {(!activos.length || !disponibles.length) && <p>Necesitás un cliente activo y un producto con stock.</p>}
+            {(!activos.length || !disponibles.length) && <p>Necesitás un cliente activo y un producto con stock. <Link to="/clientes">Ir a Clientes</Link></p>}
             <fieldset disabled={registro.enviando || registro.incierto || !activos.length || !disponibles.length}>
               <label>Cliente<select name="cliente" required defaultValue=""><option value="">Elegir cliente</option>
                 {activos.map((cliente) => <option key={cliente.id_cliente} value={cliente.id_cliente}>{cliente.nombre_completo}</option>)}
@@ -139,9 +139,39 @@ export function Ventas() {
 
 export function Clientes() {
   const consulta = useDatos(consultaClientes)
+  const registro = useRegistro('/clientes', 'No se pudo confirmar el alta. Actualizá la lista y verificá si el cliente figura antes de volver a crearlo.')
+
+  function crearCliente(event) {
+    event.preventDefault()
+    const formulario = event.currentTarget
+    const datos = new FormData(formulario)
+    registro.registrar({
+      nombre_completo: datos.get('nombre').trim(),
+      telefono: datos.get('telefono').trim(),
+    }, () => {
+      formulario.reset()
+      consulta.recargar()
+    })
+  }
+
   return (
     <section className={styles.pagina}>
       <h1>Clientes</h1>
+      <form className={styles.panel} onSubmit={crearCliente}>
+        <h2>Nuevo cliente</h2>
+        <fieldset disabled={registro.enviando || registro.incierto}>
+          <div className={styles.linea}>
+            <label>Nombre completo<input name="nombre" required minLength={2} /></label>
+            <label>Teléfono (opcional)<input name="telefono" type="tel" /></label>
+          </div>
+          <div className={styles.acciones}>
+            <button className={styles.principal} type="submit">{registro.enviando ? 'Guardando…' : 'Crear cliente'}</button>
+          </div>
+        </fieldset>
+      </form>
+      {registro.exito && <p role="status">Cliente creado. <Link to="/ventas">Ir a Ventas</Link></p>}
+      {registro.error && <p role="alert">{registro.error}</p>}
+      {registro.incierto && <button type="button" onClick={consulta.recargar}>Actualizar lista</button>}
       {!consulta.data ? <Estado {...consulta} /> : consulta.data[0].length ? (
         <div className={styles.tabla}><table>
           <thead><tr><th>Cliente</th><th>Estado</th><th>Cuenta corriente</th></tr></thead>
