@@ -40,16 +40,19 @@ export default function OwnerDashboard() {
           ))}
         </select>
       </label>
-      <ResumenFinanciero key={periodo} periodo={periodo} />
+      <ResumenFinanciero periodo={periodo} />
       <SalesEvolution key={periodo} periodo={periodo} />
     </section>
   )
 }
 
 function ResumenFinanciero({ periodo }) {
-  const [resumen, setResumen] = useState(null)
-  const [error, setError] = useState('')
+  const [resultado, setResultado] = useState(null)
   const [intento, setIntento] = useState(0)
+
+  const actual = resultado?.periodo === periodo && resultado.intento === intento ? resultado : null
+  const resumen = actual?.resumen
+  const error = actual?.error
 
   useEffect(() => {
     const controller = new AbortController()
@@ -73,19 +76,19 @@ function ResumenFinanciero({ periodo }) {
           throw new Error('Resumen financiero incompleto')
         }
 
-        if (!controller.signal.aborted) setResumen(data)
+        if (!controller.signal.aborted) setResultado({ periodo, intento, resumen: data })
       } catch (error) {
         if (controller.signal.aborted) return
 
         const status = error.response?.status
         if (status === 401) {
-          setError('Tu sesión ya no es válida. Cerrá sesión y volvé a ingresar.')
+          setResultado({ periodo, intento, error: 'Tu sesión ya no es válida. Cerrá sesión y volvé a ingresar.' })
         } else if (status === 403) {
-          setError('Tu cuenta no tiene acceso al resumen financiero.')
+          setResultado({ periodo, intento, error: 'Tu cuenta no tiene acceso al resumen financiero.' })
         } else if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-          setError('El resumen financiero tardó demasiado en responder.')
+          setResultado({ periodo, intento, error: 'El resumen financiero tardó demasiado en responder.' })
         } else {
-          setError('No pudimos cargar el resumen financiero.')
+          setResultado({ periodo, intento, error: 'No pudimos cargar el resumen financiero.' })
         }
       }
     }
@@ -95,12 +98,15 @@ function ResumenFinanciero({ periodo }) {
   }, [periodo, intento])
 
   function reintentar() {
-    setError('')
+    setResultado(null)
     setIntento((anterior) => anterior + 1)
   }
 
   return (
-    <div>
+    <div aria-busy={!actual}>
+      <p role="status" hidden={Boolean(actual)} translate="no">
+        <span>Cargando resumen financiero…</span>
+      </p>
       {error ? (
         <>
           <p role="alert">{error}</p>
@@ -126,9 +132,7 @@ function ResumenFinanciero({ periodo }) {
             detalle="Saldo actual de clientes con compras en el período seleccionado."
           />
         </div>
-      ) : (
-        <p role="status"><span>Cargando resumen financiero…</span></p>
-      )}
+      ) : null}
     </div>
   )
 }
