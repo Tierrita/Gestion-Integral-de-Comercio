@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { api, clearToken, readToken, saveToken } from './shared/api/client.js'
+import { DetalleCompra, HistorialCompras, NuevaCompra, Stock } from './features/compras/Compras.jsx'
 import PrivateLayout from './app/PrivateLayout.jsx'
 import OwnerDashboard from './features/dashboard/OwnerDashboard.jsx'
 
@@ -184,6 +185,14 @@ function SessionRoutes() {
       )
     }
   />
+  {profile?.usuario.es_propietario === true && (
+    <>
+      <Route path="/compras" element={<HistorialCompras />} />
+      <Route path="/compras/nueva" element={<NuevaCompra />} />
+      <Route path="/compras/:id" element={<DetalleCompra />} />
+      <Route path="/stock" element={<Stock />} />
+    </>
+  )}
   <Route
     path="/perfil"
     element={
