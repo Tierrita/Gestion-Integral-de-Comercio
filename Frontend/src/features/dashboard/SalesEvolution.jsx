@@ -19,12 +19,14 @@ export default function SalesEvolution({ periodo }) {
 
     async function cargarEvolucion() {
       try {
-        const { data } = await api.get('/finanzas/ventas/evolucion', {
+        const { data: respuesta } = await api.get('/finanzas/ventas/evolucion', {
           params: { periodo },
           signal: controller.signal,
         })
 
         if (controller.signal.aborted) return
+
+        const data = respuesta?.ventas
 
         if (!Array.isArray(data?.evolucion) || !data.evolucion.every(
           (punto) => typeof punto?.periodo === 'string' && Number.isFinite(punto.facturacion),
