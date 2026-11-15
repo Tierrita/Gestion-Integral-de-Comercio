@@ -9,6 +9,12 @@ export default function PrivateLayout({ profile, onLogout }) {  const { usuario,
         <strong>Gestión Integral de Comercio</strong>
         <nav aria-label="Navegación principal">
           <NavLink to="/inicio" end>Inicio</NavLink>
+          {usuario.es_propietario === true && (
+            <>
+              <NavLink to="/compras">Compras</NavLink>
+              <NavLink to="/stock">Stock</NavLink>
+            </>
+          )}
           <NavLink to="/perfil" end>Mi perfil</NavLink>
         </nav>
       </aside>
