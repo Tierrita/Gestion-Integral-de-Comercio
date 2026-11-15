@@ -13,6 +13,8 @@ export default function PrivateLayout({ profile, onLogout }) {  const { usuario,
             <>
               <NavLink to="/compras">Compras</NavLink>
               <NavLink to="/stock">Stock</NavLink>
+              <NavLink to="/ventas">Ventas</NavLink>
+              <NavLink to="/clientes">Clientes</NavLink>
             </>
           )}
           <NavLink to="/perfil" end>Mi perfil</NavLink>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { api, clearToken, readToken, saveToken } from './shared/api/client.js'
 import { DetalleCompra, HistorialCompras, NuevaCompra, Stock } from './features/compras/Compras.jsx'
+import { Ventas, Clientes, CuentaCliente } from './features/ventas/CircuitoVentas.jsx'
 import PrivateLayout from './app/PrivateLayout.jsx'
 import OwnerDashboard from './features/dashboard/OwnerDashboard.jsx'
 
@@ -190,6 +191,9 @@ function SessionRoutes() {
       <Route path="/compras" element={<HistorialCompras />} />
       <Route path="/compras/nueva" element={<NuevaCompra />} />
       <Route path="/compras/:id" element={<DetalleCompra />} />
+      <Route path="/ventas" element={<Ventas />} />
+      <Route path="/clientes" element={<Clientes />} />
+      <Route path="/clientes/:id" element={<CuentaCliente />} />
       <Route path="/stock" element={<Stock />} />
     </>
   )}
