@@ -8,6 +8,7 @@ HTTP que serán enviadas al cliente.
 
 from flask import jsonify, request, g
 
+from app.models.stock_model import obtener_historial_stock
 from app.services.stock_service import (
     ajustar_stock,
     consultar_stock_general,
@@ -25,7 +26,7 @@ def ajustar_stock_controller(id_producto):
 
     datos = request.get_json(silent=True) or {}
 
-    if not datos:
+    if not isinstance(datos, dict) or not datos:
         return jsonify({
             "error": "No se enviaron datos"
         }), 400
@@ -47,8 +48,13 @@ def ajustar_stock_controller(id_producto):
             cantidad=cantidad,
             tipo_ajuste=tipo_ajuste,
             id_usuario=g.id_usuario,
-            id_comercio=g.id_comercio
+            id_comercio=g.id_comercio,
+            observaciones=datos.get("observaciones"),
+            stock_esperado=datos.get("stock_esperado"),
         )
+
+        if resultado is None:
+            return jsonify({"error": "El stock cambió. Actualizá las existencias."}), 409
 
         return jsonify({
             "message": "Stock ajustado correctamente",
@@ -120,3 +126,17 @@ def consultar_alertas_stock_controller():
         return jsonify({
             "error": "Error interno del servidor"
         }), 500
+
+
+def obtener_historial_stock_controller():
+    pagina = request.args.get("pagina", "1")
+    producto = request.args.get("id_producto")
+    try:
+        pagina = int(pagina)
+        producto = int(producto) if producto is not None else None
+        if not 1 <= pagina <= 100000 or (producto is not None and not 1 <= producto <= 2147483647):
+            raise ValueError
+    except ValueError:
+        return jsonify({"error": "Página o producto inválido"}), 400
+
+    return jsonify(obtener_historial_stock(g.id_comercio, pagina, producto)), 200

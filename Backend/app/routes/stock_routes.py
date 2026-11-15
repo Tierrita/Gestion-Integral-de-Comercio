@@ -11,6 +11,7 @@ from flask import Blueprint
 
 from app.controllers.stock_controller import (
     ajustar_stock_controller,
+    obtener_historial_stock_controller,
     consultar_stock_general_controller,
     consultar_alertas_stock_controller
 )
@@ -80,3 +81,10 @@ def consultar_alertas_stock_route():
     """
 
     return consultar_alertas_stock_controller()
+
+
+@stock_bp.route("/stock/historial", methods=["GET"])
+@login_requerido
+@permiso_requerido("stock.ver")
+def obtener_historial_stock_route():
+    return obtener_historial_stock_controller()

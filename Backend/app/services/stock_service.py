@@ -10,8 +10,7 @@ del usuario autenticado.
 
 from app.models.stock_model import (
     obtener_stock_producto,
-    actualizar_stock_producto,
-    registrar_movimiento_stock,
+    registrar_ajuste_stock,
     obtener_stock_general
 )
 
@@ -21,7 +20,9 @@ def ajustar_stock(
     cantidad,
     tipo_ajuste,
     id_usuario,
-    id_comercio
+    id_comercio,
+    observaciones,
+    stock_esperado=None,
 ):
     """
     Realiza un ajuste manual de stock.
@@ -56,6 +57,12 @@ def ajustar_stock(
             "Tipo de ajuste inválido. "
             "Debe ser AUMENTAR o DISMINUIR"
         )
+
+    if not isinstance(observaciones, str) or len(observaciones.strip()) < 5:
+        raise ValueError("El motivo debe tener al menos 5 caracteres")
+
+    if stock_esperado is not None and type(stock_esperado) is not int:
+        raise ValueError("El stock esperado debe ser un número entero")
 
     # Buscar el producto dentro del comercio autenticado
     producto = obtener_stock_producto(
@@ -96,47 +103,20 @@ def ajustar_stock(
             "El stock no puede quedar negativo"
         )
 
-    # Actualizar stock
-    producto_actualizado = actualizar_stock_producto(
-        id_producto,
-        id_comercio,
-        nuevo_stock
-    )
+    referencia = stock_actual if stock_esperado is None else stock_esperado
+    if referencia != stock_actual:
+        return None
 
-    if not producto_actualizado:
-        raise ValueError(
-            "No se pudo actualizar el stock del producto"
-        )
-
-    # Registrar quién realizó realmente el movimiento.
-    # id_usuario proviene del JWT.
-    movimiento = {
-        "id_producto": id_producto,
-        "id_usuario": id_usuario,
-        "tipo_movimiento": tipo_movimiento,
-        "cantidad": cantidad,
-        "stock_anterior": stock_actual,
-        "stock_nuevo": nuevo_stock,
-        "observaciones": "Ajuste manual de stock"
-    }
-
-    movimiento_registrado = registrar_movimiento_stock(
-        movimiento
-    )
-
-    if not movimiento_registrado:
-        raise ValueError(
-            "No se pudo registrar el movimiento de stock"
-        )
-
-    return {
-        "id_producto": id_producto,
-        "nombre_producto": producto["nombre_producto"],
-        "stock_anterior": stock_actual,
-        "stock_nuevo": nuevo_stock,
-        "cantidad": cantidad,
-        "tipo_movimiento": tipo_movimiento
-    }
+    return registrar_ajuste_stock({
+        "p_id_producto": id_producto,
+        "p_id_comercio": id_comercio,
+        "p_id_usuario": id_usuario,
+        "p_stock_anterior": referencia,
+        "p_stock_nuevo": nuevo_stock,
+        "p_cantidad": cantidad,
+        "p_tipo": tipo_movimiento,
+        "p_observaciones": observaciones.strip(),
+    })
 
 
 def consultar_stock_general(id_comercio, buscar=None):

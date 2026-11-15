@@ -10,10 +10,15 @@ export default function PrivateLayout({ profile, onLogout }) {  const { usuario,
         <strong>Gestión Integral de Comercio</strong>
         <nav aria-label="Navegación principal">
           <NavLink to="/inicio" end>Inicio</NavLink>
-          {tienePermiso(profile, 'productos.ver') && (
+          {(tienePermiso(profile, 'productos.ver') || tienePermiso(profile, 'stock.ver')) && (
             <div role="group" aria-label="Stock">
               <span className={styles.grupo}>Stock</span>
-              <NavLink to="/stock/productos">Productos</NavLink>
+              {tienePermiso(profile, 'productos.ver') && <NavLink to="/stock/productos">Productos</NavLink>}
+              {tienePermiso(profile, 'stock.ver') && <>
+                <NavLink to="/stock/existencias">Existencias</NavLink>
+                <NavLink to="/stock/alertas">Alertas</NavLink>
+                <NavLink to="/stock/historial">Historial</NavLink>
+              </>}
             </div>
           )}
           <NavLink to="/perfil" end>Mi perfil</NavLink>

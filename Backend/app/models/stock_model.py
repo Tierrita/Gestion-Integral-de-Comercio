@@ -93,7 +93,7 @@ def obtener_stock_general(id_comercio, buscar=None):
         .table("productos")
         .select(
             "id_producto, numero_producto, nombre_producto, "
-            "stock, stock_minimo, unidad_de_medida, estado, id_comercio"
+            "stock, stock_minimo, unidad_de_medida, estado, id_comercio, categorias(nombre_categoria)"
         )
         .eq("id_comercio", id_comercio)
     )
@@ -110,4 +110,35 @@ def obtener_stock_general(id_comercio, buscar=None):
         .execute()
     )
 
-    return response.data
+    return [
+        {**producto, "categoria": (producto.get("categorias") or {}).get("nombre_categoria")}
+        for producto in response.data
+    ]
+
+
+def registrar_ajuste_stock(datos):
+    return get_client().rpc("registrar_ajuste_manual_stock", datos).execute().data
+
+
+def obtener_historial_stock(id_comercio, pagina, id_producto=None):
+    limite = 25
+    inicio = (pagina - 1) * limite
+    consulta = (
+        get_client()
+        .table("historial_movimiento")
+        .select(
+            "id_movimiento, tipo_movimiento, cantidad, stock_anterior, stock_nuevo, "
+            "fecha_movimiento, observaciones, "
+            "productos!inner(numero_producto,nombre_producto), usuarios(nombre_completo)"
+        )
+        .eq("productos.id_comercio", id_comercio)
+    )
+    if id_producto is not None:
+        consulta = consulta.eq("id_producto", id_producto)
+    movimientos = (
+        consulta.order("fecha_movimiento", desc=True)
+        .order("id_movimiento", desc=True)
+        .range(inicio, inicio + limite)
+        .execute().data
+    )
+    return {"movimientos": movimientos[:limite], "hay_mas": len(movimientos) > limite}

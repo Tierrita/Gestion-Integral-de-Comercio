@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../../shared/api/client.js'
 import { tienePermiso } from '../../shared/auth/permisos.js'
+import { HistorialStock } from '../stock/Stock.jsx'
 import styles from './Productos.module.css'
 
 const pesos = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' })
@@ -103,14 +104,15 @@ export default function Productos({ profile }) {
     {panel && <Panel titulo={panel.modo === 'crear' ? 'Nuevo producto' : 'Detalle de producto'} cerrar={() => setPanel(null)}>
       {panel.modo === 'crear' ? <Editor categorias={categorias} crearCategoria={permite('categorias.gestionar')} finalizar={finalizar} />
         : <Ficha key={panel.id} id={panel.id} categorias={categorias} editar={permite('productos.modificar') && verCatalogos}
-          cambiarEstado={permite('productos.estado')} finalizar={finalizar} />}
+          verHistorial={permite('stock.ver')} cambiarEstado={permite('productos.estado')} finalizar={finalizar} />}
     </Panel>}
   </section>
 }
 
-function Ficha({ id, categorias, editar, cambiarEstado, finalizar }) {
+function Ficha({ id, categorias, editar, verHistorial, cambiarEstado, finalizar }) {
   const consulta = useConsulta('/productos/' + id)
   const [edita, setEdita] = useState(false)
+  const [historial, setHistorial] = useState(false)
   const [confirma, setConfirma] = useState(false)
   const guardado = useGuardado()
   const p = consulta.data
@@ -147,6 +149,8 @@ function Ficha({ id, categorias, editar, cambiarEstado, finalizar }) {
       <button disabled={guardado.ocupado} onClick={() => setConfirma(false)}>Cancelar</button>
     </div>}
     {guardado.error && <p role="alert">{guardado.error}</p>}
+    {verHistorial && <button onClick={() => setHistorial(!historial)}>{historial ? 'Ocultar historial' : 'Ver historial'}</button>}
+    {verHistorial && historial && <HistorialStock producto={p} />}
   </>
 }
 

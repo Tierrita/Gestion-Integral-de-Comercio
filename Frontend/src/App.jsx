@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { api, clearToken, readToken, saveToken } from './shared/api/client.js'
+import Stock, { HistorialStock } from './features/stock/Stock.jsx'
 import Productos from './features/productos/Productos.jsx'
 import { tienePermiso } from './shared/auth/permisos.js'
 import PrivateLayout from './app/PrivateLayout.jsx'
@@ -181,6 +182,9 @@ function SessionRoutes() {
       </section>
     }
   />
+  <Route path="/stock/existencias" element={tienePermiso(profile, 'stock.ver') ? <Stock key="existencias" profile={profile} /> : <Navigate to="/inicio" replace />} />
+  <Route path="/stock/alertas" element={tienePermiso(profile, 'stock.ver') ? <Stock key="alertas" vista="alertas" profile={profile} /> : <Navigate to="/inicio" replace />} />
+  <Route path="/stock/historial" element={tienePermiso(profile, 'stock.ver') ? <HistorialStock /> : <Navigate to="/inicio" replace />} />
   <Route
     path="/stock/productos"
     element={tienePermiso(profile, 'productos.ver') ? <Productos profile={profile} /> : <Navigate to="/inicio" replace />}
