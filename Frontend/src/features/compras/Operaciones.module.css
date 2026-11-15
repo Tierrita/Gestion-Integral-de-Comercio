@@ -61,3 +61,24 @@
   padding: 0.65rem;
   border-bottom: 1px solid var(--color-border);
 }
+
+.panel, .tabla {
+  background: linear-gradient(145deg, #172941, var(--color-surface) 70%);
+  border-radius: 1rem;
+  box-shadow: 0 12px 28px #0003;
+}
+
+.pagina .principal {
+  background: linear-gradient(100deg, #1d55bb, #066679);
+  border-color: #5095bd;
+  font-weight: 600;
+}
+
+.pagina :is(button, a, select, input):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+.tabla tbody tr:hover {
+  background: #1a3047;
+}
