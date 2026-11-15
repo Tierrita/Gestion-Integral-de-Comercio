@@ -40,3 +40,70 @@
   outline: 2px solid var(--color-focus);
   outline-offset: 3px;
 }
+
+
+.periodo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.periodo select {
+  padding: 0.5rem;
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+}
+
+.periodo select:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.evolucion {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+}
+
+.evolucion h2 {
+  margin-top: 0;
+}
+
+.barras {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.etiquetaBarra {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin-bottom: 0.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pista {
+  background: var(--color-background);
+  border-radius: 0.25rem;
+}
+
+.barra,
+.barraNegativa {
+  height: 0.625rem;
+  border-radius: inherit;
+  background: var(--color-primary);
+}
+
+.barraNegativa {
+  background: #fb7185;
+}
