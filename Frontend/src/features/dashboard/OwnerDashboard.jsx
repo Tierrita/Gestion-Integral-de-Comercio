@@ -2,6 +2,15 @@ import { useEffect, useState } from 'react'
 import { api } from '../../shared/api/client.js'
 import styles from './OwnerDashboard.module.css'
 
+import SalesEvolution from './SalesEvolution.jsx'
+
+const periodos = [
+  ['hoy', 'Hoy'],
+  ['semana', 'Semana'],
+  ['mes', 'Mes'],
+  ['anio', 'Año'],
+]
+
 const moneda = new Intl.NumberFormat('es-AR', {
   style: 'currency',
   currency: 'ARS',
@@ -18,6 +27,26 @@ function Indicador({ titulo, monto, detalle }) {
 }
 
 export default function OwnerDashboard() {
+  const [periodo, setPeriodo] = useState('mes')
+
+  return (
+    <section>
+      <h1>Resumen financiero</h1>
+      <label className={styles.periodo}>
+        Período
+        <select value={periodo} onChange={(event) => setPeriodo(event.target.value)}>
+          {periodos.map(([valor, etiqueta]) => (
+            <option key={valor} value={valor}>{etiqueta}</option>
+          ))}
+        </select>
+      </label>
+      <ResumenFinanciero key={periodo} periodo={periodo} />
+      <SalesEvolution key={periodo} periodo={periodo} />
+    </section>
+  )
+}
+
+function ResumenFinanciero({ periodo }) {
   const [resumen, setResumen] = useState(null)
   const [error, setError] = useState('')
   const [intento, setIntento] = useState(0)
@@ -28,7 +57,7 @@ export default function OwnerDashboard() {
     async function cargarResumen() {
       try {
         const { data } = await api.get('/finanzas/dashboard', {
-          params: { periodo: 'mes' },
+          params: { periodo },
           timeout: 30000,
           signal: controller.signal,
         })
@@ -63,7 +92,7 @@ export default function OwnerDashboard() {
 
     cargarResumen()
     return () => controller.abort()
-  }, [intento])
+  }, [periodo, intento])
 
   function reintentar() {
     setError('')
@@ -71,9 +100,7 @@ export default function OwnerDashboard() {
   }
 
   return (
-    <section>
-      <h1>Resumen financiero</h1>
-      <p>Este mes</p>
+    <div>
       {error ? (
         <>
           <p role="alert">{error}</p>
@@ -96,12 +123,12 @@ export default function OwnerDashboard() {
           <Indicador
             titulo="Pendiente de cobrar"
             monto={resumen.clientes.total_por_cobrar}
-            detalle="Saldo actual de clientes con compras en el mes."
+            detalle="Saldo actual de clientes con compras en el período seleccionado."
           />
         </div>
       ) : (
         <p role="status">Cargando resumen financiero…</p>
       )}
-    </section>
+    </div>
   )
 }
