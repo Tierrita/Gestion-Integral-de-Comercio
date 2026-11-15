@@ -1,0 +1,104 @@
+import { useEffect, useState } from 'react'
+import { api } from '../../shared/api/client.js'
+import styles from './OwnerDashboard.module.css'
+
+const moneda = new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'ARS',
+})
+
+function Indicador({ titulo, monto, detalle }) {
+  return (
+    <article className={styles.tarjeta}>
+      <h2>{titulo}</h2>
+      <strong>{moneda.format(monto)}</strong>
+      <p>{detalle}</p>
+    </article>
+  )
+}
+
+export default function OwnerDashboard() {
+  const [resumen, setResumen] = useState(null)
+  const [error, setError] = useState('')
+  const [intento, setIntento] = useState(0)
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function cargarResumen() {
+      try {
+        const { data } = await api.get('/finanzas/dashboard', {
+          params: { periodo: 'mes' },
+          signal: controller.signal,
+        })
+        const montos = [
+          data?.ventas?.facturacion,
+          data?.caja?.saldo_neto,
+          data?.caja?.total_entradas,
+          data?.caja?.total_salidas,
+          data?.clientes?.total_por_cobrar,
+        ]
+
+        if (!montos.every(Number.isFinite) || !Number.isInteger(data?.ventas?.cantidad_ventas)) {
+          throw new Error('Resumen financiero incompleto')
+        }
+
+        if (!controller.signal.aborted) setResumen(data)
+      } catch (error) {
+        if (controller.signal.aborted) return
+
+        const status = error.response?.status
+        if (status === 401) {
+          setError('Tu sesión ya no es válida. Cerrá sesión y volvé a ingresar.')
+        } else if (status === 403) {
+          setError('Tu cuenta no tiene acceso al resumen financiero.')
+        } else {
+          setError('No pudimos cargar el resumen financiero.')
+        }
+      }
+    }
+
+    cargarResumen()
+    return () => controller.abort()
+  }, [intento])
+
+  function reintentar() {
+    setError('')
+    setIntento((anterior) => anterior + 1)
+  }
+
+  return (
+    <section>
+      <h1>Resumen financiero</h1>
+      <p>Este mes</p>
+      {error ? (
+        <>
+          <p role="alert">{error}</p>
+          <button className={styles.reintentar} type="button" onClick={reintentar}>
+            Reintentar
+          </button>
+        </>
+      ) : resumen ? (
+        <div className={styles.grilla}>
+          <Indicador
+            titulo="Ventas del período"
+            monto={resumen.ventas.facturacion}
+            detalle={`Operaciones: ${resumen.ventas.cantidad_ventas}`}
+          />
+          <Indicador
+            titulo="Flujo neto de caja"
+            monto={resumen.caja.saldo_neto}
+            detalle={`Entradas ${moneda.format(resumen.caja.total_entradas)} · Salidas ${moneda.format(resumen.caja.total_salidas)}`}
+          />
+          <Indicador
+            titulo="Pendiente de cobrar"
+            monto={resumen.clientes.total_por_cobrar}
+            detalle="Saldo actual de clientes con compras en el mes."
+          />
+        </div>
+      ) : (
+        <p role="status">Cargando resumen financiero…</p>
+      )}
+    </section>
+  )
+}
