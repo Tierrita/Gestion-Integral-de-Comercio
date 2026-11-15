@@ -40,3 +40,86 @@
   outline: 2px solid var(--color-focus);
   outline-offset: 3px;
 }
+
+
+.periodo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.periodo select {
+  padding: 0.5rem;
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+}
+
+.periodo select:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.evolucion {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+}
+
+.evolucion h2 {
+  margin-top: 0;
+}
+
+.barras {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(8rem, 1fr);
+  gap: 1rem;
+  margin: 0;
+  padding: 0 0 0.5rem;
+  overflow-x: auto;
+  list-style: none;
+}
+
+.barras li {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.etiquetaBarra {
+  display: grid;
+  gap: 0.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.etiquetaBarra span {
+  color: var(--color-text-muted);
+}
+
+.pista {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 10rem;
+  border-bottom: 1px solid var(--color-border);
+  background: repeating-linear-gradient(to top, transparent 0 calc(25% - 1px), var(--color-border) calc(25% - 1px) 25%);
+}
+
+.barra,
+.barraNegativa {
+  width: min(60%, 4rem);
+  border-radius: 0.35rem 0.35rem 0 0;
+  background: linear-gradient(var(--color-focus), var(--color-primary));
+}
+
+.barraNegativa {
+  background: #fb7185;
+}
