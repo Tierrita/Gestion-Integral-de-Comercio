@@ -8,6 +8,7 @@ al servicio correspondiente.
 
 from flask import request, jsonify, g
 
+from app.models.rol_model import obtener_permisos_rol, obtener_rol_por_id
 from app.services.auth_service import iniciar_sesion
 
 
@@ -56,7 +57,19 @@ def obtener_perfil_actual():
     usuario = g.usuario_actual
     comercio = g.comercio_actual
 
+    permisos = []
+    id_rol = usuario.get("id_rol")
+    if id_rol and not usuario.get("es_propietario"):
+        rol = obtener_rol_por_id(id_rol, usuario["id_comercio"])
+        if rol and rol.get("estado"):
+            permisos = [
+                fila["permisos"]["codigo"]
+                for fila in obtener_permisos_rol(id_rol)
+                if fila.get("permisos")
+            ]
+
     return jsonify({
+        "permisos": permisos,
         "usuario": {
             "id_usuario": usuario["id_usuario"],
             "id_comercio": usuario["id_comercio"],

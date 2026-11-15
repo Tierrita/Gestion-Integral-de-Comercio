@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
+import { tienePermiso } from '../shared/auth/permisos.js'
 import styles from './PrivateLayout.module.css'
 
 export default function PrivateLayout({ profile, onLogout }) {  const { usuario, comercio } = profile
@@ -9,6 +10,12 @@ export default function PrivateLayout({ profile, onLogout }) {  const { usuario,
         <strong>Gestión Integral de Comercio</strong>
         <nav aria-label="Navegación principal">
           <NavLink to="/inicio" end>Inicio</NavLink>
+          {tienePermiso(profile, 'productos.ver') && (
+            <div role="group" aria-label="Stock">
+              <span className={styles.grupo}>Stock</span>
+              <NavLink to="/stock/productos">Productos</NavLink>
+            </div>
+          )}
           <NavLink to="/perfil" end>Mi perfil</NavLink>
         </nav>
       </aside>

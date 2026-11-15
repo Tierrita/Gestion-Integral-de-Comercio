@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { api, clearToken, readToken, saveToken } from './shared/api/client.js'
+import Productos from './features/productos/Productos.jsx'
+import { tienePermiso } from './shared/auth/permisos.js'
 import PrivateLayout from './app/PrivateLayout.jsx'
-import OwnerDashboard from './features/dashboard/OwnerDashboard.jsx'
 
 function Login({ notice, onLogin }) {
   const [submitting, setSubmitting] = useState(false)
@@ -174,15 +175,15 @@ function SessionRoutes() {
   <Route
     path="/inicio"
     element={
-      profile?.usuario.es_propietario === true ? (
-        <OwnerDashboard />
-      ) : (
-        <section>
-          <h1>Inicio</h1>
-          <p>Comercio activo: {profile?.comercio.nombre_comercio}</p>
-        </section>
-      )
+      <section>
+        <h1>Inicio</h1>
+        <p>Comercio activo: {profile?.comercio.nombre_comercio}</p>
+      </section>
     }
+  />
+  <Route
+    path="/stock/productos"
+    element={tienePermiso(profile, 'productos.ver') ? <Productos profile={profile} /> : <Navigate to="/inicio" replace />}
   />
   <Route
     path="/perfil"

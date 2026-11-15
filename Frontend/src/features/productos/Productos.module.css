@@ -1,0 +1,30 @@
+.pagina { display: grid; gap: 1.25rem; }
+.pagina h1, .panel h2 { margin: 0; }
+.barra, .filtros { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; }
+.barra { justify-content: space-between; align-items: center; }
+.filtros label:first-child { flex: 1 1 16rem; }
+.pagina label, .panel label { display: grid; gap: .35rem; color: var(--color-text-muted); }
+.pagina :is(button, input, select), .panel :is(button, input, select) {
+  font: inherit; color: var(--color-text); background: var(--color-background);
+  border: 1px solid var(--color-border); border-radius: .5rem; min-height: 44px; padding: .55rem .8rem;
+  min-width: 0;
+}
+.pagina button:enabled, .panel button:enabled { cursor: pointer; }
+.pagina button:disabled, .panel button:disabled { opacity: .55; }
+.pagina :focus-visible, .panel :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.pagina .principal, .panel .principal { background: #12496b; border-color: #3e8ca1; font-weight: 600; }
+.pagina .enlace { border: 0; background: transparent; color: var(--color-focus); padding-inline: 0; text-align: left; }
+.tabla { overflow-x: auto; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: .85rem; }
+.tabla table { width: 100%; border-collapse: collapse; text-align: left; }
+.tabla :is(th, td) { padding: .55rem .85rem; border-bottom: 1px solid var(--color-border); }
+.tabla th { color: var(--color-text-muted); }
+.panel {
+  position: fixed; inset: 0 0 0 auto; margin: 0; width: min(31rem, 100vw); height: 100%; max-height: none; max-width: none;
+  padding: 1.25rem; border: 0; border-left: 1px solid var(--color-border);
+  background: var(--color-surface); color: var(--color-text); box-shadow: -1rem 0 3rem #0005;
+}
+.panel::backdrop { background: #080d17aa; }
+.panel fieldset { border: 0; padding: 0; margin: 1rem 0; display: grid; gap: .8rem; min-width: 0; }
+.panel dt { color: var(--color-text-muted); margin-top: .75rem; }
+.panel dd { margin: .2rem 0; }
+.categoria { border-top: 1px solid var(--color-border); padding-top: 1rem; display: grid; gap: .6rem; }
