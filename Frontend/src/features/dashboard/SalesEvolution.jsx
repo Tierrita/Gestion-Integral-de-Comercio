@@ -7,6 +7,15 @@ const moneda = new Intl.NumberFormat('es-AR', {
   currency: 'ARS',
 })
 
+const fecha = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', timeZone: 'UTC' })
+const mes = new Intl.DateTimeFormat('es-AR', { month: 'short', year: 'numeric', timeZone: 'UTC' })
+
+function etiquetaPeriodo(valor, agrupacion) {
+  if (agrupacion === 'mes') return mes.format(new Date(valor + '-01T00:00:00Z'))
+  if (agrupacion === 'dia') return fecha.format(new Date(valor + 'T00:00:00Z'))
+  return valor
+}
+
 const agrupaciones = { hora: 'Hora', dia: 'Día', mes: 'Mes' }
 
 export default function SalesEvolution({ periodo }) {
@@ -62,7 +71,7 @@ export default function SalesEvolution({ periodo }) {
           </button>
         </>
       )}
-      {!error && !serie && <p role="status">Cargando evolución de ventas…</p>}
+      {!error && !serie && <p role="status"><span>Cargando evolución de ventas…</span></p>}
       {serie?.evolucion.length === 0 && <p>No hay ventas registradas para este período.</p>}
       {serie?.evolucion.length > 0 && (
         <>
@@ -71,13 +80,13 @@ export default function SalesEvolution({ periodo }) {
             {serie.evolucion.map(({ periodo: etiqueta, facturacion }) => (
               <li key={etiqueta}>
                 <div className={styles.etiquetaBarra}>
-                  <span>{etiqueta}</span>
+                  <span>{etiquetaPeriodo(etiqueta, serie.agrupacion)}</span>
                   <strong>{moneda.format(facturacion)}</strong>
                 </div>
                 <div className={styles.pista} aria-hidden="true">
                   <div
                     className={facturacion < 0 ? styles.barraNegativa : styles.barra}
-                    style={{ width: `${Math.abs(facturacion) / maximo * 100}%` }}
+                    style={{ height: `${Math.abs(facturacion) / maximo * 100}%` }}
                   />
                 </div>
               </li>
