@@ -127,7 +127,7 @@ function ResumenFinanciero({ periodo }) {
           />
         </div>
       ) : (
-        <p role="status">Cargando resumen financiero…</p>
+        <p role="status"><span>Cargando resumen financiero…</span></p>
       )}
     </div>
   )
