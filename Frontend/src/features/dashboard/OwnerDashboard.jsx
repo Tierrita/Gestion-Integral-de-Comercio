@@ -2,6 +2,15 @@ import { useEffect, useState } from 'react'
 import { api } from '../../shared/api/client.js'
 import styles from './OwnerDashboard.module.css'
 
+import SalesEvolution from './SalesEvolution.jsx'
+
+const periodos = [
+  ['hoy', 'Hoy'],
+  ['semana', 'Semana'],
+  ['mes', 'Mes'],
+  ['anio', 'Año'],
+]
+
 const moneda = new Intl.NumberFormat('es-AR', {
   style: 'currency',
   currency: 'ARS',
@@ -18,9 +27,32 @@ function Indicador({ titulo, monto, detalle }) {
 }
 
 export default function OwnerDashboard() {
-  const [resumen, setResumen] = useState(null)
-  const [error, setError] = useState('')
+  const [periodo, setPeriodo] = useState('mes')
+
+  return (
+    <section>
+      <h1>Resumen financiero</h1>
+      <label className={styles.periodo}>
+        Período
+        <select value={periodo} onChange={(event) => setPeriodo(event.target.value)}>
+          {periodos.map(([valor, etiqueta]) => (
+            <option key={valor} value={valor}>{etiqueta}</option>
+          ))}
+        </select>
+      </label>
+      <ResumenFinanciero periodo={periodo} />
+      <SalesEvolution key={periodo} periodo={periodo} />
+    </section>
+  )
+}
+
+function ResumenFinanciero({ periodo }) {
+  const [resultado, setResultado] = useState(null)
   const [intento, setIntento] = useState(0)
+
+  const actual = resultado?.periodo === periodo && resultado.intento === intento ? resultado : null
+  const resumen = actual?.resumen
+  const error = actual?.error
 
   useEffect(() => {
     const controller = new AbortController()
@@ -28,7 +60,7 @@ export default function OwnerDashboard() {
     async function cargarResumen() {
       try {
         const { data } = await api.get('/finanzas/dashboard', {
-          params: { periodo: 'mes' },
+          params: { periodo },
           timeout: 30000,
           signal: controller.signal,
         })
@@ -44,36 +76,37 @@ export default function OwnerDashboard() {
           throw new Error('Resumen financiero incompleto')
         }
 
-        if (!controller.signal.aborted) setResumen(data)
+        if (!controller.signal.aborted) setResultado({ periodo, intento, resumen: data })
       } catch (error) {
         if (controller.signal.aborted) return
 
         const status = error.response?.status
         if (status === 401) {
-          setError('Tu sesión ya no es válida. Cerrá sesión y volvé a ingresar.')
+          setResultado({ periodo, intento, error: 'Tu sesión ya no es válida. Cerrá sesión y volvé a ingresar.' })
         } else if (status === 403) {
-          setError('Tu cuenta no tiene acceso al resumen financiero.')
+          setResultado({ periodo, intento, error: 'Tu cuenta no tiene acceso al resumen financiero.' })
         } else if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-          setError('El resumen financiero tardó demasiado en responder.')
+          setResultado({ periodo, intento, error: 'El resumen financiero tardó demasiado en responder.' })
         } else {
-          setError('No pudimos cargar el resumen financiero.')
+          setResultado({ periodo, intento, error: 'No pudimos cargar el resumen financiero.' })
         }
       }
     }
 
     cargarResumen()
     return () => controller.abort()
-  }, [intento])
+  }, [periodo, intento])
 
   function reintentar() {
-    setError('')
+    setResultado(null)
     setIntento((anterior) => anterior + 1)
   }
 
   return (
-    <section>
-      <h1>Resumen financiero</h1>
-      <p>Este mes</p>
+    <div aria-busy={!actual}>
+      <p role="status" hidden={Boolean(actual)} translate="no">
+        <span>Cargando resumen financiero…</span>
+      </p>
       {error ? (
         <>
           <p role="alert">{error}</p>
@@ -96,12 +129,10 @@ export default function OwnerDashboard() {
           <Indicador
             titulo="Pendiente de cobrar"
             monto={resumen.clientes.total_por_cobrar}
-            detalle="Saldo actual de clientes con compras en el mes."
+            detalle="Saldo actual de clientes con compras en el período seleccionado."
           />
         </div>
-      ) : (
-        <p role="status">Cargando resumen financiero…</p>
-      )}
-    </section>
+      ) : null}
+    </div>
   )
 }
