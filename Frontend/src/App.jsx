@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { api, clearToken, readToken, saveToken } from './shared/api/client.js'
+import { HistorialCompras, NuevaCompra, DetalleCompra } from './features/compras/Compras.jsx'
 import Stock, { HistorialStock } from './features/stock/Stock.jsx'
 import Productos from './features/productos/Productos.jsx'
 import { tienePermiso } from './shared/auth/permisos.js'
@@ -182,6 +183,9 @@ function SessionRoutes() {
       </section>
     }
   />
+  <Route path="/compras" element={tienePermiso(profile, 'compras.ver') ? <HistorialCompras profile={profile} /> : <Navigate to="/compras/nueva" replace />} />
+  <Route path="/compras/nueva" element={tienePermiso(profile, 'compras.registrar') ? <NuevaCompra profile={profile} /> : <Navigate to="/inicio" replace />} />
+  <Route path="/compras/:id" element={tienePermiso(profile, 'compras.ver') ? <DetalleCompra profile={profile} /> : <Navigate to="/inicio" replace />} />
   <Route path="/stock/existencias" element={tienePermiso(profile, 'stock.ver') ? <Stock key="existencias" profile={profile} /> : <Navigate to="/inicio" replace />} />
   <Route path="/stock/alertas" element={tienePermiso(profile, 'stock.ver') ? <Stock key="alertas" vista="alertas" profile={profile} /> : <Navigate to="/inicio" replace />} />
   <Route path="/stock/historial" element={tienePermiso(profile, 'stock.ver') ? <HistorialStock /> : <Navigate to="/inicio" replace />} />

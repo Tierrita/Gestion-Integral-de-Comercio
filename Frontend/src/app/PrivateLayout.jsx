@@ -22,6 +22,8 @@ export default function PrivateLayout({ profile, onLogout }) {
               </>}
             </div>
           )}
+          {(tienePermiso(profile, 'compras.ver') || tienePermiso(profile, 'compras.registrar')) &&
+            <NavLink to={tienePermiso(profile, 'compras.ver') ? '/compras' : '/compras/nueva'}>Compras</NavLink>}
           <NavLink to="/perfil" end>Mi perfil</NavLink>
         </nav>
       </aside>
