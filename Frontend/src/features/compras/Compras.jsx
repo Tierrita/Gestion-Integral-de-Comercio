@@ -201,7 +201,7 @@ function CompraPorId({ id, profile }) {
               </tr>
             ))}</tbody>
           </table></div>
-          <Link to="/stock/existencias">Consultar stock</Link>
+          {tienePermiso(profile, 'stock.ver') && <Link to="/stock/existencias">Consultar stock</Link>}
         </>
       )}
     </section>
