@@ -105,3 +105,15 @@
   outline: 2px solid var(--color-focus);
   outline-offset: 3px;
 }
+.sidebar {
+  background: linear-gradient(160deg, #14263e, #101827 65%);
+}
+
+.sidebar a[aria-current='page'] {
+  background: #1a334a;
+  box-shadow: inset 3px 0 var(--color-focus);
+}
+
+.header {
+  background: #101b2c;
+}
