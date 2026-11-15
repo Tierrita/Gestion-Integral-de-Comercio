@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { api, clearToken, readToken, saveToken } from './shared/api/client.js'
 import PrivateLayout from './app/PrivateLayout.jsx'
+import OwnerDashboard from './features/dashboard/OwnerDashboard.jsx'
 
 function Login({ notice, onLogin }) {
   const [submitting, setSubmitting] = useState(false)
@@ -173,10 +174,14 @@ function SessionRoutes() {
   <Route
     path="/inicio"
     element={
-      <section>
-        <h1>Inicio</h1>
-        <p>Comercio activo: {profile?.comercio.nombre_comercio}</p>
-      </section>
+      profile?.usuario.es_propietario === true ? (
+        <OwnerDashboard />
+      ) : (
+        <section>
+          <h1>Inicio</h1>
+          <p>Comercio activo: {profile?.comercio.nombre_comercio}</p>
+        </section>
+      )
     }
   />
   <Route
