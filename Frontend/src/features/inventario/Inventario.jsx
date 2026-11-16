@@ -8,6 +8,9 @@ const classify = (p) => p.estado === false ? 'inactivo' : Number(p.stock) <= Num
 export default function Inventario() {
   const [items, setItems] = useState([])
   const [alerts, setAlerts] = useState([])
+  const [categories, setCategories] = useState([])
+  const [category, setCategory] = useState('todas')
+  const [categoryError, setCategoryError] = useState('')
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('todos')
   const [loading, setLoading] = useState(true)
@@ -21,11 +24,18 @@ export default function Inventario() {
   async function reload() {
     setLoading(true)
     setError('')
-    const [stockResult, alertResult] = await Promise.allSettled([api.get('/stock'), api.get('/stock/alertas')])
+    const [stockResult, alertResult, categoryResult] = await Promise.allSettled([api.get('/stock'), api.get('/stock/alertas'), api.get('/categorias')])
     if (stockResult.status === 'fulfilled' && Array.isArray(stockResult.value.data)) setItems(stockResult.value.data)
     else setError(stockResult.status === 'rejected' ? errorText(stockResult.reason) : 'Flask devolvió un listado de stock inválido.')
     if (alertResult.status === 'fulfilled' && Array.isArray(alertResult.value.data)) setAlerts(alertResult.value.data)
     else setError((prev) => [prev, 'No se pudieron consultar las alertas de stock.'].filter(Boolean).join(' '))
+    if (categoryResult.status === 'fulfilled' && Array.isArray(categoryResult.value.data)) {
+      setCategories(categoryResult.value.data)
+      setCategoryError('')
+    } else {
+      setCategories([])
+      setCategoryError('No se pudieron consultar las categorías. El filtro por categoría no está disponible.')
+    }
     setLoading(false)
   }
 
@@ -37,8 +47,8 @@ export default function Inventario() {
   const visible = useMemo(() => items.filter((p) => {
     const query = search.trim().toLocaleLowerCase('es-AR')
     const match = [p.nombre_producto, p.numero_producto, p.id_producto].some((value) => String(value ?? '').toLocaleLowerCase('es-AR').includes(query))
-    return match && (filter === 'todos' || classify(p) === filter)
-  }), [items, search, filter])
+    return match && (category === 'todas' || String(p.id_categoria) === category) && (filter === 'todos' || classify(p) === filter)
+  }), [items, search, filter, category])
 
   const activeCount = items.filter((p) => p.estado !== false).length
   const zeroCount = items.filter((p) => p.estado !== false && Number(p.stock) === 0).length
@@ -90,9 +100,11 @@ export default function Inventario() {
     </div>
     {notice && <p className={styles.success} role="status">{notice}</p>}
     {error && <p className={styles.error} role="alert">{error}</p>}
+    {categoryError && <p className={styles.error} role="alert">{categoryError}</p>}
     <section className={styles.panel}>
       <div className={styles.toolbar}>
         <label>Buscar producto<input type="search" placeholder="Nombre o número" value={search} onChange={(e) => setSearch(e.target.value)} /></label>
+        <label>Categoría<select value={category} disabled={Boolean(categoryError)} onChange={(e) => setCategory(e.target.value)}><option value="todas">Todas las categorías</option>{categories.map((c) => <option key={c.id_categoria} value={String(c.id_categoria)}>{c.nombre_categoria}</option>)}</select></label>
         <label>Situación<select value={filter} onChange={(e) => setFilter(e.target.value)}><option value="todos">Todos</option><option value="normal">Stock normal</option><option value="alerta">Stock bajo / mínimo</option><option value="inactivo">Inactivos</option></select></label>
       </div>
       {loading ? <p className={styles.empty}>Cargando inventario…</p> : error && !items.length ? <p className={styles.empty}>No se pudo cargar el inventario.</p> : !visible.length ? <p className={styles.empty}>No hay productos que coincidan con los filtros.</p> : <div className={styles.scroll}><table><thead><tr><th>N.º</th><th>Producto</th><th>Existencias</th><th>Mínimo</th><th>Situación</th><th>Acción</th></tr></thead><tbody>{visible.map((p) => <tr key={p.id_producto}><td>#{p.numero_producto ?? p.id_producto}</td><td><strong>{p.nombre_producto}</strong><small>{p.unidad_de_medida}</small></td><td className={styles.quantity}>{p.stock ?? '—'}</td><td>{p.stock_minimo ?? '—'}</td><td><span className={classify(p) === 'alerta' ? styles.alert : classify(p) === 'inactivo' ? styles.inactive : styles.ok}>{classify(p) === 'alerta' ? 'Stock bajo' : classify(p) === 'inactivo' ? 'Inactivo' : 'Normal'}</span></td><td><button className={styles.secondary} type="button" disabled={p.estado === false} onClick={() => openAdjustment(p)}>Ajustar stock</button></td></tr>)}</tbody></table></div>}
