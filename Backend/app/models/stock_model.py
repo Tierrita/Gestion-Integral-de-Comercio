@@ -111,3 +111,39 @@ def obtener_stock_general(id_comercio, buscar=None):
     )
 
     return response.data
+
+def obtener_historial_stock(id_comercio, id_producto=None):
+    """
+    Lee movimientos solo de productos del comercio autenticado.
+    No confía en identificadores de comercio recibidos del frontend.
+    """
+    supabase = get_client()
+    productos_query = (
+        supabase.table("productos")
+        .select("id_producto, numero_producto, nombre_producto")
+        .eq("id_comercio", id_comercio)
+    )
+    if id_producto is not None:
+        productos_query = productos_query.eq("id_producto", id_producto)
+
+    productos = productos_query.execute().data or []
+    if not productos:
+        return []
+
+    por_id = {p["id_producto"]: p for p in productos}
+    ids = list(por_id)
+    movimientos = (
+        supabase.table("historial_movimiento")
+        .select("*")
+        .in_("id_producto", ids)
+        .execute()
+    ).data or []
+
+    # Los datos devueltos solo pertenecen a productos autorizados.
+    for movimiento in movimientos:
+        producto = por_id.get(movimiento["id_producto"])
+        if producto:
+            movimiento["nombre_producto"] = producto["nombre_producto"]
+            movimiento["numero_producto"] = producto["numero_producto"]
+
+    return movimientos
