@@ -43,6 +43,9 @@ export default function PrivateLayout({ profile, onLogout }) {
           <NavLink to="/inicio" end onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>
             <span aria-hidden="true">◫</span> Panel principal
           </NavLink>
+          <NavLink to="/productos" end onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>
+            <span aria-hidden="true">▦</span> Productos
+          </NavLink>
           <NavLink to="/perfil" end onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>
             <span aria-hidden="true">◉</span> Mi perfil
           </NavLink>

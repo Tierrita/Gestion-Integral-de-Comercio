@@ -3,6 +3,8 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { api, clearToken, readToken, saveToken } from './shared/api/client.js'
 import PrivateLayout from './app/PrivateLayout.jsx'
 import OwnerDashboard from './features/dashboard/OwnerDashboard.jsx'
+import Productos from './features/productos/Productos.jsx'
+import ProductoFormulario from './features/productos/ProductoFormulario.jsx'
 
 function Login({ notice, onLogin }) {
   const [submitting, setSubmitting] = useState(false)
@@ -184,6 +186,9 @@ function SessionRoutes() {
       )
     }
   />
+  <Route path="/productos" element={<Productos />} />
+  <Route path="/productos/nuevo" element={<ProductoFormulario />} />
+  <Route path="/productos/:id/editar" element={<ProductoFormulario />} />
   <Route
     path="/perfil"
     element={
