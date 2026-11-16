@@ -27,7 +27,10 @@ export default function Productos() {
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    const timer = setTimeout(() => { void load() }, 0)
+    return () => clearTimeout(timer)
+  }, [load])
 
   const visible = useMemo(() => productos.filter((p) => {
     const matchesState = filter === 'todos' || (filter === 'activos' ? p.estado !== false : p.estado === false)
