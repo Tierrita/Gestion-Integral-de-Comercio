@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../../shared/api/client.js'
 import styles from './Inventario.module.css'
+import HistorialMovimientos from './HistorialMovimientos.jsx'
 
 const errorText = (error) => error.response?.data?.error || (error.response?.status === 403 ? 'Tu usuario no tiene permiso para realizar esta operación.' : 'No se pudo conectar con el servidor Flask.')
 const classify = (p) => p.estado === false ? 'inactivo' : Number(p.stock) <= Number(p.stock_minimo) ? 'alerta' : 'normal'
@@ -20,6 +21,7 @@ export default function Inventario() {
   const [adjustType, setAdjustType] = useState('AUMENTAR')
   const [amount, setAmount] = useState('')
   const [saving, setSaving] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
 
   async function reload() {
     setLoading(true)
@@ -90,7 +92,7 @@ export default function Inventario() {
   return <section className={styles.page}>
     <header className={styles.heading}>
       <div><p className={styles.eyebrow}>CONTROL DE EXISTENCIAS</p><h1>Inventario</h1><p className={styles.muted}>Consultá existencias, detectá faltantes y registrá ajustes manuales.</p></div>
-      <button className={styles.secondary} onClick={reload} type="button" disabled={loading}>↻ Actualizar</button>
+      <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap" }}><button className={styles.secondary} onClick={() => setShowHistory((current) => !current)} type="button">{showHistory ? "Ocultar historial" : "Ver historial"}</button><button className={styles.secondary} onClick={reload} type="button" disabled={loading}>↻ Actualizar</button></div>
     </header>
     <div className={styles.metrics}>
       <div><span>Productos registrados</span><strong>{items.length}</strong></div>
@@ -109,7 +111,7 @@ export default function Inventario() {
       </div>
       {loading ? <p className={styles.empty}>Cargando inventario…</p> : error && !items.length ? <p className={styles.empty}>No se pudo cargar el inventario.</p> : !visible.length ? <p className={styles.empty}>No hay productos que coincidan con los filtros.</p> : <div className={styles.scroll}><table><thead><tr><th>N.º</th><th>Producto</th><th>Existencias</th><th>Mínimo</th><th>Situación</th><th>Acción</th></tr></thead><tbody>{visible.map((p) => <tr key={p.id_producto}><td>#{p.numero_producto ?? p.id_producto}</td><td><strong>{p.nombre_producto}</strong><small>{p.unidad_de_medida}</small></td><td className={styles.quantity}>{p.stock ?? '—'}</td><td>{p.stock_minimo ?? '—'}</td><td><span className={classify(p) === 'alerta' ? styles.alert : classify(p) === 'inactivo' ? styles.inactive : styles.ok}>{classify(p) === 'alerta' ? 'Stock bajo' : classify(p) === 'inactivo' ? 'Inactivo' : 'Normal'}</span></td><td><button className={styles.secondary} type="button" disabled={p.estado === false} onClick={() => openAdjustment(p)}>Ajustar stock</button></td></tr>)}</tbody></table></div>}
     </section>
-    <p className={styles.muted}>Los ajustes manuales quedan registrados por Flask. La consulta del historial estará disponible cuando el backend exponga una ruta para leerlo.</p>
+    {showHistory && <HistorialMovimientos products={items} onClose={() => setShowHistory(false)} />}
     {selected && <div className={styles.overlay} onMouseDown={(e) => { if (e.target === e.currentTarget && !saving) setSelected(null) }}>
       <section className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="adjust-title">
         <div className={styles.dialogHead}><div><p className={styles.eyebrow}>MOVIMIENTO MANUAL</p><h2 id="adjust-title">Ajustar stock</h2></div><button type="button" className={styles.secondary} onClick={() => setSelected(null)} disabled={saving} aria-label="Cerrar">✕</button></div>
