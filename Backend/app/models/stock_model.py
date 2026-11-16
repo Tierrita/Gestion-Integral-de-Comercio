@@ -92,7 +92,7 @@ def obtener_stock_general(id_comercio, buscar=None):
         supabase
         .table("productos")
         .select(
-            "id_producto, numero_producto, nombre_producto, "
+            "id_producto, numero_producto, nombre_producto, id_categoria, "
             "stock, stock_minimo, unidad_de_medida, estado, id_comercio"
         )
         .eq("id_comercio", id_comercio)
