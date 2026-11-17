@@ -92,7 +92,7 @@ def obtener_stock_general(id_comercio, buscar=None):
         supabase
         .table("productos")
         .select(
-            "id_producto, numero_producto, nombre_producto, "
+            "id_producto, numero_producto, nombre_producto, id_categoria, "
             "stock, stock_minimo, unidad_de_medida, estado, id_comercio"
         )
         .eq("id_comercio", id_comercio)
@@ -111,3 +111,72 @@ def obtener_stock_general(id_comercio, buscar=None):
     )
 
     return response.data
+
+def obtener_historial_stock(id_comercio, id_producto=None):
+    """
+    Lee movimientos solo de productos del comercio autenticado.
+    No confía en identificadores de comercio recibidos del frontend.
+    """
+    supabase = get_client()
+    productos_query = (
+        supabase.table("productos")
+        .select("id_producto, numero_producto, nombre_producto")
+        .eq("id_comercio", id_comercio)
+    )
+    if id_producto is not None:
+        productos_query = productos_query.eq("id_producto", id_producto)
+
+    productos = productos_query.execute().data or []
+    if not productos:
+        return []
+
+    por_id = {p["id_producto"]: p for p in productos}
+    ids = list(por_id)
+    movimientos = (
+        supabase.table("historial_movimiento")
+        .select("*")
+        .in_("id_producto", ids)
+        .execute()
+    ).data or []
+
+    # Consultar solo los nombres de usuarios del mismo comercio.
+    # No exponer correos, contraseñas ni otros datos personales.
+    ids_usuarios = list({
+        m["id_usuario"] for m in movimientos
+        if m.get("id_usuario") is not None
+    })
+    usuarios_por_id = {}
+    if ids_usuarios:
+        usuarios = (
+            supabase.table("usuarios")
+            .select("id_usuario, nombre_completo")
+            .eq("id_comercio", id_comercio)
+            .in_("id_usuario", ids_usuarios)
+            .execute()
+        ).data or []
+        usuarios_por_id = {
+            usuario["id_usuario"]: usuario.get("nombre_completo")
+            for usuario in usuarios
+        }
+
+    # Los datos devueltos solo pertenecen a productos autorizados.
+    for movimiento in movimientos:
+        producto = por_id.get(movimiento["id_producto"])
+        if producto:
+            movimiento["nombre_producto"] = producto["nombre_producto"]
+            movimiento["numero_producto"] = producto["numero_producto"]
+        movimiento["nombre_responsable"] = usuarios_por_id.get(movimiento.get("id_usuario"))
+
+    # Resolver responsables dentro del mismo comercio, sin exponer datos sensibles.
+    usuarios = (
+        supabase.table("usuarios")
+        .select("id_usuario, nombre_completo")
+        .eq("id_comercio", id_comercio)
+        .execute()
+    ).data or []
+    nombres = {u["id_usuario"]: u.get("nombre_completo") for u in usuarios}
+
+    for movimiento in movimientos:
+        movimiento["nombre_responsable"] = nombres.get(movimiento.get("id_usuario"))
+
+    return movimientos

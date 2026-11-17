@@ -4,6 +4,8 @@ import { api, clearToken, readToken, saveToken } from './shared/api/client.js'
 import PrivateLayout from './app/PrivateLayout.jsx'
 import OwnerDashboard from './features/dashboard/OwnerDashboard.jsx'
 import Productos from './features/productos/Productos.jsx'
+import Inventario from './features/inventario/Inventario.jsx'
+import HistorialMovimientos from './features/inventario/HistorialMovimientos.jsx'
 import ProductoFormulario from './features/productos/ProductoFormulario.jsx'
 
 function Login({ notice, onLogin }) {
@@ -187,6 +189,8 @@ function SessionRoutes() {
     }
   />
   <Route path="/productos" element={<Productos />} />
+  <Route path="/inventario" element={<Inventario />} />
+  <Route path="/inventario/historial" element={<HistorialMovimientos />} />
   <Route path="/productos/nuevo" element={<ProductoFormulario />} />
   <Route path="/productos/:id/editar" element={<ProductoFormulario />} />
   <Route

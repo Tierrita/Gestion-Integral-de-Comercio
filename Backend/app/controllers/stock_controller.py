@@ -11,7 +11,8 @@ from flask import jsonify, request, g
 from app.services.stock_service import (
     ajustar_stock,
     consultar_stock_general,
-    consultar_alertas_stock
+    consultar_alertas_stock,
+    consultar_historial_stock
 )
 
 
@@ -120,3 +121,18 @@ def consultar_alertas_stock_controller():
         return jsonify({
             "error": "Error interno del servidor"
         }), 500
+
+def consultar_historial_stock_controller():
+    """GET /stock/historial, opcionalmente ?id_producto=ID."""
+    raw_id = request.args.get("id_producto")
+    if raw_id is not None and (not raw_id.isdecimal() or int(raw_id) <= 0):
+        return jsonify({"error": "id_producto debe ser un entero positivo"}), 400
+
+    try:
+        movimientos = consultar_historial_stock(
+            id_comercio=g.id_comercio,
+            id_producto=int(raw_id) if raw_id is not None else None
+        )
+        return jsonify(movimientos), 200
+    except Exception:
+        return jsonify({"error": "No se pudo consultar el historial de stock"}), 500

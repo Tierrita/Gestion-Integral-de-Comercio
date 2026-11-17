@@ -12,7 +12,8 @@ from app.models.stock_model import (
     obtener_stock_producto,
     actualizar_stock_producto,
     registrar_movimiento_stock,
-    obtener_stock_general
+    obtener_stock_general,
+    obtener_historial_stock
 )
 
 
@@ -195,3 +196,7 @@ def consultar_alertas_stock(id_comercio):
             alertas.append(producto)
 
     return alertas
+
+def consultar_historial_stock(id_comercio, id_producto=None):
+    """Consulta de solo lectura de movimientos de stock."""
+    return obtener_historial_stock(id_comercio, id_producto)
