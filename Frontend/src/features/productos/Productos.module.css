@@ -42,3 +42,5 @@
 @media (max-width: 600px) { .metrics { grid-template-columns: 1fr; } .fields { grid-template-columns: 1fr; } .dialog { padding: 1rem; } }
 
 .heading a.primary,.actions a.secondary { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
+
+.tableControls,.pagination{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;padding:1rem 1.2rem;color:var(--color-text-muted);font-size:.85rem}.tableControls{border-bottom:1px solid var(--color-border)}.tableControls label{display:flex;align-items:center;gap:.6rem}.tableControls select{width:auto;min-width:130px}.sortButton{border:0;background:transparent;color:inherit;font:inherit;font-weight:800;cursor:pointer;text-align:left;white-space:nowrap}.sortButton:hover{color:var(--color-primary)}.pageActions{display:flex;align-items:center;gap:.75rem}.pageActions button:disabled{opacity:.45;cursor:not-allowed}.lowStock{color:#e6a45b}.actions{flex-wrap:wrap}.pagination{border-top:1px solid var(--color-border)}
