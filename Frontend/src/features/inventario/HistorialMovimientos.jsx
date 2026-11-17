@@ -8,7 +8,7 @@ const stamp = (row) => row.fecha_movimiento ?? row.fecha ?? row.created_at ?? ''
 const formatDate = (value) => {
   if (!value) return '—'
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('es-AR', { dateStyle: 'short', timeStyle: 'short' }).format(date)
+  return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(date).replace(',', ' ·')
 }
 const signedChange = (row) => {
   const before = Number(row.stock_anterior)
@@ -16,6 +16,7 @@ const signedChange = (row) => {
   if (Number.isFinite(before) && Number.isFinite(after) && row.stock_anterior != null && row.stock_nuevo != null) return after - before
   return null
 }
+const responsibleLabel = (row) => row.nombre_responsable || (row.id_usuario == null ? 'Sin identificar' : 'Usuario #' + row.id_usuario)
 const movementLabel = (value) => String(value ?? 'SIN TIPO').replaceAll('_', ' ')
 const isPositive = (row) => signedChange(row) > 0
 const isNegative = (row) => signedChange(row) < 0
@@ -87,8 +88,8 @@ export default function HistorialMovimientos() {
   }
 
   function exportCsv() {
-    const header = ['Fecha', 'Producto', 'Tipo', 'Cantidad', 'Stock anterior', 'Stock nuevo', 'Usuario ID', 'Observaciones']
-    const data = filtered.map((row) => [formatDate(stamp(row)), row.nombre_producto, movementLabel(row.tipo_movimiento), row.cantidad, row.stock_anterior, row.stock_nuevo, row.id_usuario, row.observaciones])
+    const header = ['Fecha', 'Producto', 'Tipo', 'Cantidad', 'Stock anterior', 'Stock nuevo', 'Responsable', 'Usuario ID', 'Observaciones']
+    const data = filtered.map((row) => [formatDate(stamp(row)), row.nombre_producto, movementLabel(row.tipo_movimiento), row.cantidad, row.stock_anterior, row.stock_nuevo, responsibleLabel(row), row.id_usuario, row.observaciones])
     const csv = '\uFEFF' + [header, ...data].map((line) => line.map(exportCell).join(';')).join('\r\n')
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
     const anchor = document.createElement('a')
@@ -127,7 +128,7 @@ export default function HistorialMovimientos() {
         <label>Dirección<select value={direction} onChange={(e) => setDirection(e.target.value)}><option value="">Entradas y salidas</option><option value="entrada">Solo entradas (+)</option><option value="salida">Solo salidas (−)</option></select></label>
         <label>Desde<input type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} /></label>
         <label>Hasta<input type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} /></label>
-        <label>Usuario<select value={userId} onChange={(e) => setUserId(e.target.value)}><option value="">Todos los usuarios</option>{users.map((id) => <option key={id} value={String(id)}>Usuario #{id}</option>)}</select></label>
+        <label>Usuario<select value={userId} onChange={(e) => setUserId(e.target.value)}><option value="">Todos los usuarios</option>{users.map((id) => <option key={id} value={String(id)}>{responsibleLabel(rows.find((row) => row.id_usuario === id) || { id_usuario: id })}</option>)}</select></label>
         {hasFilters && <button type="button" className={styles.secondary} onClick={clearFilters}>Limpiar filtros</button>}
       </div>
       {error && <p className={styles.error} role="alert">{error}</p>}
@@ -141,7 +142,7 @@ export default function HistorialMovimientos() {
               <td><strong>{row.nombre_producto ?? ('Producto #' + row.id_producto)}</strong><small>#{row.numero_producto ?? row.id_producto}</small></td>
               <td><span className={isPositive(row) ? h.entryBadge : isNegative(row) ? h.exitBadge : h.neutralBadge}>{movementLabel(row.tipo_movimiento)}</span></td>
               <td><strong className={isPositive(row) ? h.positive : isNegative(row) ? h.negative : ''}>{change === null ? row.cantidad ?? '—' : (change > 0 ? '+' : '') + change}</strong></td>
-              <td>{row.stock_anterior ?? '—'}</td><td>{row.stock_nuevo ?? '—'}</td><td>#{row.id_usuario ?? '—'}</td>
+              <td>{row.stock_anterior ?? '—'}</td><td>{row.stock_nuevo ?? '—'}</td><td>{responsibleLabel(row)}</td>
               <td><button type="button" className={h.detailButton} onClick={() => setSelected(row)}>Ver detalle</button></td>
             </tr>
           })}</tbody>
@@ -157,7 +158,7 @@ export default function HistorialMovimientos() {
           <div><dt>Producto</dt><dd>{selected.nombre_producto ?? ('#' + selected.id_producto)}</dd></div>
           <div><dt>Fecha</dt><dd>{formatDate(stamp(selected))}</dd></div>
           <div><dt>Operación</dt><dd>{movementLabel(selected.tipo_movimiento)}</dd></div>
-          <div><dt>Usuario</dt><dd>#{selected.id_usuario ?? '—'}</dd></div>
+          <div><dt>Responsable</dt><dd>{responsibleLabel(selected)}{selected.id_usuario != null ? ' (#' + selected.id_usuario + ')' : ''}</dd></div>
           <div><dt>Cantidad registrada</dt><dd>{selected.cantidad ?? '—'}</dd></div>
           <div><dt>Variación real</dt><dd>{signedChange(selected) ?? '—'}</dd></div>
           <div><dt>Stock anterior</dt><dd>{selected.stock_anterior ?? '—'}</dd></div>
