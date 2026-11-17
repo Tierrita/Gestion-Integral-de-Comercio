@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { api } from '../../shared/api/client.js'
 import styles from './Inventario.module.css'
 import { Link } from 'react-router-dom'
+import MercaderiaNav from '../productos/MercaderiaNav.jsx'
 
 const errorText = (error) => error.response?.data?.error || (error.response?.status === 403 ? 'Tu usuario no tiene permiso para realizar esta operación.' : 'No se pudo conectar con el servidor Flask.')
 const classify = (p) => p.estado === false ? 'inactivo' : Number(p.stock) <= Number(p.stock_minimo) ? 'alerta' : 'normal'
@@ -89,6 +90,7 @@ export default function Inventario() {
   }
 
   return <section className={styles.page}>
+    <MercaderiaNav />
     <header className={styles.heading}>
       <div><p className={styles.eyebrow}>CONTROL DE EXISTENCIAS</p><h1>Inventario</h1><p className={styles.muted}>Consultá existencias, detectá faltantes y registrá ajustes manuales.</p></div>
       <div style={{ display: "flex", gap: ".75rem", flexWrap: "wrap" }}><Link className={styles.secondary} to="/inventario/historial">Ver historial</Link><button className={styles.secondary} onClick={reload} type="button" disabled={loading}>↻ Actualizar</button></div>
