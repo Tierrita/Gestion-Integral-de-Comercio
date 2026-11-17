@@ -146,4 +146,16 @@ def obtener_historial_stock(id_comercio, id_producto=None):
             movimiento["nombre_producto"] = producto["nombre_producto"]
             movimiento["numero_producto"] = producto["numero_producto"]
 
+    # Resolver responsables dentro del mismo comercio, sin exponer datos sensibles.
+    usuarios = (
+        supabase.table("usuarios")
+        .select("id_usuario, nombre_completo")
+        .eq("id_comercio", id_comercio)
+        .execute()
+    ).data or []
+    nombres = {u["id_usuario"]: u.get("nombre_completo") for u in usuarios}
+
+    for movimiento in movimientos:
+        movimiento["nombre_responsable"] = nombres.get(movimiento.get("id_usuario"))
+
     return movimientos
