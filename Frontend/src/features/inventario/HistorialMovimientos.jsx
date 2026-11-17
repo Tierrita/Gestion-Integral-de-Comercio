@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import styles from './Inventario.module.css'
 import h from './HistorialMovimientos.module.css'
+import MercaderiaNav from '../productos/MercaderiaNav.jsx'
 
 const stamp = (row) => row.fecha_movimiento ?? row.fecha ?? row.created_at ?? ''
 const formatDate = (value) => {
@@ -102,6 +103,7 @@ export default function HistorialMovimientos() {
   }
 
   return <section className={styles.page}>
+    <MercaderiaNav />
     <header className={styles.heading}>
       <div>
         <p className={styles.eyebrow}>INVENTARIO / AUDITORÍA</p>
