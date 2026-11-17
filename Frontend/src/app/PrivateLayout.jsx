@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import styles from './PrivateLayout.module.css'
 
 const THEME_KEY = 'gestion-integral.theme'
@@ -14,6 +14,7 @@ function initialTheme() {
 
 export default function PrivateLayout({ profile, onLogout }) {
   const { usuario, comercio } = profile
+  const location = useLocation()
   const [theme, setTheme] = useState(initialTheme)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -43,7 +44,7 @@ export default function PrivateLayout({ profile, onLogout }) {
           <NavLink to="/inicio" end onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>
             <span aria-hidden="true">◫</span> Panel principal
           </NavLink>
-          <NavLink to="/productos" onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>
+          <NavLink to="/productos" onClick={closeMenu} className={({ isActive }) => isActive || location.pathname.startsWith('/inventario') ? styles.active : ''}>
             <span aria-hidden="true">▦</span> Productos e inventario
           </NavLink>
           <NavLink to="/perfil" end onClick={closeMenu} className={({ isActive }) => isActive ? styles.active : ''}>
