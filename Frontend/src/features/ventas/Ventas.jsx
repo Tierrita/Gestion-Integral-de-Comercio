@@ -1,5 +1,5 @@
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../../shared/api/client.js'
 import styles from './Ventas.module.css'
 
@@ -41,6 +41,24 @@ export default function Ventas() {
   const [detalle, setDetalle] = useState(null)
   const [errorDetalle, setErrorDetalle] = useState('')
   const [cargandoDetalle, setCargandoDetalle] = useState(false)
+  const detalleRequest = useRef(0)
+
+  function cerrarDetalle() {
+    detalleRequest.current += 1
+    setSeleccionada(null)
+    setDetalle(null)
+    setErrorDetalle('')
+    setCargandoDetalle(false)
+  }
+
+  useEffect(() => {
+    if (seleccionada === null) return undefined
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') cerrarDetalle()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [seleccionada])
 
   async function cargarVentas() {
     setCargando(true)
@@ -102,6 +120,7 @@ export default function Ventas() {
   )
 
   async function verDetalle(id) {
+    const request = ++detalleRequest.current
     setSeleccionada(id)
     setDetalle(null)
     setErrorDetalle('')
@@ -112,13 +131,14 @@ export default function Ventas() {
       if (!data?.venta || !Array.isArray(data.detalles)) {
         throw new Error('Detalle inválido')
       }
-      setDetalle(data)
+      if (request === detalleRequest.current) setDetalle(data)
     } catch (err) {
+      if (request !== detalleRequest.current) return
       setErrorDetalle(
         err.response?.data?.error || 'No se pudo cargar el detalle.',
       )
     } finally {
-      setCargandoDetalle(false)
+      if (request === detalleRequest.current) setCargandoDetalle(false)
     }
   }
 
@@ -279,56 +299,53 @@ export default function Ventas() {
       </div>
 
       {seleccionada !== null && (
-        <div className={styles.detallePanel}>
-          <div className={styles.detalleEncabezado}>
-            <h2>Detalle de venta #{seleccionada}</h2>
-            <button
-              type="button"
-              className={styles.secundario}
-              onClick={() => setSeleccionada(null)}
-            >
-              Cerrar
-            </button>
-          </div>
-
-          {cargandoDetalle && <p>Cargando detalle…</p>}
-          {errorDetalle && <p role="alert" className={styles.error}>{errorDetalle}</p>}
-
-          {detalle && (
-            <>
-              <p>
-                <strong>Estado:</strong> {normalizar(detalle.venta.estado)}
-                {' · '}
-                <strong>Total:</strong> {dinero(detalle.venta.total)}
-              </p>
-              <p>
-                <strong>Observaciones:</strong>{' '}
-                {detalle.venta.observaciones || 'Sin observaciones'}
-              </p>
-              <div className={styles.tablaScroll}>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Producto ID</th>
-                      <th>Cantidad</th>
-                      <th>Precio unitario</th>
-                      <th>Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {detalle.detalles.map((item) => (
-                      <tr key={item.id_detalle_venta}>
-                        <td>#{item.id_producto}</td>
-                        <td>{item.cantidad}</td>
-                        <td>{dinero(item.precio_unitario)}</td>
-                        <td>{dinero(item.subtotal)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+        <div className={styles.modalBackdrop} onMouseDown={(event) => {
+          if (event.target === event.currentTarget) cerrarDetalle()
+        }}>
+          <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="venta-detalle-titulo">
+            <header className={styles.modalHeader}>
+              <div>
+                <p className={styles.etiqueta}>DETALLE DE OPERACIÓN</p>
+                <h2 id="venta-detalle-titulo">Venta #{detalle?.venta?.numero_venta ?? seleccionada}</h2>
               </div>
-            </>
-          )}
+              <button type="button" className={styles.secundario} onClick={cerrarDetalle} autoFocus>
+                Cerrar ×
+              </button>
+            </header>
+
+            {cargandoDetalle && <p role="status" className={styles.vacio}>Cargando detalle…</p>}
+            {errorDetalle && <p role="alert" className={styles.error}>{errorDetalle}</p>}
+
+            {detalle && (
+              <div className={styles.modalBody}>
+                <div className={styles.modalSummary}>
+                  <div><span>Estado</span><strong className={normalizar(detalle.venta.estado) === 'ANULADA' ? styles.anulada : styles.completada}>{normalizar(detalle.venta.estado)}</strong></div>
+                  <div><span>Fecha</span><strong>{fechaLocal(detalle.venta.fecha_venta)}</strong></div>
+                  <div><span>Cliente</span><strong>Cliente #{detalle.venta.id_cliente}</strong></div>
+                  <div><span>Registrada por</span><strong>Usuario #{detalle.venta.id_usuario}</strong></div>
+                  <div><span>Método de pago</span><strong>{normalizar(detalle.venta.metodo_pago).replaceAll('_', ' ')}</strong></div>
+                </div>
+                <h3>Productos de la venta</h3>
+                <div className={styles.tablaScroll}>
+                  <table>
+                    <thead><tr><th>Producto</th><th>Cantidad</th><th>Precio unitario</th><th>Subtotal</th></tr></thead>
+                    <tbody>
+                      {detalle.detalles.map((item) => (
+                        <tr key={item.id_detalle_venta}>
+                          <td>Producto #{item.id_producto}</td>
+                          <td>{item.cantidad}</td>
+                          <td>{dinero(item.precio_unitario)}</td>
+                          <td>{dinero(item.subtotal)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className={styles.modalTotal}><span>Total de la venta</span><strong>{dinero(detalle.venta.total)}</strong></div>
+                <div className={styles.observaciones}><strong>Observaciones</strong><p>{detalle.venta.observaciones || 'Sin observaciones'}</p></div>
+              </div>
+            )}
+          </section>
         </div>
       )}
     </section>
