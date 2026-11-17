@@ -139,12 +139,33 @@ def obtener_historial_stock(id_comercio, id_producto=None):
         .execute()
     ).data or []
 
+    # Consultar solo los nombres de usuarios del mismo comercio.
+    # No exponer correos, contraseñas ni otros datos personales.
+    ids_usuarios = list({
+        m["id_usuario"] for m in movimientos
+        if m.get("id_usuario") is not None
+    })
+    usuarios_por_id = {}
+    if ids_usuarios:
+        usuarios = (
+            supabase.table("usuarios")
+            .select("id_usuario, nombre_completo")
+            .eq("id_comercio", id_comercio)
+            .in_("id_usuario", ids_usuarios)
+            .execute()
+        ).data or []
+        usuarios_por_id = {
+            usuario["id_usuario"]: usuario.get("nombre_completo")
+            for usuario in usuarios
+        }
+
     # Los datos devueltos solo pertenecen a productos autorizados.
     for movimiento in movimientos:
         producto = por_id.get(movimiento["id_producto"])
         if producto:
             movimiento["nombre_producto"] = producto["nombre_producto"]
             movimiento["numero_producto"] = producto["numero_producto"]
+        movimiento["nombre_responsable"] = usuarios_por_id.get(movimiento.get("id_usuario"))
 
     # Resolver responsables dentro del mismo comercio, sin exponer datos sensibles.
     usuarios = (
