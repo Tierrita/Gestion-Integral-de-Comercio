@@ -7,6 +7,10 @@ import Productos from './features/productos/Productos.jsx'
 import Inventario from './features/inventario/Inventario.jsx'
 import HistorialMovimientos from './features/inventario/HistorialMovimientos.jsx'
 import ProductoFormulario from './features/productos/ProductoFormulario.jsx'
+import Ventas from './features/ventas/Ventas.jsx'
+
+
+
 
 function Login({ notice, onLogin }) {
   const [submitting, setSubmitting] = useState(false)
@@ -193,6 +197,9 @@ function SessionRoutes() {
   <Route path="/inventario/historial" element={<HistorialMovimientos />} />
   <Route path="/productos/nuevo" element={<ProductoFormulario />} />
   <Route path="/productos/:id/editar" element={<ProductoFormulario />} />
+  <Route path="/ventas" element={<Ventas />} />
+
+
   <Route
     path="/perfil"
     element={
