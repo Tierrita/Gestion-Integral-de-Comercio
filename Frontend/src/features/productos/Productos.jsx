@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import styles from './Productos.module.css'
+import MercaderiaNav from './MercaderiaNav.jsx'
 
 const money = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number(value) || 0)
 const messageOf = (error) => error.response?.data?.error || (error.response?.status === 403 ? 'No tenés permiso para realizar esta operación.' : 'No se pudo completar la operación. Revisá la conexión con Flask.')
@@ -52,6 +53,7 @@ export default function Productos() {
   }
 
   return <section className={styles.page}>
+    <MercaderiaNav />
     <header className={styles.heading}>
       <div><p className={styles.eyebrow}>CATÁLOGO COMERCIAL</p><h1>Productos</h1><p className={styles.muted}>Administrá tu catálogo, precios y estado de los productos.</p></div>
       <Link className={styles.primary} to="/productos/nuevo">+ Nuevo producto</Link>
