@@ -66,7 +66,7 @@ export default function PrivateLayout({ profile, onLogout }) {
                 : ''
             }
           >
-            <span aria-hidden="true">▦</span> Productos e inventario
+            <span aria-hidden="true">▦</span> Mercaderia
           </NavLink>
 
           {/* MÓDULO DE VENTAS */}
