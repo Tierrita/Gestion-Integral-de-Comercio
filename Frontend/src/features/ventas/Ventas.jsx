@@ -1,5 +1,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import styles from './Ventas.module.css'
 
@@ -24,11 +25,15 @@ const fechaFiltro = (valor) => {
   if (!valor) return ''
   const fecha = new Date(valor)
   if (Number.isNaN(fecha.getTime())) return ''
-  const local = new Date(fecha.getTime() - fecha.getTimezoneOffset() * 60000)
+  const local = new Date(
+    fecha.getTime() - fecha.getTimezoneOffset() * 60000,
+  )
   return local.toISOString().slice(0, 10)
 }
 
 export default function Ventas() {
+  const navigate = useNavigate()
+
   const [ventas, setVentas] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
@@ -41,6 +46,7 @@ export default function Ventas() {
   const [detalle, setDetalle] = useState(null)
   const [errorDetalle, setErrorDetalle] = useState('')
   const [cargandoDetalle, setCargandoDetalle] = useState(false)
+
   const detalleRequest = useRef(0)
 
   function cerrarDetalle() {
@@ -53,9 +59,11 @@ export default function Ventas() {
 
   useEffect(() => {
     if (seleccionada === null) return undefined
+
     const onKeyDown = (event) => {
       if (event.key === 'Escape') cerrarDetalle()
     }
+
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [seleccionada])
@@ -66,9 +74,11 @@ export default function Ventas() {
 
     try {
       const { data } = await api.get('/ventas')
+
       if (!Array.isArray(data)) {
         throw new Error('Respuesta inválida del servidor')
       }
+
       setVentas(data)
     } catch (err) {
       setError(
@@ -84,6 +94,7 @@ export default function Ventas() {
     const timer = setTimeout(() => {
       void cargarVentas()
     }, 0)
+
     return () => clearTimeout(timer)
   }, [])
 
@@ -121,6 +132,7 @@ export default function Ventas() {
 
   async function verDetalle(id) {
     const request = ++detalleRequest.current
+
     setSeleccionada(id)
     setDetalle(null)
     setErrorDetalle('')
@@ -128,17 +140,25 @@ export default function Ventas() {
 
     try {
       const { data } = await api.get(`/ventas/${id}`)
+
       if (!data?.venta || !Array.isArray(data.detalles)) {
         throw new Error('Detalle inválido')
       }
-      if (request === detalleRequest.current) setDetalle(data)
+
+      if (request === detalleRequest.current) {
+        setDetalle(data)
+      }
     } catch (err) {
       if (request !== detalleRequest.current) return
+
       setErrorDetalle(
-        err.response?.data?.error || 'No se pudo cargar el detalle.',
+        err.response?.data?.error ||
+        'No se pudo cargar el detalle.',
       )
     } finally {
-      if (request === detalleRequest.current) setCargandoDetalle(false)
+      if (request === detalleRequest.current) {
+        setCargandoDetalle(false)
+      }
     }
   }
 
@@ -152,11 +172,11 @@ export default function Ventas() {
             Consultá las operaciones registradas en tu comercio.
           </p>
         </div>
+
         <button
           type="button"
           className={styles.principal}
-          disabled
-          title="Disponible en la próxima etapa"
+          onClick={() => navigate('/ventas/nueva')}
         >
           + Nueva venta
         </button>
@@ -167,16 +187,23 @@ export default function Ventas() {
           <span>Ventas completadas</span>
           <strong>{activas.length}</strong>
         </article>
+
         <article>
           <span>Total vendido</span>
           <strong>{dinero(total)}</strong>
         </article>
+
         <article>
           <span>Ventas anuladas</span>
           <strong>
-            {filtradas.filter((v) => normalizar(v.estado) === 'ANULADA').length}
+            {
+              filtradas.filter(
+                (v) => normalizar(v.estado) === 'ANULADA',
+              ).length
+            }
           </strong>
         </article>
+
         <article>
           <span>Registros encontrados</span>
           <strong>{filtradas.length}</strong>
@@ -185,73 +212,93 @@ export default function Ventas() {
 
       <div className={styles.panel}>
         <div className={styles.panelContenido}>
-        <div className={styles.filtros}>
-          <label>
-            Buscar
-            <input
-              type="search"
-              placeholder="N.º, ID cliente u observación"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-            />
-          </label>
+          <div className={styles.filtros}>
+            <label>
+              Buscar
+              <input
+                type="search"
+                placeholder="N.º, ID cliente u observación"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+              />
+            </label>
 
-          <label>
-            Desde
-            <input
-              type="date"
-              value={desde}
-              onChange={(e) => setDesde(e.target.value)}
-            />
-          </label>
+            <label>
+              Desde
+              <input
+                type="date"
+                value={desde}
+                onChange={(e) => setDesde(e.target.value)}
+              />
+            </label>
 
-          <label>
-            Hasta
-            <input
-              type="date"
-              value={hasta}
-              onChange={(e) => setHasta(e.target.value)}
-            />
-          </label>
+            <label>
+              Hasta
+              <input
+                type="date"
+                value={hasta}
+                onChange={(e) => setHasta(e.target.value)}
+              />
+            </label>
 
-          <label>
-            Estado
-            <select value={estado} onChange={(e) => setEstado(e.target.value)}>
-              <option value="TODOS">Todos</option>
-              <option value="COMPLETADA">Completadas</option>
-              <option value="ANULADA">Anuladas</option>
-            </select>
-          </label>
+            <label>
+              Estado
+              <select
+                value={estado}
+                onChange={(e) => setEstado(e.target.value)}
+              >
+                <option value="TODOS">Todos</option>
+                <option value="COMPLETADA">Completadas</option>
+                <option value="ANULADA">Anuladas</option>
+              </select>
+            </label>
 
-          <label>
-            Método de pago
-            <select value={metodo} onChange={(e) => setMetodo(e.target.value)}>
-              <option value="TODOS">Todos</option>
-              <option value="EFECTIVO">Efectivo</option>
-              <option value="TRANSFERENCIA">Transferencia</option>
-              <option value="CUENTA_CORRIENTE">Cuenta corriente</option>
-            </select>
-          </label>
+            <label>
+              Método de pago
+              <select
+                value={metodo}
+                onChange={(e) => setMetodo(e.target.value)}
+              >
+                <option value="TODOS">Todos</option>
+                <option value="EFECTIVO">Efectivo</option>
+                <option value="TRANSFERENCIA">Transferencia</option>
+                <option value="CUENTA_CORRIENTE">
+                  Cuenta corriente
+                </option>
+              </select>
+            </label>
 
-          <button
-            type="button"
-            className={styles.secundario}
-            onClick={cargarVentas}
-            disabled={cargando}
-          >
-            Actualizar
-          </button>
+            <button
+              type="button"
+              className={styles.secundario}
+              onClick={cargarVentas}
+              disabled={cargando}
+            >
+              Actualizar
+            </button>
+          </div>
         </div>
 
-        </div>
+        {error && (
+          <p role="alert" className={styles.error}>
+            {error}
+          </p>
+        )}
 
-        {error && <p role="alert" className={styles.error}>{error}</p>}
-        {!cargando && <p className={styles.conteo}>Mostrando {filtradas.length} de {ventas.length} ventas</p>}
+        {!cargando && (
+          <p className={styles.conteo}>
+            Mostrando {filtradas.length} de {ventas.length} ventas
+          </p>
+        )}
 
         {cargando ? (
-          <p role="status" className={styles.vacio}>Cargando ventas…</p>
+          <p role="status" className={styles.vacio}>
+            Cargando ventas…
+          </p>
         ) : filtradas.length === 0 ? (
-          <p className={styles.vacio}>No hay ventas para mostrar.</p>
+          <p className={styles.vacio}>
+            No hay ventas para mostrar.
+          </p>
         ) : (
           <div className={`${styles.tablaScroll} ${styles.tablaListado}`}>
             <table>
@@ -266,13 +313,24 @@ export default function Ventas() {
                   <th>Acciones</th>
                 </tr>
               </thead>
+
               <tbody>
                 {filtradas.map((venta) => (
                   <tr key={venta.id_venta}>
-                    <td><strong>#{venta.numero_venta ?? venta.id_venta}</strong></td>
+                    <td>
+                      <strong>
+                        #{venta.numero_venta ?? venta.id_venta}
+                      </strong>
+                    </td>
+
                     <td>{fechaLocal(venta.fecha_venta)}</td>
+
                     <td>Cliente #{venta.id_cliente}</td>
-                    <td className={styles.metodoPago}>{normalizar(venta.metodo_pago).replaceAll('_', ' ')}</td>
+
+                    <td className={styles.metodoPago}>
+                      {normalizar(venta.metodo_pago).replaceAll('_', ' ')}
+                    </td>
+
                     <td>
                       <span
                         className={
@@ -284,7 +342,11 @@ export default function Ventas() {
                         {normalizar(venta.estado)}
                       </span>
                     </td>
-                    <td className={styles.importe}><strong>{dinero(venta.total)}</strong></td>
+
+                    <td className={styles.importe}>
+                      <strong>{dinero(venta.total)}</strong>
+                    </td>
+
                     <td>
                       <button
                         type="button"
@@ -303,50 +365,147 @@ export default function Ventas() {
       </div>
 
       {seleccionada !== null && (
-        <div className={styles.modalBackdrop} onMouseDown={(event) => {
-          if (event.target === event.currentTarget) cerrarDetalle()
-        }}>
-          <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="venta-detalle-titulo">
+        <div
+          className={styles.modalBackdrop}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              cerrarDetalle()
+            }
+          }}
+        >
+          <section
+            className={styles.modal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="venta-detalle-titulo"
+          >
             <header className={styles.modalHeader}>
               <div>
-                <p className={styles.etiqueta}>DETALLE DE OPERACIÓN</p>
-                <h2 id="venta-detalle-titulo">Venta #{detalle?.venta?.numero_venta ?? seleccionada}</h2>
+                <p className={styles.etiqueta}>
+                  DETALLE DE OPERACIÓN
+                </p>
+                <h2 id="venta-detalle-titulo">
+                  Venta #
+                  {detalle?.venta?.numero_venta ??
+                     ventas.find((venta) => venta.id_venta === seleccionada)?.numero_venta ??
+                     seleccionada}
+                </h2>
               </div>
-              <button type="button" className={styles.secundario} onClick={cerrarDetalle} autoFocus>
+
+              <button
+                type="button"
+                className={styles.secundario}
+                onClick={cerrarDetalle}
+                autoFocus
+              >
                 Cerrar ×
               </button>
             </header>
 
-            {cargandoDetalle && <p role="status" className={styles.vacio}>Cargando detalle…</p>}
-            {errorDetalle && <p role="alert" className={styles.error}>{errorDetalle}</p>}
+            {cargandoDetalle && (
+              <p role="status" className={styles.vacio}>
+                Cargando detalle…
+              </p>
+            )}
+
+            {errorDetalle && (
+              <p role="alert" className={styles.error}>
+                {errorDetalle}
+              </p>
+            )}
 
             {detalle && (
               <div className={styles.modalBody}>
                 <div className={styles.modalSummary}>
-                  <div><span>Estado</span><strong className={normalizar(detalle.venta.estado) === 'ANULADA' ? styles.anulada : styles.completada}>{normalizar(detalle.venta.estado)}</strong></div>
-                  <div><span>Fecha</span><strong>{fechaLocal(detalle.venta.fecha_venta)}</strong></div>
-                  <div><span>Cliente</span><strong>Cliente #{detalle.venta.id_cliente}</strong></div>
-                  <div><span>Registrada por</span><strong>Usuario #{detalle.venta.id_usuario}</strong></div>
-                  <div><span>Método de pago</span><strong>{normalizar(detalle.venta.metodo_pago).replaceAll('_', ' ')}</strong></div>
+                  <div>
+                    <span>Estado</span>
+                    <strong
+                      className={
+                        normalizar(detalle.venta.estado) === 'ANULADA'
+                          ? styles.anulada
+                          : styles.completada
+                      }
+                    >
+                      {normalizar(detalle.venta.estado)}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>Fecha</span>
+                    <strong>
+                      {fechaLocal(detalle.venta.fecha_venta)}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>Cliente</span>
+                    <strong>
+                      Cliente #{detalle.venta.id_cliente}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>Registrada por</span>
+                    <strong>
+                      Usuario #{detalle.venta.id_usuario}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>Método de pago</span>
+                    <strong>
+                      {normalizar(detalle.venta.metodo_pago)
+                        .replaceAll('_', ' ')}
+                    </strong>
+                  </div>
                 </div>
+
                 <h3>Productos de la venta</h3>
+
                 <div className={styles.tablaScroll}>
                   <table>
-                    <thead><tr><th>Producto</th><th>Cantidad</th><th>Precio unitario</th><th>Subtotal</th></tr></thead>
+                    <thead>
+                      <tr>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Precio unitario</th>
+                        <th>Subtotal</th>
+                      </tr>
+                    </thead>
+
                     <tbody>
                       {detalle.detalles.map((item) => (
                         <tr key={item.id_detalle_venta}>
-                          <td>Producto #{item.id_producto}</td>
+                          <td>
+                            Producto #{item.id_producto}
+                          </td>
                           <td>{item.cantidad}</td>
-                          <td>{dinero(item.precio_unitario)}</td>
-                          <td>{dinero(item.subtotal)}</td>
+                          <td>
+                            {dinero(item.precio_unitario)}
+                          </td>
+                          <td>
+                            {dinero(item.subtotal)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <div className={styles.modalTotal}><span>Total de la venta</span><strong>{dinero(detalle.venta.total)}</strong></div>
-                <div className={styles.observaciones}><strong>Observaciones</strong><p>{detalle.venta.observaciones || 'Sin observaciones'}</p></div>
+
+                <div className={styles.modalTotal}>
+                  <span>Total de la venta</span>
+                  <strong>
+                    {dinero(detalle.venta.total)}
+                  </strong>
+                </div>
+
+                <div className={styles.observaciones}>
+                  <strong>Observaciones</strong>
+                  <p>
+                    {detalle.venta.observaciones ||
+                      'Sin observaciones'}
+                  </p>
+                </div>
               </div>
             )}
           </section>

@@ -1,0 +1,485 @@
+
+/* ==========================================
+   NUEVA VENTA — GESTIÓN INTEGRAL V2
+   Colores heredados del tema global.
+   ========================================== */
+
+.pagina {
+  display: grid;
+  gap: 1.4rem;
+  min-width: 0;
+  color: var(--color-text);
+}
+
+.encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.encabezado h1 {
+  margin: .3rem 0;
+  font-size: clamp(1.7rem, 3vw, 2.3rem);
+  letter-spacing: -.035em;
+}
+
+.etiqueta {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .15em;
+}
+
+.descripcion {
+  margin: .4rem 0 0;
+  color: var(--color-text-muted);
+}
+
+/* Distribución principal */
+
+.contenido {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.principal {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+/* Paneles */
+
+.panel,
+.resumen {
+  min-width: 0;
+  padding: 1.4rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+}
+
+.panel h2,
+.resumen h2 {
+  margin: 0 0 1.25rem;
+  font-size: 1.05rem;
+  font-weight: 750;
+}
+
+.campo {
+  display: grid;
+  gap: .5rem;
+  color: var(--color-text-muted);
+  font-size: .85rem;
+  font-weight: 650;
+}
+
+.campo input,
+.campo select,
+.panel textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: .75rem .85rem;
+  background: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: .65rem;
+  font: inherit;
+}
+
+.campo input::placeholder,
+.panel textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+.campo input:focus-visible,
+.campo select:focus-visible,
+.panel textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.panel textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* Tabla de productos */
+
+.tablaScroll {
+  width: 100%;
+  margin-top: 1.25rem;
+  overflow-x: auto;
+}
+
+.tablaScroll table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.tablaScroll th {
+  padding: .85rem .75rem;
+  color: var(--color-text-muted);
+  font-size: .76rem;
+  font-weight: 750;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tablaScroll td {
+  padding: 1rem .75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.vacio {
+  padding: 2rem !important;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: .85rem;
+}
+
+/* Resumen lateral */
+
+.resumen {
+  display: grid;
+  gap: 1.2rem;
+  position: sticky;
+  top: 1.25rem;
+}
+
+.resumen h2 {
+  margin-bottom: 0;
+}
+
+.total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2rem 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.total span {
+  font-size: .95rem;
+  font-weight: 700;
+}
+
+.total strong {
+  color: var(--color-primary);
+  font-size: clamp(1.5rem, 2vw, 2rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.confirmar {
+  width: 100%;
+  min-height: 48px;
+  padding: .8rem 1rem;
+  background: var(--color-primary);
+  color: #071c2a;
+  border: 1px solid transparent;
+  border-radius: .7rem;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.confirmar:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.confirmar:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.secundario {
+  min-height: 42px;
+  padding: .65rem 1rem;
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: .65rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secundario:hover {
+  border-color: var(--color-primary);
+}
+
+.ayuda {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: .78rem;
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* Responsive */
+
+@media (max-width: 1100px) {
+  .contenido {
+    grid-template-columns: minmax(0, 1fr) 290px;
+  }
+}
+
+@media (max-width: 850px) {
+  .contenido {
+    grid-template-columns: 1fr;
+  }
+
+  .resumen {
+    position: static;
+  }
+}
+
+@media (max-width: 600px) {
+  .encabezado {
+    align-items: stretch;
+  }
+
+  .encabezado .secundario {
+    width: 100%;
+  }
+
+  .panel,
+  .resumen {
+    padding: 1rem;
+  }
+
+  .total strong {
+    font-size: 1.6rem;
+  }
+}
+
+
+
+/* ==========================================
+   NUEVA VENTA — DISTRIBUCIÓN DON GESTIÓN
+   ========================================== */
+
+/* Datos generales: vendedor, fecha y cliente */
+
+.datosGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  align-items: end;
+}
+
+/* Productos debajo de los datos generales */
+
+.productos {
+  display: grid;
+  gap: 1.2rem;
+  min-width: 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.productos h2 {
+  margin: 0;
+}
+
+/* Tabla y totales */
+
+.tablaScroll {
+  margin-top: 0;
+  border: 1px solid var(--color-border);
+  border-radius: .75rem;
+}
+
+.tablaScroll th {
+  background: var(--color-surface-raised);
+  text-transform: uppercase;
+}
+
+.tablaScroll tfoot td {
+  background: var(--color-surface);
+  font-weight: 650;
+}
+
+.filaTotal td {
+  background: var(--color-surface-raised) !important;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.filaTotal td:last-child {
+  color: var(--color-primary);
+  font-size: 1.3rem;
+}
+
+/* Sección de pagos */
+
+.pagoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+/* Botones inferiores */
+
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .8rem;
+  padding-bottom: 1rem;
+}
+
+.acciones .confirmar {
+  width: auto;
+  min-width: 180px;
+}
+
+/* Adaptación a pantallas pequeñas */
+
+@media (max-width: 900px) {
+  .datosGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 650px) {
+  .datosGrid,
+  .pagoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .acciones {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .acciones button,
+  .acciones .confirmar {
+    width: 100%;
+  }
+}
+
+
+
+
+
+/* Buscador de productos */
+
+.buscador {
+  display: grid;
+  gap: .75rem;
+  min-width: 0;
+}
+
+.resultados {
+  display: grid;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: .7rem;
+  background: var(--color-surface);
+}
+
+.resultado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: .85rem 1rem;
+  text-align: left;
+  background: transparent;
+  color: var(--color-text);
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  font: inherit;
+}
+
+.resultado:last-child {
+  border-bottom: 0;
+}
+
+.resultado:hover:not(:disabled) {
+  background: var(--color-surface-raised);
+}
+
+.resultado:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.resultado span {
+  display: grid;
+  gap: .35rem;
+}
+
+.resultado small,
+.datoExtra {
+  color: var(--color-text-muted);
+  font-size: .76rem;
+}
+
+.sinResultados {
+  padding: 1rem;
+  color: var(--color-text-muted);
+}
+
+/* Carrito */
+
+.cantidadInput {
+  width: 95px;
+  max-width: 100%;
+  padding: .55rem;
+  background: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: .5rem;
+  font: inherit;
+}
+
+.cantidadInput:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.cantidadInput[aria-invalid="true"] {
+  border-color: #dc2626;
+}
+
+.error,
+.errorCantidad {
+  color: #dc2626;
+}
+
+.errorCantidad {
+  display: block;
+  margin-top: .35rem;
+  font-size: .72rem;
+}
+
+.quitar {
+  padding: .5rem .7rem;
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid currentColor;
+  border-radius: .5rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: .8rem;
+}
+
+.quitar:hover {
+  background: rgb(220 38 38 / .08);
+}

@@ -8,7 +8,7 @@ import Inventario from './features/inventario/Inventario.jsx'
 import HistorialMovimientos from './features/inventario/HistorialMovimientos.jsx'
 import ProductoFormulario from './features/productos/ProductoFormulario.jsx'
 import Ventas from './features/ventas/Ventas.jsx'
-
+import NuevaVenta from './features/ventas/NuevaVenta.jsx'
 
 
 
@@ -198,7 +198,7 @@ function SessionRoutes() {
   <Route path="/productos/nuevo" element={<ProductoFormulario />} />
   <Route path="/productos/:id/editar" element={<ProductoFormulario />} />
   <Route path="/ventas" element={<Ventas />} />
-
+  <Route path="/ventas/nueva" element={<NuevaVenta />} />
 
   <Route
     path="/perfil"
