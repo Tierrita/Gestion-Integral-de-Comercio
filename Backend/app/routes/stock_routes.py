@@ -12,7 +12,8 @@ from flask import Blueprint
 from app.controllers.stock_controller import (
     ajustar_stock_controller,
     consultar_stock_general_controller,
-    consultar_alertas_stock_controller
+    consultar_alertas_stock_controller,
+    consultar_historial_stock_controller
 )
 
 from core.auth import (
@@ -80,3 +81,10 @@ def consultar_alertas_stock_route():
     """
 
     return consultar_alertas_stock_controller()
+
+@stock_bp.route("/stock/historial", methods=["GET"])
+@login_requerido
+@permiso_requerido("stock.ver")
+def consultar_historial_stock_route():
+    """Historial de movimientos de los productos del comercio."""
+    return consultar_historial_stock_controller()
