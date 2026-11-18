@@ -24,7 +24,8 @@ from app.models.venta_model import (
     obtener_detalles_venta,
     actualizar_estado_venta,
     registrar_ingreso_venta_rpc,
-    anular_ingreso_venta_rpc
+    anular_ingreso_venta_rpc,
+    registrar_venta_transaccional_rpc,
 )
 
 
@@ -320,145 +321,35 @@ def crear_venta(
 
     total_venta = _redondear_importe(total_venta)
 
+ 
     # ==================================================
-    # NÚMERO LOCAL
+    # REGISTRO TRANSACCIONAL
     # ==================================================
 
-    numero_venta = obtener_siguiente_numero_venta(
-        id_comercio
+    productos_rpc = [
+        {
+            "id_producto": detalle["id_producto"],
+            "cantidad": _json_numero(detalle["cantidad"])
+        }
+        for detalle in detalles
+    ]
+
+    resultado = registrar_venta_transaccional_rpc(
+        id_comercio=id_comercio,
+        id_usuario=id_usuario,
+        id_cliente=id_cliente,
+        metodo_pago=metodo_pago,
+        id_cuenta=id_cuenta,
+        productos=productos_rpc,
+        observaciones=datos.get("observaciones")
     )
 
-    if numero_venta is None:
-        raise ValueError(
-            "No se pudo generar el número de venta"
-        )
-
-    # ==================================================
-    # CREAR VENTA
-    # ==================================================
-
-    datos_venta = {
-        "id_usuario": id_usuario,
-        "id_cliente": id_cliente,
-        "id_comercio": id_comercio,
-        "numero_venta": numero_venta,
-        "total": _json_numero(total_venta),
-        "metodo_pago": metodo_pago,
-        "estado": "COMPLETADA",
-        "observaciones": datos.get(
-            "observaciones"
-        )
-    }
-
-    venta_creada = insertar_venta(
-        datos_venta
-    )
-
-    if not venta_creada:
+    if not resultado:
         raise ValueError(
             "No se pudo registrar la venta"
         )
 
-    venta = venta_creada[0]
-
-    id_venta = venta[
-        "id_venta"
-    ]
-
-    # ==================================================
-    # DETALLES + STOCK + HISTORIAL
-    # ==================================================
-
-    detalles_creados = []
-    productos_actualizados = []
-
-    for detalle in detalles:
-
-        datos_detalle = {
-            "id_venta": id_venta,
-            "id_producto": detalle["id_producto"],
-            "cantidad": _json_numero(detalle["cantidad"]),
-            "precio_unitario": _json_numero(detalle["precio_unitario"]),
-            "costo_unitario": _json_numero(detalle["costo_unitario"]),
-            "subtotal": detalle["subtotal"]
-        }
-
-        detalle_creado = insertar_detalle_venta(
-            datos_detalle
-        )
-
-        detalles_creados.extend(
-            detalle_creado
-        )
-
-        # ----------------------------------------------
-        # DESCONTAR STOCK
-        # ----------------------------------------------
-
-        producto_actualizado = actualizar_stock_producto(
-            detalle["id_producto"],
-            id_comercio,
-            _json_numero(detalle["stock_nuevo"])
-        )
-
-        if not producto_actualizado:
-            raise ValueError(
-                f"No se pudo actualizar el stock del producto "
-                f"{detalle['nombre_producto']}"
-            )
-
-        # ----------------------------------------------
-        # HISTORIAL
-        # ----------------------------------------------
-
-        registrar_movimiento_stock({
-            "id_producto": detalle["id_producto"],
-            "id_usuario": id_usuario,
-            "tipo_movimiento": "VENTA",
-            "cantidad": _json_numero(detalle["cantidad"]),
-            "stock_anterior": _json_numero(detalle["stock_anterior"]),
-            "stock_nuevo": _json_numero(detalle["stock_nuevo"]),
-            "observaciones": (
-                f"Venta #{numero_venta} "
-                f"(ID global {id_venta})"
-            )
-        })
-
-        productos_actualizados.append({
-            "id_producto": detalle["id_producto"],
-            "nombre_producto": detalle["nombre_producto"],
-            "cantidad": _json_numero(detalle["cantidad"]),
-            "stock_anterior": _json_numero(detalle["stock_anterior"]),
-            "stock_actual": _json_numero(detalle["stock_nuevo"]),
-            "precio_unitario": _json_numero(detalle["precio_unitario"]),
-            "costo_unitario": _json_numero(detalle["costo_unitario"])
-        })
-
-    # ==================================================
-    # MOVIMIENTO FINANCIERO
-    # ==================================================
-
-    movimiento_financiero = None
-
-    if metodo_pago != "CUENTA_CORRIENTE":
-
-        movimiento_financiero = registrar_ingreso_venta_rpc(
-            id_venta=id_venta,
-            id_cuenta=id_cuenta,
-            id_usuario=id_usuario,
-            monto=_json_numero(total_venta)
-        )
-
-    # ==================================================
-    # RESPUESTA
-    # ==================================================
-
-    return {
-        "venta": venta,
-        "detalles": detalles_creados,
-        "productos_actualizados": productos_actualizados,
-        "movimiento_financiero": movimiento_financiero
-    }
+    return resultado
 
 
 def listar_ventas(id_comercio):

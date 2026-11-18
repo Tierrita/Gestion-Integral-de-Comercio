@@ -508,3 +508,35 @@ def anular_ingreso_venta_rpc(
                 )
 
         raise
+
+def registrar_venta_transaccional_rpc(
+    id_comercio,
+    id_usuario,
+    id_cliente,
+    metodo_pago,
+    id_cuenta,
+    productos,
+    observaciones=None
+):
+    """Registra toda la venta en una única transacción PostgreSQL."""
+
+    supabase = get_client()
+
+    response = (
+        supabase
+        .rpc(
+            "registrar_venta_transaccional",
+            {
+                "p_id_comercio": id_comercio,
+                "p_id_usuario": id_usuario,
+                "p_id_cliente": id_cliente,
+                "p_metodo_pago": metodo_pago,
+                "p_id_cuenta": id_cuenta,
+                "p_productos": productos,
+                "p_observaciones": observaciones
+            }
+        )
+        .execute()
+    )
+
+    return response.data
