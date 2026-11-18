@@ -6,6 +6,10 @@ incluyendo seguridad multicomercio, stock y movimientos
 financieros.
 """
 
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+
+from app.utils.cantidades import validar_cantidad
+
 from app.models.venta_model import (
     insertar_venta,
     insertar_detalle_venta,
@@ -35,6 +39,28 @@ def _es_entero_positivo(valor):
         and not isinstance(valor, bool)
         and valor > 0
     )
+
+
+def _precio_decimal(valor, nombre):
+    """Valida importes sin utilizar float en los cálculos."""
+    if isinstance(valor, bool) or not isinstance(valor, (int, float, str, Decimal)):
+        raise ValueError(f"El {nombre} debe ser numérico")
+    try:
+        numero = Decimal(str(valor))
+    except InvalidOperation:
+        raise ValueError(f"El {nombre} debe ser numérico")
+    if not numero.is_finite():
+        raise ValueError(f"El {nombre} debe ser finito")
+    return numero
+
+
+def _redondear_importe(valor):
+    return valor.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def _json_numero(valor):
+    """Adapta Decimal a los datos numéricos JSON que usa el modelo."""
+    return float(valor)
 
 
 def crear_venta(
@@ -154,7 +180,7 @@ def crear_venta(
 
     detalles = []
     productos_utilizados = set()
-    total_venta = 0.0
+    total_venta = Decimal("0.00")
 
     for producto_venta in productos:
 
@@ -174,11 +200,6 @@ def crear_venta(
         if not _es_entero_positivo(id_producto):
             raise ValueError(
                 "El id_producto debe ser un número entero mayor que cero"
-            )
-
-        if not _es_entero_positivo(cantidad):
-            raise ValueError(
-                "La cantidad debe ser un número entero mayor que cero"
             )
 
         # ----------------------------------------------
@@ -230,8 +251,10 @@ def crear_venta(
                 "no posee stock válido"
             )
 
-        stock_actual = int(
-            stock_actual
+        unidad = str(producto.get("unidad_de_medida", "")).strip().upper()
+        cantidad = validar_cantidad(cantidad, unidad)
+        stock_actual = validar_cantidad(
+            stock_actual, unidad, permitir_cero=True
         )
 
         if stock_actual < cantidad:
@@ -257,12 +280,11 @@ def crear_venta(
                 "no posee precio de costo"
             )
 
-        precio_unitario = float(
-            producto["precio_venta"]
+        precio_unitario = _precio_decimal(
+            producto["precio_venta"], "precio de venta"
         )
-
-        costo_unitario = float(
-            producto["precio_costo"]
+        costo_unitario = _precio_decimal(
+            producto["precio_costo"], "precio de costo"
         )
 
         if precio_unitario <= 0:
@@ -281,10 +303,7 @@ def crear_venta(
         # SUBTOTAL
         # ----------------------------------------------
 
-        subtotal = round(
-            cantidad * precio_unitario,
-            2
-        )
+        subtotal = _redondear_importe(cantidad * precio_unitario)
 
         total_venta += subtotal
 
@@ -299,10 +318,7 @@ def crear_venta(
             "stock_nuevo": stock_actual - cantidad
         })
 
-    total_venta = round(
-        total_venta,
-        2
-    )
+    total_venta = _redondear_importe(total_venta)
 
     # ==================================================
     # NÚMERO LOCAL
@@ -326,7 +342,7 @@ def crear_venta(
         "id_cliente": id_cliente,
         "id_comercio": id_comercio,
         "numero_venta": numero_venta,
-        "total": total_venta,
+        "total": _json_numero(total_venta),
         "metodo_pago": metodo_pago,
         "estado": "COMPLETADA",
         "observaciones": datos.get(
@@ -361,9 +377,9 @@ def crear_venta(
         datos_detalle = {
             "id_venta": id_venta,
             "id_producto": detalle["id_producto"],
-            "cantidad": detalle["cantidad"],
-            "precio_unitario": detalle["precio_unitario"],
-            "costo_unitario": detalle["costo_unitario"],
+            "cantidad": _json_numero(detalle["cantidad"]),
+            "precio_unitario": _json_numero(detalle["precio_unitario"]),
+            "costo_unitario": _json_numero(detalle["costo_unitario"]),
             "subtotal": detalle["subtotal"]
         }
 
@@ -382,7 +398,7 @@ def crear_venta(
         producto_actualizado = actualizar_stock_producto(
             detalle["id_producto"],
             id_comercio,
-            detalle["stock_nuevo"]
+            _json_numero(detalle["stock_nuevo"])
         )
 
         if not producto_actualizado:
@@ -399,9 +415,9 @@ def crear_venta(
             "id_producto": detalle["id_producto"],
             "id_usuario": id_usuario,
             "tipo_movimiento": "VENTA",
-            "cantidad": detalle["cantidad"],
-            "stock_anterior": detalle["stock_anterior"],
-            "stock_nuevo": detalle["stock_nuevo"],
+            "cantidad": _json_numero(detalle["cantidad"]),
+            "stock_anterior": _json_numero(detalle["stock_anterior"]),
+            "stock_nuevo": _json_numero(detalle["stock_nuevo"]),
             "observaciones": (
                 f"Venta #{numero_venta} "
                 f"(ID global {id_venta})"
@@ -411,11 +427,11 @@ def crear_venta(
         productos_actualizados.append({
             "id_producto": detalle["id_producto"],
             "nombre_producto": detalle["nombre_producto"],
-            "cantidad": detalle["cantidad"],
-            "stock_anterior": detalle["stock_anterior"],
-            "stock_actual": detalle["stock_nuevo"],
-            "precio_unitario": detalle["precio_unitario"],
-            "costo_unitario": detalle["costo_unitario"]
+            "cantidad": _json_numero(detalle["cantidad"]),
+            "stock_anterior": _json_numero(detalle["stock_anterior"]),
+            "stock_actual": _json_numero(detalle["stock_nuevo"]),
+            "precio_unitario": _json_numero(detalle["precio_unitario"]),
+            "costo_unitario": _json_numero(detalle["costo_unitario"])
         })
 
     # ==================================================
@@ -430,7 +446,7 @@ def crear_venta(
             id_venta=id_venta,
             id_cuenta=id_cuenta,
             id_usuario=id_usuario,
-            monto=total_venta
+            monto=_json_numero(total_venta)
         )
 
     # ==================================================
@@ -557,20 +573,18 @@ def anular_venta(
                 "en el comercio actual"
             )
 
-        stock_actual = int(
-            producto["stock"]
+        unidad = str(producto.get("unidad_de_medida", "")).strip().upper()
+        stock_actual = validar_cantidad(
+            producto["stock"], unidad, permitir_cero=True
         )
-
-        cantidad = int(
-            detalle["cantidad"]
-        )
+        cantidad = validar_cantidad(detalle["cantidad"], unidad)
 
         productos_a_revertir.append({
             "id_producto": detalle["id_producto"],
             "nombre_producto": producto["nombre_producto"],
-            "cantidad": cantidad,
-            "stock_anterior": stock_actual,
-            "stock_nuevo": stock_actual + cantidad
+            "cantidad": _json_numero(cantidad),
+            "stock_anterior": _json_numero(stock_actual),
+            "stock_nuevo": _json_numero(stock_actual + cantidad)
         })
 
     # ==================================================

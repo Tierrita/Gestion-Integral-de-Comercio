@@ -1,25 +1,15 @@
-"""
-Servicio de compras.
-
-Contiene las reglas de negocio del módulo de compras
-adaptadas a autenticación, permisos y multicomercio.
-"""
-
+"""Servicio de compras: validación de entrada y operaciones atómicas mediante RPC."""
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from app.utils.cantidades import validar_cantidad
 from app.models.compra_model import (
-    insertar_compra,
-    insertar_detalle_compra,
-    obtener_siguiente_numero_compra,
     obtener_proveedor_por_id,
     obtener_producto_por_id,
-    actualizar_stock_producto,
-    actualizar_precios_producto,
-    registrar_movimiento_stock,
     obtener_compras,
     obtener_compra_por_id,
     obtener_detalles_compra,
-    actualizar_estado_compra
+    registrar_compra_rpc,
+    anular_compra_rpc,
 )
-
 
 def _es_entero_positivo(valor):
     return (
@@ -27,6 +17,27 @@ def _es_entero_positivo(valor):
         and not isinstance(valor, bool)
         and valor > 0
     )
+
+
+def _decimal_precio(valor, nombre):
+    if isinstance(valor, bool) or not isinstance(valor, (int, float, str, Decimal)):
+        raise ValueError(f"El {nombre} debe ser numérico")
+    try:
+        numero = Decimal(str(valor))
+    except InvalidOperation:
+        raise ValueError(f"El {nombre} debe ser numérico")
+    if not numero.is_finite():
+        raise ValueError(f"El {nombre} debe ser finito")
+    return numero
+
+
+def _dinero(valor):
+    return valor.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def _json_numero(valor):
+    """Convierte Decimal a número compatible con el cliente Supabase/JSON."""
+    return float(valor)
 
 
 def crear_compra(datos, id_comercio, id_usuario):
@@ -77,7 +88,6 @@ def crear_compra(datos, id_comercio, id_usuario):
     # --------------------------------------------------
 
     detalles = []
-    total_compra = 0.0
     ids_productos = set()
 
     for producto_compra in productos:
@@ -103,19 +113,9 @@ def crear_compra(datos, id_comercio, id_usuario):
 
         ids_productos.add(id_producto)
 
-        if not _es_entero_positivo(cantidad):
-            raise ValueError(
-                "La cantidad debe ser un número entero mayor a 0"
-            )
-
-        if (
-            not isinstance(precio_unitario, (int, float))
-            or isinstance(precio_unitario, bool)
-            or precio_unitario <= 0
-        ):
-            raise ValueError(
-                "El precio unitario debe ser numérico y mayor a 0"
-            )
+        precio_compra = _decimal_precio(precio_unitario, "precio unitario")
+        if precio_compra <= 0:
+            raise ValueError("El precio unitario debe ser mayor a 0")
 
         # --------------------------------------------------
         # PRODUCTO DEL MISMO COMERCIO
@@ -138,7 +138,11 @@ def crear_compra(datos, id_comercio, id_usuario):
                 f"se encuentra inactivo"
             )
 
-        stock_actual = int(producto_actual["stock"])
+        unidad = str(producto_actual.get("unidad_de_medida", "")).strip().upper()
+        cantidad = validar_cantidad(cantidad, unidad)
+        stock_actual = validar_cantidad(
+            producto_actual["stock"], unidad, permitir_cero=True
+        )
 
         if producto_actual.get("precio_costo") is None:
             raise ValueError(
@@ -152,197 +156,27 @@ def crear_compra(datos, id_comercio, id_usuario):
                 f"no posee precio de venta"
             )
 
-        costo_actual = float(
-            producto_actual["precio_costo"]
+        costo_actual = _decimal_precio(producto_actual["precio_costo"], "costo actual")
+        precio_venta_actual = _decimal_precio(
+            producto_actual["precio_venta"], "precio de venta"
         )
-
-        precio_venta_actual = float(
-            producto_actual["precio_venta"]
-        )
-
-        precio_compra = float(precio_unitario)
-
-        subtotal = round(
-            cantidad * precio_compra,
-            2
-        )
-
-        total_compra = round(
-            total_compra + subtotal,
-            2
-        )
-
-        # --------------------------------------------------
-        # ACTUALIZACIÓN DE COSTO/PRECIO
-        # --------------------------------------------------
-
-        actualizar_precio = False
-        nuevo_costo = costo_actual
-        nuevo_precio_venta = precio_venta_actual
-        markup = None
-
-        if precio_compra > costo_actual:
-
-            if costo_actual <= 0:
-                raise ValueError(
-                    f"No se puede calcular el porcentaje de recargo "
-                    f"del producto {producto_actual['nombre_producto']} "
-                    f"porque su costo actual es 0"
-                )
-
-            markup = (
-                precio_venta_actual - costo_actual
-            ) / costo_actual
-
-            nuevo_costo = precio_compra
-
-            nuevo_precio_venta = round(
-                nuevo_costo * (1 + markup),
-                2
-            )
-
-            actualizar_precio = True
 
         detalles.append({
             "id_producto": id_producto,
-            "nombre_producto": producto_actual["nombre_producto"],
-            "cantidad": cantidad,
-            "precio_unitario": precio_compra,
-            "subtotal": subtotal,
-
-            "stock_anterior": stock_actual,
-            "stock_nuevo": stock_actual + cantidad,
-
-            "costo_anterior": costo_actual,
-            "precio_venta_anterior": precio_venta_actual,
-
-            "nuevo_costo": nuevo_costo,
-            "nuevo_precio_venta": nuevo_precio_venta,
-
-            "markup": markup,
-            "actualizar_precio": actualizar_precio
+            "cantidad": _json_numero(cantidad),
+            "precio_unitario": _json_numero(precio_compra),
         })
 
-    # --------------------------------------------------
-    # NUMERACIÓN LOCAL
-    # --------------------------------------------------
-
-    numero_compra = obtener_siguiente_numero_compra(
-        id_comercio
+    resultado = registrar_compra_rpc(
+        id_comercio=id_comercio,
+        id_usuario=id_usuario,
+        id_proveedor=id_proveedor,
+        productos=detalles,
+        observaciones=datos.get("observaciones"),
     )
-
-    if numero_compra is None:
-        raise ValueError(
-            "No se pudo generar el número de compra"
-        )
-
-    # --------------------------------------------------
-    # CREAR COMPRA
-    # --------------------------------------------------
-
-    datos_compra = {
-        "id_proveedor": id_proveedor,
-        "id_usuario": id_usuario,
-        "id_comercio": id_comercio,
-        "numero_compra": numero_compra,
-        "total_compra": total_compra,
-        "estado": "COMPLETADA",
-        "observaciones": datos.get("observaciones")
-    }
-
-    compra_creada = insertar_compra(
-        datos_compra
-    )
-
-    if not compra_creada:
-        raise ValueError(
-            "No se pudo registrar la compra"
-        )
-
-    compra = compra_creada[0]
-    id_compra = compra["id_compra"]
-
-    detalles_creados = []
-    productos_actualizados = []
-
-    # --------------------------------------------------
-    # DETALLES + STOCK + HISTORIAL
-    # --------------------------------------------------
-
-    for detalle in detalles:
-
-        detalle_creado = insertar_detalle_compra({
-            "id_compra": id_compra,
-            "id_producto": detalle["id_producto"],
-            "cantidad": detalle["cantidad"],
-            "precio_unitario": detalle["precio_unitario"],
-            "subtotal": detalle["subtotal"]
-        })
-
-        detalles_creados.extend(detalle_creado)
-
-        if detalle["actualizar_precio"]:
-            actualizar_precios_producto(
-                detalle["id_producto"],
-                id_comercio,
-                detalle["nuevo_costo"],
-                detalle["nuevo_precio_venta"]
-            )
-
-        actualizar_stock_producto(
-            detalle["id_producto"],
-            id_comercio,
-            detalle["stock_nuevo"]
-        )
-
-        registrar_movimiento_stock({
-            "id_producto": detalle["id_producto"],
-            "id_usuario": id_usuario,
-            "tipo_movimiento": "COMPRA",
-            "cantidad": detalle["cantidad"],
-            "stock_anterior": detalle["stock_anterior"],
-            "stock_nuevo": detalle["stock_nuevo"],
-            "observaciones": (
-                f"Compra #{numero_compra} "
-                f"(ID global {id_compra})"
-            )
-        })
-
-        productos_actualizados.append({
-            "id_producto": detalle["id_producto"],
-            "nombre_producto": detalle["nombre_producto"],
-
-            "costo_anterior": detalle["costo_anterior"],
-            "costo_compra": detalle["precio_unitario"],
-            "costo_actual": detalle["nuevo_costo"],
-
-            "precio_venta_anterior":
-                detalle["precio_venta_anterior"],
-
-            "precio_venta_actual":
-                detalle["nuevo_precio_venta"],
-
-            "markup_porcentaje": (
-                round(detalle["markup"] * 100, 2)
-                if detalle["markup"] is not None
-                else None
-            ),
-
-            "precio_actualizado":
-                detalle["actualizar_precio"],
-
-            "stock_anterior":
-                detalle["stock_anterior"],
-
-            "stock_actual":
-                detalle["stock_nuevo"]
-        })
-
-    return {
-        "compra": compra,
-        "detalles": detalles_creados,
-        "productos_actualizados": productos_actualizados
-    }
+    if not isinstance(resultado, dict) or not resultado.get("compra"):
+        raise RuntimeError("La RPC de registro no devolvió una compra válida")
+    return resultado
 
 
 def listar_compras(id_comercio):
@@ -378,111 +212,11 @@ def buscar_compra_por_id(id_compra, id_comercio):
     }
 
 
-def anular_compra(
-    id_compra,
-    id_comercio,
-    id_usuario_anulacion
-):
-    """
-    Anula una compra del comercio autenticado.
-
-    La autorización para esta operación es exclusiva
-    del propietario y se controla desde la ruta.
-    """
-
-    compra = obtener_compra_por_id(
-        id_compra,
-        id_comercio
-    )
-
-    if not compra:
-        raise ValueError(
-            "Compra no encontrada"
-        )
-
-    if str(compra["estado"]).upper() == "ANULADA":
-        raise ValueError(
-            "La compra ya se encuentra anulada"
-        )
-
-    detalles = obtener_detalles_compra(
-        id_compra
-    )
-
-    if not detalles:
-        raise ValueError(
-            "La compra no posee productos asociados"
-        )
-
-    productos_a_revertir = []
-
-    # --------------------------------------------------
-    # VALIDAR TODO ANTES DE MODIFICAR
-    # --------------------------------------------------
-
-    for detalle in detalles:
-
-        producto = obtener_producto_por_id(
-            detalle["id_producto"],
-            id_comercio
-        )
-
-        if not producto:
-            raise ValueError(
-                f"El producto con ID "
-                f"{detalle['id_producto']} no existe "
-                f"en el comercio autenticado"
-            )
-
-        stock_actual = int(producto["stock"])
-        cantidad = int(detalle["cantidad"])
-
-        if stock_actual < cantidad:
-            raise ValueError(
-                f"No se puede anular la compra. "
-                f"Stock insuficiente para el producto "
-                f"{detalle['id_producto']}"
-            )
-
-        productos_a_revertir.append({
-            "id_producto": detalle["id_producto"],
-            "cantidad": cantidad,
-            "stock_anterior": stock_actual,
-            "stock_nuevo": stock_actual - cantidad
-        })
-
-    # --------------------------------------------------
-    # REVERTIR STOCK
-    # --------------------------------------------------
-
-    for producto in productos_a_revertir:
-
-        actualizar_stock_producto(
-            producto["id_producto"],
-            id_comercio,
-            producto["stock_nuevo"]
-        )
-
-        registrar_movimiento_stock({
-            "id_producto": producto["id_producto"],
-            "id_usuario": id_usuario_anulacion,
-            "tipo_movimiento": "ANULACION_COMPRA",
-            "cantidad": producto["cantidad"],
-            "stock_anterior": producto["stock_anterior"],
-            "stock_nuevo": producto["stock_nuevo"],
-            "observaciones": (
-                f"Anulación Compra #{compra['numero_compra']} "
-                f"(ID global {id_compra})"
-            )
-        })
-
-    compra_actualizada = actualizar_estado_compra(
-        id_compra,
-        id_comercio,
-        "ANULADA"
-    )
-
-    return {
-        "compra": compra_actualizada,
-        "productos_revertidos": productos_a_revertir
-    }
+def anular_compra(id_compra, id_comercio, id_usuario_anulacion):
+    """Anula la compra de forma atómica. La ruta exige propietario."""
+    if not _es_entero_positivo(id_compra):
+        raise ValueError("El id_compra debe ser un entero positivo")
+    resultado = anular_compra_rpc(id_compra, id_comercio, id_usuario_anulacion)
+    if not isinstance(resultado, dict) or not resultado.get("compra"):
+        raise RuntimeError("La RPC de anulación no devolvió una compra válida")
+    return resultado

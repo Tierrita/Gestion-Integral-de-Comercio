@@ -17,6 +17,8 @@ from app.models.producto_model import (
     obtener_proveedor_por_id,
 )
 
+from app.utils.cantidades import validar_cantidad
+
 
 def listar_productos(id_comercio):
     """
@@ -114,34 +116,17 @@ def crear_producto(datos, id_comercio):
         )
 
     # -----------------------------
-    # STOCK
+    # UNIDAD DE MEDIDA Y STOCK
     # -----------------------------
 
-    stock = datos.get("stock", 0)
-    stock_minimo = datos.get("stock_minimo", 0)
+    unidad = str(datos.get("unidad_de_medida", "")).strip().upper()
+    if unidad not in ("UNIDAD", "KG"):
+        raise ValueError("La unidad de medida debe ser UNIDAD o KG")
 
-    if isinstance(stock, bool) or not isinstance(stock, int):
-        raise ValueError(
-            "El stock debe ser un número entero"
-        )
-
-    if (
-        isinstance(stock_minimo, bool)
-        or not isinstance(stock_minimo, int)
-    ):
-        raise ValueError(
-            "El stock mínimo debe ser un número entero"
-        )
-
-    if stock < 0:
-        raise ValueError(
-            "El stock no puede ser negativo"
-        )
-
-    if stock_minimo < 0:
-        raise ValueError(
-            "El stock mínimo no puede ser negativo"
-        )
+    stock = validar_cantidad(datos.get("stock", 0), unidad, permitir_cero=True)
+    stock_minimo = validar_cantidad(
+        datos.get("stock_minimo", 0), unidad, permitir_cero=True
+    )
 
     # -----------------------------
     # CATEGORÍA
@@ -210,11 +195,9 @@ def crear_producto(datos, id_comercio):
         "precio_venta": precio_venta,
         "id_categoria": id_categoria,
         "id_proveedor": id_proveedor,
-        "unidad_de_medida": str(
-            datos.get("unidad_de_medida", "")
-        ).strip(),
-        "stock": stock,
-        "stock_minimo": stock_minimo,
+        "unidad_de_medida": unidad,
+        "stock": float(stock),
+        "stock_minimo": float(stock_minimo),
         "estado": True,
     }
 
@@ -353,42 +336,33 @@ def modificar_producto(
             )
 
     # -----------------------------
-    # STOCK MÍNIMO
+    # UNIDAD DE MEDIDA Y STOCK MÍNIMO
     # -----------------------------
 
-    if "stock_minimo" in datos_actualizados:
+    unidad_anterior = str(producto_actual["unidad_de_medida"]).strip().upper()
+    unidad = str(
+        datos_actualizados.get("unidad_de_medida", unidad_anterior)
+    ).strip().upper()
 
-        stock_minimo = datos_actualizados["stock_minimo"]
-
-        if (
-            isinstance(stock_minimo, bool)
-            or not isinstance(stock_minimo, int)
-        ):
-            raise ValueError(
-                "El stock mínimo debe ser un número entero"
-            )
-
-        if stock_minimo < 0:
-            raise ValueError(
-                "El stock mínimo no puede ser negativo"
-            )
-
-    # -----------------------------
-    # UNIDAD DE MEDIDA
-    # -----------------------------
+    if unidad not in ("UNIDAD", "KG"):
+        raise ValueError("La unidad de medida debe ser UNIDAD o KG")
 
     if "unidad_de_medida" in datos_actualizados:
-
-        unidad = str(
-            datos_actualizados["unidad_de_medida"]
-        ).strip()
-
-        if len(unidad) < 1:
+        # Cambiar la unidad altera el significado del stock y de su historial.
+        # Por seguridad, esta operación requiere un flujo específico de migración.
+        if unidad != unidad_anterior:
             raise ValueError(
-                "La unidad de medida no puede estar vacía"
+                "No se puede cambiar la unidad de medida de un producto existente. "
+                "Requiere una migración controlada de stock e historial"
             )
-
         datos_actualizados["unidad_de_medida"] = unidad
+
+    if "stock_minimo" in datos_actualizados:
+        stock_minimo = validar_cantidad(
+            datos_actualizados["stock_minimo"], unidad, permitir_cero=True
+        )
+        # Convertir solo en el límite de serialización JSON del cliente Supabase.
+        datos_actualizados["stock_minimo"] = float(stock_minimo)
 
     # -----------------------------
     # CATEGORÍA
