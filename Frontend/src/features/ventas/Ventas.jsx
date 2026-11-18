@@ -3,11 +3,18 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import styles from './Ventas.module.css'
+import confirmStyles from './ConfirmarAnulacion.module.css'
 
 const dinero = (valor) =>
   new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: 'ARS',
+  }).format(Number(valor) || 0)
+
+
+const cantidadFormato = (valor) =>
+  new Intl.NumberFormat('es-AR', {
+    maximumFractionDigits: 3,
   }).format(Number(valor) || 0)
 
 const normalizar = (valor) =>
@@ -31,10 +38,13 @@ const fechaFiltro = (valor) => {
   return local.toISOString().slice(0, 10)
 }
 
-export default function Ventas() {
+export default function Ventas({ esPropietario = false }) {
   const navigate = useNavigate()
-
   const [ventas, setVentas] = useState([])
+  const [clientes, setClientes] = useState([])
+  const [productos, setProductos] = useState([])
+  const [usuarios, setUsuarios] = useState([])
+  const [erroresReferencias, setErroresReferencias] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [busqueda, setBusqueda] = useState('')
@@ -46,27 +56,41 @@ export default function Ventas() {
   const [detalle, setDetalle] = useState(null)
   const [errorDetalle, setErrorDetalle] = useState('')
   const [cargandoDetalle, setCargandoDetalle] = useState(false)
+  const [anulando, setAnulando] = useState(false)
+  const [errorAnulacion, setErrorAnulacion] = useState('')
+  const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false)
+  const [mensajeExito, setMensajeExito] = useState('')
+
 
   const detalleRequest = useRef(0)
 
   function cerrarDetalle() {
+    if (anulando) return
+    setMostrarConfirmacion(false)
     detalleRequest.current += 1
     setSeleccionada(null)
     setDetalle(null)
     setErrorDetalle('')
+    setErrorAnulacion('')
     setCargandoDetalle(false)
   }
 
-  useEffect(() => {
+    useEffect(() => {
     if (seleccionada === null) return undefined
 
     const onKeyDown = (event) => {
-      if (event.key === 'Escape') cerrarDetalle()
+      if (event.key === 'Escape' && !mostrarConfirmacion && !anulando) {
+        detalleRequest.current += 1
+        setSeleccionada(null)
+        setDetalle(null)
+        setErrorDetalle('')
+        setCargandoDetalle(false)
+      }
     }
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [seleccionada])
+  }, [seleccionada, mostrarConfirmacion, anulando])
 
   async function cargarVentas() {
     setCargando(true)
@@ -98,6 +122,56 @@ export default function Ventas() {
     return () => clearTimeout(timer)
   }, [])
 
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function cargarReferencias() {
+      const endpoints = ['/clientes', '/productos', '/usuarios']
+      const respuestas = await Promise.allSettled(
+        endpoints.map((ruta) => api.get(ruta, { signal: controller.signal })),
+      )
+      if (controller.signal.aborted) return
+
+      const errores = []
+      const [rClientes, rProductos, rUsuarios] = respuestas
+
+      function extraer(resultado, clave, ruta) {
+        if (resultado.status === 'rejected') {
+          const status = resultado.reason?.response?.status
+          errores.push(`${ruta}: ${status ? `HTTP ${status}` : 'error de conexión'}`)
+          return []
+        }
+        const datos = resultado.value.data
+        const lista = Array.isArray(datos) ? datos : datos?.[clave]
+        if (!Array.isArray(lista)) {
+          errores.push(`${ruta}: formato de respuesta inesperado`)
+          return []
+        }
+        return lista
+      }
+
+      setClientes(extraer(rClientes, 'clientes', '/clientes'))
+      setProductos(extraer(rProductos, 'productos', '/productos'))
+      setUsuarios(extraer(rUsuarios, 'usuarios', '/usuarios'))
+      setErroresReferencias(errores)
+    }
+
+    void cargarReferencias()
+    return () => controller.abort()
+  }, [])
+
+  const nombreCliente = (id) =>
+    clientes.find((item) => String(item.id_cliente) === String(id))
+      ?.nombre_completo || `Cliente #${id}`
+
+  const nombreProducto = (id) =>
+    productos.find((item) => String(item.id_producto) === String(id))
+      ?.nombre_producto || `Producto #${id}`
+
+  const nombreUsuario = (id) =>
+    usuarios.find((item) => String(item.id_usuario) === String(id))
+      ?.nombre_completo || `Usuario #${id}`
+
   const filtradas = useMemo(() => {
     return ventas.filter((venta) => {
       const texto = busqueda.trim().toLowerCase()
@@ -106,6 +180,9 @@ export default function Ventas() {
       const coincideBusqueda = [
         venta.numero_venta,
         venta.id_cliente,
+        clientes.find(
+        (item) => String(item.id_cliente) === String(venta.id_cliente),
+        )?.nombre_completo,
         venta.observaciones,
       ].some((valor) =>
         String(valor ?? '').toLowerCase().includes(texto),
@@ -119,8 +196,7 @@ export default function Ventas() {
         (!hasta || fecha <= hasta)
       )
     })
-  }, [ventas, busqueda, estado, metodo, desde, hasta])
-
+  }, [ventas, clientes, busqueda, estado, metodo, desde, hasta])
   const activas = filtradas.filter(
     (venta) => normalizar(venta.estado) === 'COMPLETADA',
   )
@@ -136,6 +212,9 @@ export default function Ventas() {
     setSeleccionada(id)
     setDetalle(null)
     setErrorDetalle('')
+    setErrorAnulacion('')
+    setMensajeExito('')
+    setMostrarConfirmacion(false)
     setCargandoDetalle(true)
 
     try {
@@ -159,6 +238,40 @@ export default function Ventas() {
       if (request === detalleRequest.current) {
         setCargandoDetalle(false)
       }
+    }
+  }
+
+  function abrirConfirmacion() {
+    if (!esPropietario || !detalle?.venta || anulando) return
+    if (normalizar(detalle.venta.estado) !== 'COMPLETADA') return
+    setErrorAnulacion('')
+    setMostrarConfirmacion(true)
+  }
+
+  async function confirmarAnulacion() {
+    if (!esPropietario || !detalle?.venta || anulando) return
+
+    const venta = detalle.venta
+
+    if (normalizar(venta.estado) !== 'COMPLETADA') return
+
+    setAnulando(true)
+    setErrorAnulacion('')
+
+    try {
+      await api.patch(`/ventas/${venta.id_venta}/anular`)
+
+      setMostrarConfirmacion(false)
+      cerrarDetalle()
+      setMensajeExito(`La venta #${venta.numero_venta ?? venta.id_venta} se anuló correctamente.`)
+      await cargarVentas()
+    } catch (err) {
+      setErrorAnulacion(
+        err.response?.data?.error ||
+        'No se pudo anular la venta. Intentá nuevamente.',
+      )
+    } finally {
+      setAnulando(false)
     }
   }
 
@@ -209,6 +322,12 @@ export default function Ventas() {
           <strong>{filtradas.length}</strong>
         </article>
       </div>
+
+      {mensajeExito && (
+        <p role="status" className={confirmStyles.exito}>
+          ✓ {mensajeExito}
+        </p>
+      )}
 
       <div className={styles.panel}>
         <div className={styles.panelContenido}>
@@ -279,6 +398,13 @@ export default function Ventas() {
           </div>
         </div>
 
+        {erroresReferencias.length > 0 && (
+          <p role="alert" className={styles.error}>
+            No se pudieron cargar algunos nombres: {erroresReferencias.join('; ')}.
+            Las ventas siguen disponibles.
+          </p>
+        )}
+
         {error && (
           <p role="alert" className={styles.error}>
             {error}
@@ -325,7 +451,7 @@ export default function Ventas() {
 
                     <td>{fechaLocal(venta.fecha_venta)}</td>
 
-                    <td>Cliente #{venta.id_cliente}</td>
+                    <td>{nombreCliente(venta.id_cliente)}</td>
 
                     <td className={styles.metodoPago}>
                       {normalizar(venta.metodo_pago).replaceAll('_', ' ')}
@@ -368,7 +494,7 @@ export default function Ventas() {
         <div
           className={styles.modalBackdrop}
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
+            if (event.target === event.currentTarget && !mostrarConfirmacion && !anulando) {
               cerrarDetalle()
             }
           }}
@@ -396,6 +522,7 @@ export default function Ventas() {
                 type="button"
                 className={styles.secundario}
                 onClick={cerrarDetalle}
+                disabled={anulando || mostrarConfirmacion}
                 autoFocus
               >
                 Cerrar ×
@@ -440,14 +567,14 @@ export default function Ventas() {
                   <div>
                     <span>Cliente</span>
                     <strong>
-                      Cliente #{detalle.venta.id_cliente}
+                      {nombreCliente(detalle.venta.id_cliente)}
                     </strong>
                   </div>
 
                   <div>
                     <span>Registrada por</span>
                     <strong>
-                      Usuario #{detalle.venta.id_usuario}
+                      {nombreUsuario(detalle.venta.id_usuario)}
                     </strong>
                   </div>
 
@@ -477,9 +604,9 @@ export default function Ventas() {
                       {detalle.detalles.map((item) => (
                         <tr key={item.id_detalle_venta}>
                           <td>
-                            Producto #{item.id_producto}
+                            {nombreProducto(item.id_producto)}
                           </td>
-                          <td>{item.cantidad}</td>
+                          <td>{cantidadFormato(item.cantidad)}</td>
                           <td>
                             {dinero(item.precio_unitario)}
                           </td>
@@ -506,8 +633,88 @@ export default function Ventas() {
                       'Sin observaciones'}
                   </p>
                 </div>
+
+                {esPropietario &&
+                  normalizar(detalle.venta.estado) === 'COMPLETADA' && (
+                    <>
+                      <button
+                        type="button"
+                        className={styles.secundario}
+                        onClick={abrirConfirmacion}
+                        disabled={anulando}
+                      >
+                        {anulando ? 'Anulando venta...' : 'Anular venta'}
+                      </button>
+
+                      {errorAnulacion && (
+                        <p role="alert" className={styles.error}>
+                          {errorAnulacion}
+                        </p>
+                      )}
+                    </>
+                  )}
               </div>
             )}
+          </section>
+        </div>
+      )}
+
+      {mostrarConfirmacion && detalle?.venta && (
+        <div className={confirmStyles.fondo}>
+          <section
+            className={confirmStyles.caja}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="confirmar-anulacion-titulo"
+            aria-describedby="confirmar-anulacion-descripcion"
+          >
+            <div className={confirmStyles.encabezado}>
+              <span className={confirmStyles.icono} aria-hidden="true">!</span>
+              <div>
+                <p className={confirmStyles.etiqueta}>OPERACIÓN SENSIBLE</p>
+                <h2 id="confirmar-anulacion-titulo">¿Anular esta venta?</h2>
+                <p id="confirmar-anulacion-descripcion">
+                  Revisá los datos antes de confirmar la operación.
+                </p>
+              </div>
+            </div>
+
+            <div className={confirmStyles.datos}>
+              <div><span>Venta</span><strong>#{detalle.venta.numero_venta ?? detalle.venta.id_venta}</strong></div>
+              <div><span>Importe</span><strong>{dinero(detalle.venta.total)}</strong></div>
+              <div><span>Método de pago</span><strong>{normalizar(detalle.venta.metodo_pago).replaceAll('_', ' ')}</strong></div>
+              <div><span>Estado</span><strong>COMPLETADA</strong></div>
+            </div>
+
+            <p className={confirmStyles.advertencia}>
+              Los productos volverán al stock. En ventas en efectivo o transferencia,
+              se revertirá el ingreso financiero correspondiente. La operación quedará
+              registrada en el historial.
+            </p>
+
+            {errorAnulacion && (
+              <p role="alert" className={confirmStyles.error}>{errorAnulacion}</p>
+            )}
+
+            <div className={confirmStyles.acciones}>
+              <button
+                type="button"
+                className={confirmStyles.cancelar}
+                onClick={() => { setMostrarConfirmacion(false); setErrorAnulacion('') }}
+                disabled={anulando}
+                autoFocus
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className={confirmStyles.confirmar}
+                onClick={confirmarAnulacion}
+                disabled={anulando}
+              >
+                {anulando ? 'Anulando venta…' : 'Confirmar anulación'}
+              </button>
+            </div>
           </section>
         </div>
       )}

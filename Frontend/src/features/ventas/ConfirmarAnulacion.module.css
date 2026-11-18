@@ -1,0 +1,23 @@
+/* Modal de confirmación de anulación, aislado del resto de Ventas */
+.fondo { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(13, 28, 46, .64); }
+.caja { box-sizing: border-box; width: min(100%, 560px); max-height: calc(100vh - 40px); overflow-y: auto; border: 1px solid #dce5ef; border-radius: 18px; padding: 28px; background: #fff; color: #172c45; box-shadow: 0 22px 80px rgba(8, 22, 40, .3); }
+.encabezado { display: flex; align-items: flex-start; gap: 16px; }
+.icono { flex: 0 0 46px; height: 46px; display: grid; place-items: center; border-radius: 13px; background: #fff0f0; color: #c52828; font-size: 27px; font-weight: 800; }
+.etiqueta { margin: 0 0 5px; font-size: 11px; font-weight: 800; letter-spacing: .14em; color: #b42323; }
+.encabezado h2 { margin: 0 0 6px; font-size: 23px; line-height: 1.2; }
+.encabezado p:last-child { margin: 0; font-size: 14px; line-height: 1.5; color: #586d83; }
+.datos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; padding: 22px 0; margin-top: 18px; border-top: 1px solid #e2eaf2; border-bottom: 1px solid #e2eaf2; }
+.datos div { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.datos span { color: #61758c; font-size: 13px; }
+.datos strong { overflow-wrap: anywhere; font-size: 15px; }
+.advertencia { margin: 20px 0; padding: 14px 16px; border: 1px solid #f5d9d9; border-radius: 10px; background: #fff8f8; color: #8d2929; font-size: 13px; line-height: 1.55; }
+.error { margin: 0 0 14px; color: #b42323; font-size: 13px; font-weight: 600; }
+.acciones { display: flex; justify-content: flex-end; gap: 12px; }
+.acciones button { padding: 12px 17px; border-radius: 10px; font: inherit; font-weight: 700; cursor: pointer; }
+.acciones button:disabled { opacity: .55; cursor: not-allowed; }
+.cancelar { background: #eaf2fa; color: #1d3853; border: 1px solid #cbdceb; }
+.confirmar { background: #bd2929; color: white; border: 1px solid #bd2929; }
+.confirmar:not(:disabled):hover { background: #a51e1e; }
+.cancelar:not(:disabled):hover { background: #dcebf7; }
+.exito { margin: 12px 0; padding: 13px 16px; border: 1px solid #b6e0ce; border-radius: 10px; background: #edf9f2; color: #166143; font-weight: 600; }
+@media (max-width: 520px) { .caja { padding: 20px; } .datos { gap: 16px; } .acciones { flex-direction: column-reverse; } .acciones button { width: 100%; } }

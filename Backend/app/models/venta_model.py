@@ -540,3 +540,96 @@ def registrar_venta_transaccional_rpc(
     )
 
     return response.data
+
+# ==================================================
+# ANULAR VENTA COMPLETA (TRANSACCIONAL)
+# ==================================================
+
+
+def anular_venta_completa_rpc(
+    id_venta,
+    id_comercio,
+    id_usuario
+):
+    """
+    Ejecuta la anulación completa mediante
+    una única transacción PostgreSQL.
+    """
+
+    supabase = get_client()
+
+    parametros = {
+        "p_id_venta": id_venta,
+        "p_id_comercio": id_comercio,
+        "p_id_usuario": id_usuario
+    }
+
+    try:
+        response = (
+            supabase
+            .rpc(
+                "anular_venta_completa",
+                parametros
+            )
+            .execute()
+        )
+
+        return response.data
+
+    except Exception as error:
+        mensaje = str(error)
+
+        errores_conocidos = [
+            "Parametros de anulacion invalidos",
+            "Usuario no autorizado para anular ventas",
+            "Venta no encontrada en este comercio",
+            "La venta ya se encuentra anulada",
+            "La venta no se encuentra completada",
+            "La venta no posee productos asociados",
+            "No pertenece al comercio",
+            "Stock o cantidad invalida",
+            "No se encontro el ingreso financiero",
+            "Venta a cuenta corriente con ingreso financiero inesperado",
+            "Metodo de pago no admitido",
+            "El ingreso de esta venta ya fue anulado",
+            "Cuenta no encontrada",
+            "Saldo insuficiente en la cuenta para anular la venta"
+        ]
+
+        for error_conocido in errores_conocidos:
+            if error_conocido.lower() in mensaje.lower():
+                raise ValueError(error_conocido) from error
+
+        raise
+
+    """
+    Ejecuta la anulación completa de una venta
+    mediante una única transacción PostgreSQL.
+
+    La función SQL se encarga de:
+    - Validar comercio y propietario.
+    - Evitar anulaciones duplicadas.
+    - Revertir el ingreso financiero.
+    - Devolver productos al stock.
+    - Registrar el historial.
+    - Actualizar el estado de la venta.
+    """
+
+    supabase = get_client()
+
+    parametros = {
+        "p_id_venta": id_venta,
+        "p_id_comercio": id_comercio,
+        "p_id_usuario": id_usuario
+    }
+
+    response = (
+        supabase
+        .rpc(
+            "anular_venta_completa",
+            parametros
+        )
+        .execute()
+    )
+
+    return response.data

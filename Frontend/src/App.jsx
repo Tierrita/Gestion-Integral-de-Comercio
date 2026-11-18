@@ -197,7 +197,14 @@ function SessionRoutes() {
   <Route path="/inventario/historial" element={<HistorialMovimientos />} />
   <Route path="/productos/nuevo" element={<ProductoFormulario />} />
   <Route path="/productos/:id/editar" element={<ProductoFormulario />} />
-  <Route path="/ventas" element={<Ventas />} />
+  <Route
+  path="/ventas"
+  element={
+    <Ventas
+      esPropietario={profile?.usuario?.es_propietario === true}
+    />
+  }
+  />
   <Route path="/ventas/nueva" element={<NuevaVenta />} />
 
   <Route

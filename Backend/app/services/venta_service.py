@@ -26,6 +26,7 @@ from app.models.venta_model import (
     registrar_ingreso_venta_rpc,
     anular_ingreso_venta_rpc,
     registrar_venta_transaccional_rpc,
+    anular_venta_completa_rpc,
 )
 
 
@@ -392,172 +393,40 @@ def buscar_venta_por_id(
     }
 
 
+
 def anular_venta(
     id_venta,
     id_comercio,
     id_usuario_anulacion
 ):
     """
-    Anula una venta perteneciente al comercio autenticado.
-
-    Devuelve los productos al stock y revierte el ingreso
-    financiero cuando la venta había sido cobrada.
-
-    El usuario que queda registrado en la anulación
-    es quien ejecuta actualmente la operación.
+    Anula una venta utilizando una única
+    transacción PostgreSQL en Supabase.
     """
 
-    # ==================================================
-    # BUSCAR VENTA
-    # ==================================================
+    # Validar ID de venta
+    if not isinstance(id_venta, int) or id_venta <= 0:
+        raise ValueError("ID de venta inválido")
 
-    venta = obtener_venta_por_id(
-        id_venta,
-        id_comercio
-    )
+    # Validar ID de comercio
+    if not isinstance(id_comercio, int) or id_comercio <= 0:
+        raise ValueError("ID de comercio inválido")
 
-    if not venta:
-        raise ValueError(
-            "Venta no encontrada"
-        )
-
-    # ==================================================
-    # EVITAR DOBLE ANULACIÓN
-    # ==================================================
-
+    # Validar usuario que realiza la anulación
     if (
-        str(
-            venta.get("estado", "")
-        ).upper()
-        == "ANULADA"
+        not isinstance(id_usuario_anulacion, int)
+        or id_usuario_anulacion <= 0
     ):
-        raise ValueError(
-            "La venta ya se encuentra anulada"
-        )
+        raise ValueError("ID de usuario inválido")
 
-    # ==================================================
-    # DETALLES
-    # ==================================================
-
-    detalles = obtener_detalles_venta(
-        id_venta
-    )
-
-    if not detalles:
-        raise ValueError(
-            "La venta no posee productos asociados"
-        )
-
-    productos_a_revertir = []
-
-    for detalle in detalles:
-
-        producto = obtener_producto_por_id(
-            detalle["id_producto"],
-            id_comercio
-        )
-
-        if not producto:
-            raise ValueError(
-                f"El producto con ID "
-                f"{detalle['id_producto']} no existe "
-                "en el comercio actual"
-            )
-
-        unidad = str(producto.get("unidad_de_medida", "")).strip().upper()
-        stock_actual = validar_cantidad(
-            producto["stock"], unidad, permitir_cero=True
-        )
-        cantidad = validar_cantidad(detalle["cantidad"], unidad)
-
-        productos_a_revertir.append({
-            "id_producto": detalle["id_producto"],
-            "nombre_producto": producto["nombre_producto"],
-            "cantidad": _json_numero(cantidad),
-            "stock_anterior": _json_numero(stock_actual),
-            "stock_nuevo": _json_numero(stock_actual + cantidad)
-        })
-
-    # ==================================================
-    # REVERTIR MOVIMIENTO FINANCIERO
-    # ==================================================
-    #
-    # Primero se revierte el dinero.
-    #
-    # Si la cuenta no posee fondos suficientes para
-    # realizar la anulación, la operación se detiene
-    # antes de modificar el stock.
-    #
-    # Para CUENTA_CORRIENTE la RPC devuelve None porque
-    # la venta no generó un ingreso financiero inmediato.
-    # ==================================================
-
-    movimiento_financiero = anular_ingreso_venta_rpc(
+    # Ejecutar la anulación completa en Supabase
+    resultado = anular_venta_completa_rpc(
         id_venta=id_venta,
+        id_comercio=id_comercio,
         id_usuario=id_usuario_anulacion
     )
 
-    # ==================================================
-    # DEVOLVER STOCK
-    # ==================================================
+    if not resultado:
+        raise ValueError("No se pudo anular la venta")
 
-    productos_revertidos = []
-
-    for producto in productos_a_revertir:
-
-        producto_actualizado = actualizar_stock_producto(
-            producto["id_producto"],
-            id_comercio,
-            producto["stock_nuevo"]
-        )
-
-        if not producto_actualizado:
-            raise ValueError(
-                f"No se pudo devolver el stock del producto "
-                f"{producto['nombre_producto']}"
-            )
-
-        registrar_movimiento_stock({
-            "id_producto": producto["id_producto"],
-            "id_usuario": id_usuario_anulacion,
-            "tipo_movimiento": "ANULACION_VENTA",
-            "cantidad": producto["cantidad"],
-            "stock_anterior": producto["stock_anterior"],
-            "stock_nuevo": producto["stock_nuevo"],
-            "observaciones": (
-                f"Anulación Venta #{venta['numero_venta']} "
-                f"(ID global {id_venta})"
-            )
-        })
-
-        productos_revertidos.append({
-            "id_producto": producto["id_producto"],
-            "cantidad": producto["cantidad"],
-            "stock_anterior": producto["stock_anterior"],
-            "stock_nuevo": producto["stock_nuevo"]
-        })
-
-    # ==================================================
-    # CAMBIAR ESTADO
-    # ==================================================
-
-    venta_actualizada = actualizar_estado_venta(
-        id_venta,
-        id_comercio,
-        "ANULADA"
-    )
-
-    if not venta_actualizada:
-        raise ValueError(
-            "No se pudo actualizar el estado de la venta"
-        )
-
-    # ==================================================
-    # RESPUESTA
-    # ==================================================
-
-    return {
-        "venta": venta_actualizada,
-        "productos_revertidos": productos_revertidos,
-        "movimiento_financiero": movimiento_financiero
-    }
+    return resultado
