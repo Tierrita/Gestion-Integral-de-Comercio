@@ -184,6 +184,7 @@ export default function Ventas() {
       </div>
 
       <div className={styles.panel}>
+        <div className={styles.panelContenido}>
         <div className={styles.filtros}>
           <label>
             Buscar
@@ -242,14 +243,17 @@ export default function Ventas() {
           </button>
         </div>
 
+        </div>
+
         {error && <p role="alert" className={styles.error}>{error}</p>}
+        {!cargando && <p className={styles.conteo}>Mostrando {filtradas.length} de {ventas.length} ventas</p>}
 
         {cargando ? (
           <p role="status" className={styles.vacio}>Cargando ventas…</p>
         ) : filtradas.length === 0 ? (
           <p className={styles.vacio}>No hay ventas para mostrar.</p>
         ) : (
-          <div className={styles.tablaScroll}>
+          <div className={`${styles.tablaScroll} ${styles.tablaListado}`}>
             <table>
               <thead>
                 <tr>
@@ -265,10 +269,10 @@ export default function Ventas() {
               <tbody>
                 {filtradas.map((venta) => (
                   <tr key={venta.id_venta}>
-                    <td><strong>#{venta.numero_venta}</strong></td>
+                    <td><strong>#{venta.numero_venta ?? venta.id_venta}</strong></td>
                     <td>{fechaLocal(venta.fecha_venta)}</td>
                     <td>Cliente #{venta.id_cliente}</td>
-                    <td>{normalizar(venta.metodo_pago).replaceAll('_', ' ')}</td>
+                    <td className={styles.metodoPago}>{normalizar(venta.metodo_pago).replaceAll('_', ' ')}</td>
                     <td>
                       <span
                         className={
@@ -280,11 +284,11 @@ export default function Ventas() {
                         {normalizar(venta.estado)}
                       </span>
                     </td>
-                    <td><strong>{dinero(venta.total)}</strong></td>
+                    <td className={styles.importe}><strong>{dinero(venta.total)}</strong></td>
                     <td>
                       <button
                         type="button"
-                        className={styles.secundario}
+                        className={`${styles.secundario} ${styles.botonTabla}`}
                         onClick={() => verDetalle(venta.id_venta)}
                       >
                         Ver detalle

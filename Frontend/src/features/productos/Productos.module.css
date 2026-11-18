@@ -44,3 +44,89 @@
 .heading a.primary,.actions a.secondary { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
 
 .tableControls,.pagination{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;padding:1rem 1.2rem;color:var(--color-text-muted);font-size:.85rem}.tableControls{border-bottom:1px solid var(--color-border)}.tableControls label{display:flex;align-items:center;gap:.6rem}.tableControls select{width:auto;min-width:130px}.sortButton{border:0;background:transparent;color:inherit;font:inherit;font-weight:800;cursor:pointer;text-align:left;white-space:nowrap}.sortButton:hover{color:var(--color-primary)}.pageActions{display:flex;align-items:center;gap:.75rem}.pageActions button:disabled{opacity:.45;cursor:not-allowed}.lowStock{color:#e6a45b}.actions{flex-wrap:wrap}.pagination{border-top:1px solid var(--color-border)}
+
+
+
+
+/* =========================================
+   MERCADERÍA — TABLA COMPACTA V2
+   ========================================= */
+
+.tableScroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.tableScroll table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+}
+
+.tableScroll th,
+.tableScroll td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.tableScroll th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.tableScroll tbody tr {
+  height: 48px;
+}
+
+.tableScroll tbody tr:nth-child(even) {
+  background: var(--color-background);
+}
+
+.tableScroll tbody tr:hover {
+  background: var(--color-surface-raised);
+}
+
+.tableScroll td:nth-child(2) {
+  min-width: 180px;
+  white-space: normal;
+}
+
+.tableScroll td:nth-child(3),
+.tableScroll td:nth-child(4),
+.tableScroll td:nth-child(5) {
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.actions .secondary {
+  min-height: 30px;
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.35rem;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.active,
+.inactive {
+  padding: 0.2rem 0.45rem;
+  font-size: 0.7rem;
+}
+
+.tableControls,
+.pagination {
+  padding: 0.7rem 1rem;
+}
+
+.sortButton {
+  padding: 0;
+  font-size: inherit;
+}
