@@ -5,12 +5,7 @@ import { api } from '../../shared/api/client.js'
 import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
 import Alert from '../../shared/components/Alert.jsx'
 import styles from './NuevaVenta.module.css'
-
-const dinero = (valor) =>
-  new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-  }).format(Number(valor) || 0)
+import { formatoMoneda, formatoFechaHora } from '../../shared/utils/formatters.js'
 
 const cantidadValida = (valor, unidad, stock) => {
   const texto = String(valor).trim()
@@ -31,12 +26,7 @@ export default function NuevaVenta() {
   const [errorVenta, setErrorVenta] = useState('')
   const [confirmando, setConfirmando] = useState(false)
 
-  const [fechaActual] = useState(() =>
-    new Intl.DateTimeFormat('es-AR', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    }).format(new Date()),
-  )
+  const [fechaActual] = useState(() => formatoFechaHora(new Date()))
 
   const [cliente, setCliente] = useState('')
   const [clientes, setClientes] = useState([])
@@ -405,7 +395,7 @@ useEffect(() => {
                         <strong>
                           {agregado
                             ? 'Agregado'
-                            : dinero(producto.precio_venta)}
+                            : formatoMoneda(producto.precio_venta)}
                         </strong>
                       </button>
                     )
@@ -481,11 +471,11 @@ useEffect(() => {
                           )}
                         </td>
 
-                        <td>{dinero(item.precio_venta)}</td>
+                        <td>{formatoMoneda(item.precio_venta)}</td>
 
                         <td>
                           {valido
-                            ? dinero(
+                            ? formatoMoneda(
                                 Number(item.cantidad) *
                                 Number(item.precio_venta),
                               )
@@ -518,7 +508,7 @@ useEffect(() => {
                 <tr className={styles.filaTotal}>
                   <td colSpan={3}>Total a pagar</td>
                   <td colSpan={2}>
-                    {carritoValido ? dinero(total) : '—'}
+                    {carritoValido ? formatoMoneda(total) : '—'}
                   </td>
                 </tr>
               </tfoot>
@@ -534,7 +524,7 @@ useEffect(() => {
           <label className={styles.campo}>
             Importe
             <input
-              value={carritoValido ? dinero(total) : '—'}
+              value={carritoValido ? formatoMoneda(total) : '—'}
               readOnly
             />
           </label>
@@ -609,7 +599,7 @@ useEffect(() => {
         description="Confirmá los datos antes de registrar la venta."
         details={[
           { label: 'Cliente', value: clientes.find((item) => String(item.id_cliente) === String(cliente))?.nombre_completo || `Cliente #${cliente}` },
-          { label: 'Total estimado', value: dinero(total) },
+          { label: 'Total estimado', value: formatoMoneda(total) },
           { label: 'Método de pago', value: metodoPago.replaceAll('_', ' ') },
         ]}
         warning="Se descontará el stock y se registrará la operación comercial."
