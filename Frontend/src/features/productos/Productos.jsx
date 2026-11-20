@@ -4,9 +4,11 @@ import { api } from '../../shared/api/client.js'
 import styles from './Productos.module.css'
 import MercaderiaNav from './MercaderiaNav.jsx'
 import { formatoMoneda } from '../../shared/utils/formatters.js'
+import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
 
 const numeric = (value) => value == null || value === '' ? null : Number(value)
 const PAGE_SIZES = [10, 25, 50]
+const formatStock = (value, unit) => value == null ? '—' : new Intl.NumberFormat('es-AR', { maximumFractionDigits: unit === 'KG' ? 3 : 0 }).format(Number(value))
 const messageOf = (error) => error.response?.data?.error || (error.response?.status === 403 ? 'No tenés permiso para realizar esta operación.' : 'No se pudo completar la operación. Revisá la conexión con Flask.')
 
 export default function Productos() {
@@ -18,6 +20,8 @@ export default function Productos() {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('todos')
   const [changingId, setChangingId] = useState(null)
+  const [pendingStatus, setPendingStatus] = useState(null)
+  const [statusError, setStatusError] = useState('')
   const [sortBy, setSortBy] = useState('numero_producto')
   const [sortDirection, setSortDirection] = useState('asc')
   const [pageSize, setPageSize] = useState(10)
@@ -61,17 +65,20 @@ export default function Productos() {
   }
   const sortMark = (column) => sortBy === column ? (sortDirection === 'asc' ? ' ↑' : ' ↓') : ' ↕'
 
-  async function changeStatus(producto) {
+  async function changeStatus() {
+    const producto = pendingStatus
+    if (!producto || changingId !== null) return
     const active = producto.estado !== false
-    if (!window.confirm(`¿${active ? 'Desactivar' : 'Activar'} "${producto.nombre_producto}"?`)) return
     setChangingId(producto.id_producto)
     setError('')
     setNotice('')
+    setStatusError('')
     try {
       const { data } = await api.patch('/productos/' + producto.id_producto + '/estado', { estado: !active })
       setNotice(data.message || 'Estado actualizado.')
+      setPendingStatus(null)
       await load()
-    } catch (err) { setError(messageOf(err)) }
+    } catch (err) { setStatusError(messageOf(err)) }
     finally { setChangingId(null) }
   }
 
@@ -109,15 +116,27 @@ export default function Productos() {
         <td>#{p.numero_producto ?? p.id_producto}</td><td><strong>{p.nombre_producto}</strong></td>
         <td>{p.precio_costo == null ? 'Sin acceso' : formatoMoneda(p.precio_costo)}</td>
         <td>{formatoMoneda(p.precio_venta)}</td>
-        <td><strong className={p.estado !== false && Number(p.stock) <= Number(p.stock_minimo) ? styles.lowStock : ''}>{p.stock ?? '—'}</strong></td>
+        <td><strong className={p.estado !== false && Number(p.stock) <= Number(p.stock_minimo) ? styles.lowStock : ''}>{formatStock(p.stock, p.unidad_de_medida)}</strong></td>
         <td>{p.unidad_de_medida || '—'}</td>
         <td><span className={p.estado === false ? styles.inactive : styles.active}>{p.estado === false ? 'Inactivo' : 'Activo'}</span></td>
-        <td><div className={styles.actions}><Link className={styles.secondary} to={`/productos/${p.id_producto}/editar`}>Editar</Link><Link className={styles.secondary} to="/inventario">Ver inventario</Link><button type="button" className={styles.secondary} disabled={changingId === p.id_producto} onClick={() => changeStatus(p)}>{changingId === p.id_producto ? 'Guardando…' : p.estado === false ? 'Activar' : 'Desactivar'}</button></div></td>
+        <td><div className={styles.actions}><Link className={styles.secondary} to={`/productos/${p.id_producto}/editar`}>Editar</Link><Link className={styles.secondary} to={`/inventario?producto=${p.id_producto}`}>Ver inventario</Link><button type="button" className={styles.secondary} disabled={changingId === p.id_producto} onClick={() => { setStatusError(''); setPendingStatus(p) }}>{changingId === p.id_producto ? 'Guardando…' : p.estado === false ? 'Activar' : 'Desactivar'}</button></div></td>
       </tr>)}</tbody></table></div>}
       {!loading && !error && visible.length > 0 && <div className={styles.pagination}>
         <span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, visible.length)} de {visible.length}</span>
         <div className={styles.pageActions}><button type="button" className={styles.secondary} disabled={currentPage === 1} onClick={() => setPage((n) => Math.max(1, n - 1))}>Anterior</button><span>Página {currentPage} de {totalPages}</span><button type="button" className={styles.secondary} disabled={currentPage === totalPages} onClick={() => setPage((n) => Math.min(totalPages, n + 1))}>Siguiente</button></div>
       </div>}
     </div>
+    <ConfirmDialog
+      open={Boolean(pendingStatus)}
+      onClose={() => { if (changingId === null) { setPendingStatus(null); setStatusError('') } }}
+      onConfirm={() => void changeStatus()}
+      title={pendingStatus?.estado === false ? 'Activar producto' : 'Desactivar producto'}
+      description={pendingStatus?.estado === false ? 'El producto volverá a estar disponible para operaciones.' : 'El producto dejará de estar disponible para nuevas operaciones. Su historial se conservará.'}
+      details={pendingStatus ? [{ label: 'Producto', value: pendingStatus.nombre_producto }] : []}
+      error={statusError}
+      busy={changingId !== null}
+      confirmLabel={pendingStatus?.estado === false ? 'Activar' : 'Desactivar'}
+      destructive={pendingStatus?.estado !== false}
+    />
   </section>
 }
