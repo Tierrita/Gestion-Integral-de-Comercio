@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
+import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
+import Alert from '../../shared/components/Alert.jsx'
 import styles from '../ventas/NuevaVenta.module.css'
 
 const dinero = (valor) => new Intl.NumberFormat('es-AR', {
@@ -32,6 +34,7 @@ export default function NuevaCompra() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [errorCompra, setErrorCompra] = useState('')
+  const [confirmando, setConfirmando] = useState(false)
   const [enviando, setEnviando] = useState(false)
 
   useEffect(() => {
@@ -95,17 +98,18 @@ export default function NuevaCompra() {
       : suma
   ), 0)
 
+  function solicitarConfirmacion() {
+    if (!proveedor || !carritoValido || enviandoRef.current || cargando || error) return
+    setErrorCompra('')
+    setConfirmando(true)
+  }
+
   async function confirmarCompra() {
     if (enviandoRef.current) return
     if (!proveedor || !carritoValido) {
       setErrorCompra('Seleccioná un proveedor y cargá productos con cantidades y costos válidos.')
       return
     }
-    const seleccionado = proveedores.find((item) => String(item.id_proveedor) === proveedor)
-    if (!window.confirm(
-      `Proveedor: ${seleccionado?.nombre_proveedor || proveedor}\nProductos: ${carrito.length}\nTotal estimado: ${dinero(total)}\n\n¿Confirmás registrar esta compra real? Se actualizarán el stock y los costos.`
-    )) return
-
     enviandoRef.current = true
     setEnviando(true)
     setErrorCompra('')
@@ -119,6 +123,7 @@ export default function NuevaCompra() {
         })),
         observaciones: observaciones.trim(),
       })
+      setConfirmando(false)
       navigate('/compras', { replace: true })
     } catch (err) {
       setErrorCompra(err.response?.data?.error ||
@@ -230,10 +235,20 @@ export default function NuevaCompra() {
 
       <footer className={styles.acciones}>
         <button type="button" className={styles.secundario} onClick={() => navigate('/compras')}>Cancelar</button>
-        {errorCompra && <p role="alert" className={styles.error}>{errorCompra}</p>}
+        {errorCompra && !confirmando && <Alert type="error">{errorCompra}</Alert>}
         <button type="button" className={styles.confirmar} disabled={!proveedor || !carritoValido || enviando || cargando || Boolean(error)}
-          onClick={confirmarCompra}>{enviando ? 'Registrando compra…' : 'Confirmar compra'}</button>
+          onClick={solicitarConfirmacion}>{enviando ? 'Registrando compra…' : 'Confirmar compra'}</button>
       </footer>
+      <ConfirmDialog open={confirmando} onClose={() => { if (!enviando) setConfirmando(false) }}
+        onConfirm={confirmarCompra} title="¿Registrar esta compra?"
+        description="Confirmá los datos antes de registrar la compra."
+        details={[
+          { label: 'Proveedor', value: proveedores.find((item) => String(item.id_proveedor) === String(proveedor))?.nombre_proveedor || `Proveedor #${proveedor}` },
+          { label: 'Productos', value: carrito.length },
+          { label: 'Total estimado', value: dinero(total) },
+        ]}
+        warning="Se actualizarán el stock y los costos de los productos."
+        error={errorCompra} busy={enviando} confirmLabel="Registrar compra" />
     </section>
   )
 }
