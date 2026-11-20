@@ -3,8 +3,8 @@ import { Link, useLocation } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import styles from './Productos.module.css'
 import MercaderiaNav from './MercaderiaNav.jsx'
+import { formatoMoneda } from '../../shared/utils/formatters.js'
 
-const money = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number(value) || 0)
 const numeric = (value) => value == null || value === '' ? null : Number(value)
 const PAGE_SIZES = [10, 25, 50]
 const messageOf = (error) => error.response?.data?.error || (error.response?.status === 403 ? 'No tenés permiso para realizar esta operación.' : 'No se pudo completar la operación. Revisá la conexión con Flask.')
@@ -107,8 +107,8 @@ export default function Productos() {
         <th>Unidad</th><th>Estado</th><th>Acciones</th>
       </tr></thead><tbody>{pageRows.map((p) => <tr key={p.id_producto}>
         <td>#{p.numero_producto ?? p.id_producto}</td><td><strong>{p.nombre_producto}</strong></td>
-        <td>{p.precio_costo == null ? 'Sin acceso' : money(p.precio_costo)}</td>
-        <td>{money(p.precio_venta)}</td>
+        <td>{p.precio_costo == null ? 'Sin acceso' : formatoMoneda(p.precio_costo)}</td>
+        <td>{formatoMoneda(p.precio_venta)}</td>
         <td><strong className={p.estado !== false && Number(p.stock) <= Number(p.stock_minimo) ? styles.lowStock : ''}>{p.stock ?? '—'}</strong></td>
         <td>{p.unidad_de_medida || '—'}</td>
         <td><span className={p.estado === false ? styles.inactive : styles.active}>{p.estado === false ? 'Inactivo' : 'Activo'}</span></td>
