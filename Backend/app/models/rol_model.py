@@ -188,3 +188,16 @@ def eliminar_permisos_rol(id_rol):
     )
 
     return response.data
+
+def guardar_rol_con_permisos(id_comercio, id_rol, nombre_rol, permisos):
+    """Guarda rol y permisos mediante una única transacción PostgreSQL."""
+    supabase = get_client()
+    respuesta = supabase.rpc("guardar_rol_con_permisos", {
+        "p_id_comercio": id_comercio,
+        "p_id_rol": id_rol,
+        "p_nombre_rol": nombre_rol,
+        "p_permisos": permisos,
+    }).execute()
+    if respuesta.data is None:
+        raise RuntimeError("No se pudo guardar el rol")
+    return respuesta.data
