@@ -12,6 +12,19 @@
   --color-focus: #67e8f9;
   --sidebar-width: 16rem;
   --radius-panel: 1rem;
+  /* Tokens compartidos de interfaz V2 */
+  --radius-control: .65rem;
+  --radius-card: .9rem;
+  --space-1: .25rem;
+  --space-2: .5rem;
+  --space-3: .75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --control-min-height: 44px;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #fb7185;
 }
 :root[data-theme='light'] {
   color-scheme: light;
@@ -27,7 +40,12 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--color-background); color: var(--color-text); }
-button, input { font: inherit; }
+button, input, select, textarea { font: inherit; }
+button, input, select, textarea { max-width: 100%; }
+:where(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
 button { cursor: pointer; }
 button:disabled { cursor: wait; opacity: .7; }
 button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
