@@ -79,6 +79,14 @@ export default function PrivateLayout({ profile, onLogout }) {
           </NavLink>
 
           <NavLink
+            to="/compras"
+            onClick={closeMenu}
+            className={({ isActive }) => isActive ? styles.active : ''}
+          >
+            <span aria-hidden="true">▣</span> Compras
+          </NavLink>
+
+          <NavLink
             to="/perfil"
             end
             onClick={closeMenu}
