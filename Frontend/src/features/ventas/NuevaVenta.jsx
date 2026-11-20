@@ -141,9 +141,24 @@ useEffect(() => {
         throw new Error('Respuesta inválida de cuentas')
       }
 
-      setCuentas(
-        data.cuentas.filter((cuenta) => cuenta.estado === true),
+      if (controller.signal.aborted) return
+
+      const cuentasActivas = data.cuentas.filter(
+        (cuenta) => cuenta.estado === true,
       )
+      setCuentas(cuentasActivas)
+
+      const cajaPrincipal = cuentasActivas.find(
+        (cuenta) => cuenta.nombre_cuenta?.trim().toLocaleUpperCase('es-AR') === 'CAJA PRINCIPAL',
+      )
+
+      setCuentaSeleccionada((anterior) => {
+        if (anterior && cuentasActivas.some(
+          (cuenta) => String(cuenta.id_cuenta) === String(anterior),
+        )) return anterior
+
+        return cajaPrincipal ? String(cajaPrincipal.id_cuenta) : ''
+      })
     } catch (error) {
       if (!controller.signal.aborted) {
         setErrorCuentas(
