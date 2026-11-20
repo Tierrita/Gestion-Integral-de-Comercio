@@ -1,8 +1,11 @@
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import styles from '../ventas/Ventas.module.css'
+import Alert from '../../shared/components/Alert.jsx'
+import Modal from '../../shared/components/Modal.jsx'
+import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
 
 const normalizar = (valor) =>
   String(valor ?? '').trim().toUpperCase()
@@ -50,6 +53,9 @@ export default function Compras({ esPropietario = false }) {
   const [errorDetalle, setErrorDetalle] = useState('')
   const [anulando, setAnulando] = useState(false)
   const [mensaje, setMensaje] = useState('')
+  const [confirmando, setConfirmando] = useState(false)
+  const [errorAnulacion, setErrorAnulacion] = useState('')
+  const detalleRequest = useRef(0)
 
   async function cargarCompras(signal) {
     setCargando(true)
@@ -168,6 +174,9 @@ export default function Compras({ esPropietario = false }) {
   )
 
   async function verDetalle(id) {
+    const request = ++detalleRequest.current
+    setConfirmando(false)
+    setErrorAnulacion('')
     setDetalleId(id)
     setDetalle(null)
     setErrorDetalle('')
@@ -180,42 +189,53 @@ export default function Compras({ esPropietario = false }) {
         throw new Error('Respuesta de detalle inválida')
       }
 
-      setDetalle(data)
+      if (request === detalleRequest.current) setDetalle(data)
     } catch (err) {
+      if (request !== detalleRequest.current) return
       setErrorDetalle(
         err.response?.data?.error ||
         'No se pudo cargar el detalle de la compra.',
       )
     } finally {
-      setCargandoDetalle(false)
+      if (request === detalleRequest.current) setCargandoDetalle(false)
     }
+  }
+
+  function abrirConfirmacion() {
+    if (!esPropietario || !detalle?.compra || anulando || normalizar(detalle.compra.estado) !== 'COMPLETADA') return
+    setErrorAnulacion('')
+    setConfirmando(true)
   }
 
   async function anularCompra() {
     if (!esPropietario || !detalle || anulando || normalizar(detalle.compra.estado) !== 'COMPLETADA') return
     const id = detalle.compra.id_compra
-    if (!window.confirm(`¿Anular la compra #${detalle.compra.numero_compra ?? id}?\n\nSe descontará del stock la mercadería registrada en esta compra. Esta acción no se puede deshacer.`)) return
     setAnulando(true)
-    setErrorDetalle('')
+    setErrorAnulacion('')
     setMensaje('')
     try {
       await api.patch(`/compras/${id}/anular`)
-      await cargarCompras()
+      detalleRequest.current += 1
+      setConfirmando(false)
       setDetalle(null)
       setDetalleId(null)
       setMensaje('Compra anulada correctamente. El stock fue actualizado.')
+      await cargarCompras()
     } catch (err) {
-      setErrorDetalle(err.response?.data?.error || 'No se pudo anular la compra. Verificá su estado y el stock.')
+      setErrorAnulacion(err.response?.data?.error || 'No se pudo anular la compra. Verificá su estado y el stock.')
     } finally {
       setAnulando(false)
     }
   }
 
   function cerrarDetalle() {
-    if (cargandoDetalle || anulando) return
+    if (anulando || confirmando) return
+    detalleRequest.current += 1
+    setCargandoDetalle(false)
     setDetalleId(null)
     setDetalle(null)
     setErrorDetalle('')
+    setErrorAnulacion('')
   }
 
   return (
@@ -311,18 +331,14 @@ export default function Compras({ esPropietario = false }) {
           </div>
         </div>
 
-        {mensaje && <p role="status" className={styles.conteo}>{mensaje}</p>}
+        {mensaje && <Alert type="success" title="Compra anulada">{mensaje}</Alert>}
 
         {errorProveedores && (
-          <p role="alert" className={styles.error}>
-            {errorProveedores}
-          </p>
+          <Alert type="warning" title="Información de proveedores">{errorProveedores}</Alert>
         )}
 
         {error && (
-          <p role="alert" className={styles.error}>
-            {error}
-          </p>
+          <Alert type="error">{error}</Alert>
         )}
 
         {!cargando && (
@@ -392,42 +408,15 @@ export default function Compras({ esPropietario = false }) {
         )}
       </div>
 
-      {detalleId !== null && (
-        <div className={styles.modalBackdrop}>
-          <section
-            className={styles.modal}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="detalle-compra-titulo"
-          >
-            <header className={styles.modalHeader}>
-              <div>
-                <p className={styles.etiqueta}>
-                  DETALLE DE OPERACIÓN
-                </p>
-                <h2 id="detalle-compra-titulo">
-                  Compra #{detalle?.compra?.numero_compra ?? detalleId}
-                </h2>
-              </div>
-
-              <button
-                type="button"
-                className={styles.secundario}
-                onClick={cerrarDetalle}
-                disabled={cargandoDetalle || anulando}
-              >
-                Cerrar
-              </button>
-            </header>
-
+      <Modal open={detalleId !== null && !confirmando} onClose={cerrarDetalle}
+        title={`Compra #${detalle?.compra?.numero_compra ?? detalleId}`}
+        description="Detalle de operación" busy={anulando} size="large">
             {cargandoDetalle && (
               <p className={styles.vacio}>Cargando detalle…</p>
             )}
 
             {errorDetalle && (
-              <p role="alert" className={styles.error}>
-                {errorDetalle}
-              </p>
+              <Alert type="error">{errorDetalle}</Alert>
             )}
 
             {detalle && (
@@ -495,7 +484,7 @@ export default function Compras({ esPropietario = false }) {
                   <div className={styles.modalTotal}>
                     <span>La anulación revierte el stock de esta compra.</span>
                     <button type="button" className={styles.secundario} disabled={anulando}
-                      onClick={anularCompra}>
+                      onClick={abrirConfirmacion}>
                       {anulando ? 'Anulando…' : 'Anular compra'}
                     </button>
                   </div>
@@ -510,9 +499,24 @@ export default function Compras({ esPropietario = false }) {
                 </div>
               </div>
             )}
-          </section>
-        </div>
-      )}
+      </Modal>
+      <ConfirmDialog
+        open={confirmando && Boolean(detalle?.compra)}
+        onClose={() => { if (!anulando) { setConfirmando(false); setErrorAnulacion('') } }}
+        onConfirm={anularCompra}
+        title={`¿Anular la compra #${detalle?.compra?.numero_compra ?? detalleId}?`}
+        description="Revisá los datos antes de confirmar la anulación."
+        details={[
+          { label: 'Proveedor', value: detalle ? nombreProveedor(detalle.compra.id_proveedor) : '—' },
+          { label: 'Importe', value: dinero(detalle?.compra?.total_compra) },
+        ]}
+        warning="Se descontará del stock la mercadería registrada en esta compra. Esta acción no se puede deshacer."
+        error={errorAnulacion}
+        busy={anulando}
+        destructive
+        confirmLabel="Confirmar anulación"
+      />
+
     </section>
   )
 }
