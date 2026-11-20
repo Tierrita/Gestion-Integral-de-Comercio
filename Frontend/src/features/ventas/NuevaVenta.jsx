@@ -593,11 +593,7 @@ useEffect(() => {
           Cancelar
         </button>
 
-        {errorVenta && (
-          <p role="alert" className={styles.error}>
-            {errorVenta}
-          </p>
-        )}
+        {errorVenta && !confirmando && <Alert type="error">{errorVenta}</Alert>}
 
         <button
           type="button"
