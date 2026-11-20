@@ -17,6 +17,8 @@ El comercio se obtiene desde el usuario autenticado.
 
 from datetime import datetime, timedelta, timezone
 from functools import wraps
+import hashlib
+import hmac
 
 import jwt
 from flask import current_app, request, jsonify, g
@@ -27,6 +29,15 @@ from app.models.usuario_model import (
 )
 
 from core.supabase_client import get_client
+
+
+def firma_credenciales(usuario):
+    """Huella HMAC del hash de contraseña actual; no revela el hash al cliente."""
+    password_hash = usuario.get("password")
+    if not password_hash:
+        raise ValueError("El usuario no tiene credenciales válidas")
+    secreto = current_app.config["JWT_SECRET_KEY"].encode("utf-8")
+    return hmac.new(secreto, password_hash.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
 def generar_token(usuario):
@@ -42,6 +53,7 @@ def generar_token(usuario):
 
     payload = {
         "id_usuario": usuario["id_usuario"],
+        "cred_sig": firma_credenciales(usuario),
         "iat": ahora,
         "exp": ahora + timedelta(hours=24)
     }
@@ -121,6 +133,13 @@ def login_requerido(func):
             return jsonify({
                 "error": "Usuario no encontrado"
             }), 401
+
+        # Revocar automáticamente tokens emitidos antes de un cambio de contraseña.
+        firma_token = payload.get("cred_sig")
+        if not isinstance(firma_token, str) or not hmac.compare_digest(
+            firma_token, firma_credenciales(usuario)
+        ):
+            return jsonify({"error": "La sesión ya no es válida"}), 401
 
         if not usuario.get("estado", False):
             return jsonify({

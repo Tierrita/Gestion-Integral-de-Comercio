@@ -14,7 +14,8 @@ from app.models.rol_model import (
     insertar_permisos_rol,
     actualizar_rol,
     eliminar_permisos_rol,
-    contar_usuarios_rol
+    contar_usuarios_rol,
+    guardar_rol_con_permisos
 )
 
 
@@ -92,48 +93,10 @@ def crear_rol(datos, id_comercio):
                 f"El permiso con ID {id_permiso} no existe"
             )
 
-    # -------------------------
-    # Crear rol
-    # -------------------------
-
-    nuevo_rol = {
-        "id_comercio": id_comercio,
-        "nombre_rol": nombre_rol,
-        "estado": True,
-    }
-
-    resultado = insertar_rol(nuevo_rol)
-
-    if not resultado:
-        raise RuntimeError("No se pudo crear el rol")
-
-    rol = resultado[0]
-    id_rol = rol["id_rol"]
-
-    # -------------------------
-    # Asignar permisos
-    # -------------------------
-
-    if ids_permisos:
-
-        relaciones = [
-            {
-                "id_rol": id_rol,
-                "id_permiso": id_permiso,
-            }
-            for id_permiso in ids_permisos
-        ]
-
-        insertar_permisos_rol(relaciones)
-
-    # -------------------------
-    # Respuesta final
-    # -------------------------
-
-    return obtener_detalle_rol(
-        id_rol,
-        id_comercio
+    id_rol = guardar_rol_con_permisos(
+        id_comercio, None, nombre_rol, ids_permisos
     )
+    return obtener_detalle_rol(id_rol, id_comercio)
 
 
 
@@ -153,83 +116,27 @@ def modificar_rol(id_rol, datos, id_comercio):
     if not rol:
         raise ValueError("Rol no encontrado")
 
-    # -------------------------
-    # Modificar nombre
-    # -------------------------
-
+    nombre_rol = None
     if "nombre_rol" in datos:
-
         nombre_rol = str(datos.get("nombre_rol", "")).strip()
-
-        if not nombre_rol:
-            raise ValueError("El nombre del rol es obligatorio")
-
         if len(nombre_rol) < 3:
-            raise ValueError(
-                "El nombre del rol debe tener al menos 3 caracteres"
-            )
+            raise ValueError("El nombre del rol debe tener al menos 3 caracteres")
 
-        actualizar_rol(
-            id_rol,
-            id_comercio,
-            {
-                "nombre_rol": nombre_rol
-            }
-        )
-
-    # -------------------------
-    # Modificar permisos
-    # -------------------------
-
+    ids_permisos = None
     if "permisos" in datos:
-
-        ids_permisos = datos.get("permisos")
-
+        ids_permisos = datos["permisos"]
         if not isinstance(ids_permisos, list):
-            raise ValueError(
-                "Los permisos deben enviarse como una lista"
-            )
-
-        # Evitar IDs repetidos
+            raise ValueError("Los permisos deben enviarse como una lista")
         ids_permisos = list(dict.fromkeys(ids_permisos))
+        ids_validos = {p["id_permiso"] for p in obtener_permisos()}
+        if any(p not in ids_validos for p in ids_permisos):
+            raise ValueError("Se indicó un permiso inexistente")
 
-        permisos_disponibles = obtener_permisos()
+    if nombre_rol is None and ids_permisos is None:
+        raise ValueError("No se enviaron cambios para el rol")
 
-        ids_validos = {
-            permiso["id_permiso"]
-            for permiso in permisos_disponibles
-        }
-
-        for id_permiso in ids_permisos:
-            if id_permiso not in ids_validos:
-                raise ValueError(
-                    f"El permiso con ID {id_permiso} no existe"
-                )
-
-        # Reemplazar permisos actuales
-        eliminar_permisos_rol(id_rol)
-
-        if ids_permisos:
-
-            relaciones = [
-                {
-                    "id_rol": id_rol,
-                    "id_permiso": id_permiso
-                }
-                for id_permiso in ids_permisos
-            ]
-
-            insertar_permisos_rol(relaciones)
-
-    # -------------------------
-    # Respuesta actualizada
-    # -------------------------
-
-    return obtener_detalle_rol(
-        id_rol,
-        id_comercio
-    )
-
+    guardar_rol_con_permisos(id_comercio, id_rol, nombre_rol, ids_permisos)
+    return obtener_detalle_rol(id_rol, id_comercio)
 
 
 
