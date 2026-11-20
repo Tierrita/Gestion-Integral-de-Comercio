@@ -1,3 +1,4 @@
+import { formatoMoneda } from '../../shared/utils/formatters.js'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -9,12 +10,6 @@ import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
 
 const normalizar = (valor) =>
   String(valor ?? '').trim().toUpperCase()
-
-const dinero = (valor) =>
-  new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-  }).format(Number(valor) || 0)
 
 const fechaLocal = (valor) =>
   valor
@@ -287,7 +282,7 @@ export default function Compras({ esPropietario = false }) {
         </article>
         <article>
           <span>Total comprado</span>
-          <strong>{dinero(totalComprado)}</strong>
+          <strong>{formatoMoneda(totalComprado)}</strong>
         </article>
         <article>
           <span>Compras anuladas</span>
@@ -411,7 +406,7 @@ export default function Compras({ esPropietario = false }) {
                       </span>
                     </td>
                     <td className={styles.importe}>
-                      <strong>{dinero(compra.total_compra)}</strong>
+                      <strong>{formatoMoneda(compra.total_compra)}</strong>
                     </td>
                     <td>
                       <button
@@ -487,8 +482,8 @@ export default function Compras({ esPropietario = false }) {
                         <tr key={item.id_detalle_compra}>
                           <td>{nombreProducto(item.id_producto)}</td>
                           <td>{item.cantidad}</td>
-                          <td>{dinero(item.precio_unitario)}</td>
-                          <td>{dinero(item.subtotal)}</td>
+                          <td>{formatoMoneda(item.precio_unitario)}</td>
+                          <td>{formatoMoneda(item.subtotal)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -498,7 +493,7 @@ export default function Compras({ esPropietario = false }) {
                 <div className={styles.modalTotal}>
                   <span>Total de la compra</span>
                   <strong>
-                    {dinero(detalle.compra.total_compra)}
+                    {formatoMoneda(detalle.compra.total_compra)}
                   </strong>
                 </div>
 
@@ -530,7 +525,7 @@ export default function Compras({ esPropietario = false }) {
         description="Revisá los datos antes de confirmar la anulación."
         details={[
           { label: 'Proveedor', value: detalle ? nombreProveedor(detalle.compra.id_proveedor) : '—' },
-          { label: 'Importe', value: dinero(detalle?.compra?.total_compra) },
+          { label: 'Importe', value: formatoMoneda(detalle?.compra?.total_compra) },
         ]}
         warning="Se descontará del stock la mercadería registrada en esta compra. Esta acción no se puede deshacer."
         error={errorAnulacion}

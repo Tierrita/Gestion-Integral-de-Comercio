@@ -5,12 +5,7 @@ import { api } from '../../shared/api/client.js'
 import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
 import Alert from '../../shared/components/Alert.jsx'
 import styles from './NuevaVenta.module.css'
-
-const dinero = (valor) =>
-  new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-  }).format(Number(valor) || 0)
+import { formatoMoneda, formatoFechaHora } from '../../shared/utils/formatters.js'
 
 const cantidadValida = (valor, unidad, stock) => {
   const texto = String(valor).trim()
@@ -31,12 +26,7 @@ export default function NuevaVenta() {
   const [errorVenta, setErrorVenta] = useState('')
   const [confirmando, setConfirmando] = useState(false)
 
-  const [fechaActual] = useState(() =>
-    new Intl.DateTimeFormat('es-AR', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    }).format(new Date()),
-  )
+  const [fechaActual] = useState(() => formatoFechaHora(new Date()))
 
   const [cliente, setCliente] = useState('')
   const [clientes, setClientes] = useState([])
@@ -48,6 +38,7 @@ export default function NuevaVenta() {
   const [cuentas, setCuentas] = useState([])
   const [cuentaSeleccionada, setCuentaSeleccionada] = useState('')
   const [errorCuentas, setErrorCuentas] = useState('')
+  const [cargandoCuentas, setCargandoCuentas] = useState(true)
 
 
 
@@ -141,9 +132,11 @@ useEffect(() => {
         throw new Error('Respuesta inválida de cuentas')
       }
 
-      setCuentas(
-        data.cuentas.filter((cuenta) => cuenta.estado === true),
-      )
+      if (controller.signal.aborted) return
+      const activas = data.cuentas.filter((cuenta) => cuenta.estado === true)
+      setCuentas(activas)
+      const principal = activas.find((cuenta) => String(cuenta.nombre_cuenta ?? '').trim().toUpperCase() === 'CAJA PRINCIPAL')
+      setCuentaSeleccionada((actual) => actual || String(principal?.id_cuenta ?? ''))
     } catch (error) {
       if (!controller.signal.aborted) {
         setErrorCuentas(
@@ -151,6 +144,8 @@ useEffect(() => {
           'No se pudieron cargar las cuentas.',
         )
       }
+    } finally {
+      if (!controller.signal.aborted) setCargandoCuentas(false)
     }
   }
 
@@ -238,9 +233,9 @@ useEffect(() => {
       ),
     )
 
-  const puedeConfirmar = Boolean(cliente) && carritoValido &&
-    (metodoPago === 'CUENTA_CORRIENTE' || Boolean(cuentaSeleccionada)) &&
-    !enviando
+  const puedeConfirmar = Boolean(cliente) && !errorClientes && carritoValido &&
+    (metodoPago === 'CUENTA_CORRIENTE' || (Boolean(cuentaSeleccionada) && !cargandoCuentas && !errorCuentas)) &&
+    !enviando && !cargando && !error
 
   function solicitarConfirmacion() {
     if (!puedeConfirmar || enviandoRef.current) return
@@ -341,7 +336,7 @@ useEffect(() => {
   </select>
 
   {errorClientes && (
-    <span role="alert">{errorClientes}</span>
+    <span role="alert" className={styles.error}>{errorClientes}</span>
   )}
 </label>
 
@@ -366,11 +361,7 @@ useEffect(() => {
               <p role="status">Cargando productos…</p>
             )}
 
-            {error && (
-              <p role="alert" className={styles.error}>
-                {error}
-              </p>
-            )}
+            {error && <Alert type="error">{error}</Alert>}
 
             {busqueda.trim() && !cargando && !error && (
               <div className={styles.resultados}>
@@ -405,7 +396,7 @@ useEffect(() => {
                         <strong>
                           {agregado
                             ? 'Agregado'
-                            : dinero(producto.precio_venta)}
+                            : formatoMoneda(producto.precio_venta)}
                         </strong>
                       </button>
                     )
@@ -481,11 +472,11 @@ useEffect(() => {
                           )}
                         </td>
 
-                        <td>{dinero(item.precio_venta)}</td>
+                        <td>{formatoMoneda(item.precio_venta)}</td>
 
                         <td>
                           {valido
-                            ? dinero(
+                            ? formatoMoneda(
                                 Number(item.cantidad) *
                                 Number(item.precio_venta),
                               )
@@ -518,7 +509,7 @@ useEffect(() => {
                 <tr className={styles.filaTotal}>
                   <td colSpan={3}>Total a pagar</td>
                   <td colSpan={2}>
-                    {carritoValido ? dinero(total) : '—'}
+                    {carritoValido ? formatoMoneda(total) : '—'}
                   </td>
                 </tr>
               </tfoot>
@@ -534,7 +525,7 @@ useEffect(() => {
           <label className={styles.campo}>
             Importe
             <input
-              value={carritoValido ? dinero(total) : '—'}
+              value={carritoValido ? formatoMoneda(total) : '—'}
               readOnly
             />
           </label>
@@ -559,15 +550,17 @@ useEffect(() => {
               <select
                 value={cuentaSeleccionada}
                 onChange={(e) => setCuentaSeleccionada(e.target.value)}
+                disabled={cargandoCuentas || Boolean(errorCuentas)}
               >
-                <option value="">Seleccionar cuenta</option>
+                <option value="">{cargandoCuentas ? 'Cargando cuentas…' : 'Seleccionar cuenta'}</option>
                 {cuentas.map((cuenta) => (
                   <option key={cuenta.id_cuenta} value={cuenta.id_cuenta}>
                     {cuenta.nombre_cuenta}
                   </option>
                 ))}
               </select>
-              {errorCuentas && <span role="alert">{errorCuentas}</span>}
+              {errorCuentas && <span role="alert" className={styles.error}>{errorCuentas}</span>}
+              {!cargandoCuentas && !errorCuentas && cuentas.length === 0 && <small className={styles.ayudaCampo}>No hay cuentas activas disponibles.</small>}
             </label>
           )}
         </div>
@@ -609,8 +602,9 @@ useEffect(() => {
         description="Confirmá los datos antes de registrar la venta."
         details={[
           { label: 'Cliente', value: clientes.find((item) => String(item.id_cliente) === String(cliente))?.nombre_completo || `Cliente #${cliente}` },
-          { label: 'Total estimado', value: dinero(total) },
+          { label: 'Total estimado', value: formatoMoneda(total) },
           { label: 'Método de pago', value: metodoPago.replaceAll('_', ' ') },
+          ...(metodoPago !== 'CUENTA_CORRIENTE' ? [{ label: 'Cuenta de destino', value: cuentas.find((item) => String(item.id_cuenta) === String(cuentaSeleccionada))?.nombre_cuenta || '—' }] : []),
         ]}
         warning="Se descontará el stock y se registrará la operación comercial."
         error={errorVenta} busy={enviando} confirmLabel="Registrar venta" />

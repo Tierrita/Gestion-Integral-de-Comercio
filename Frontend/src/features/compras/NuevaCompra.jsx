@@ -4,10 +4,7 @@ import { api } from '../../shared/api/client.js'
 import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
 import Alert from '../../shared/components/Alert.jsx'
 import styles from '../ventas/NuevaVenta.module.css'
-
-const dinero = (valor) => new Intl.NumberFormat('es-AR', {
-  style: 'currency', currency: 'ARS',
-}).format(Number(valor) || 0)
+import { formatoMoneda } from '../../shared/utils/formatters.js'
 
 const cantidadValida = (valor, unidad) => {
   const texto = String(valor).trim()
@@ -139,7 +136,7 @@ export default function NuevaCompra() {
       <header className={styles.encabezado}>
         <div>
           <p className={styles.etiqueta}>GESTIÓN COMERCIAL</p>
-          <h1>Nueva compra</h1>
+          <h1>Crear compra</h1>
           <p className={styles.descripcion}>Registrá mercadería recibida y actualizá su costo.</p>
         </div>
         <button type="button" className={styles.secundario} onClick={() => navigate('/compras')}>Volver a compras</button>
@@ -161,7 +158,7 @@ export default function NuevaCompra() {
         <div className={styles.productos}>
           <h2>Productos recibidos</h2>
           {cargando && <p role="status">Cargando productos y proveedores…</p>}
-          {error && <p role="alert" className={styles.error}>{error}</p>}
+          {error && <Alert type="error">{error}</Alert>}
           {!cargando && !error && proveedores.length === 0 && (
             <p role="status">No hay proveedores activos disponibles.</p>
           )}
@@ -181,7 +178,7 @@ export default function NuevaCompra() {
                     <button type="button" className={styles.resultado} key={item.id_producto}
                       onClick={() => agregarProducto(item)} disabled={agregado}>
                       <span><strong>{item.nombre_producto}</strong><small>N.º {item.numero_producto} · Stock: {item.stock} {item.unidad_de_medida}</small></span>
-                      <strong>{agregado ? 'Agregado' : dinero(item.precio_costo)}</strong>
+                      <strong>{agregado ? 'Agregado' : formatoMoneda(item.precio_costo)}</strong>
                     </button>
                   )
                 })}
@@ -214,14 +211,14 @@ export default function NuevaCompra() {
                           aria-invalid={!costoOk} onChange={(e) => cambiarItem(item.id_producto, 'precio_unitario', e.target.value)} />
                         {!costoOk && <small className={styles.errorCantidad}>Costo inválido (máx. 2 decimales)</small>}
                       </td>
-                      <td>{cantidadOk && costoOk ? dinero(Number(item.cantidad) * Number(item.precio_unitario)) : '—'}</td>
+                      <td>{cantidadOk && costoOk ? formatoMoneda(Number(item.cantidad) * Number(item.precio_unitario)) : '—'}</td>
                       <td><button type="button" className={styles.quitar}
                         onClick={() => setCarrito((actual) => actual.filter((producto) => producto.id_producto !== item.id_producto))}>Quitar</button></td>
                     </tr>
                   )
                 })}
               </tbody>
-              <tfoot><tr className={styles.filaTotal}><td colSpan={3}>Total estimado</td><td colSpan={2}>{carritoValido ? dinero(total) : '—'}</td></tr></tfoot>
+              <tfoot><tr><td colSpan={3}>Productos agregados</td><td colSpan={2}>{carrito.length}</td></tr><tr className={styles.filaTotal}><td colSpan={3}>Total estimado</td><td colSpan={2}>{carritoValido ? formatoMoneda(total) : '—'}</td></tr></tfoot>
             </table>
           </div>
         </div>
@@ -245,7 +242,7 @@ export default function NuevaCompra() {
         details={[
           { label: 'Proveedor', value: proveedores.find((item) => String(item.id_proveedor) === String(proveedor))?.nombre_proveedor || `Proveedor #${proveedor}` },
           { label: 'Productos', value: carrito.length },
-          { label: 'Total estimado', value: dinero(total) },
+          { label: 'Total estimado', value: formatoMoneda(total) },
         ]}
         warning="Se actualizarán el stock y los costos de los productos."
         error={errorCompra} busy={enviando} confirmLabel="Registrar compra" />

@@ -483,3 +483,7 @@
 .quitar:hover {
   background: rgb(220 38 38 / .08);
 }
+
+.ayudaCampo { color: var(--color-text-muted); font-size: .76rem; line-height: 1.4; }
+.tablaScroll td { overflow-wrap: anywhere; }
+.filaTotal td:last-child { font-variant-numeric: tabular-nums; }
