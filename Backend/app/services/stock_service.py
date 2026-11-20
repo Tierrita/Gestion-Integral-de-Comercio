@@ -1,17 +1,8 @@
-"""Servicio de stock del comercio autenticado.
-
-PREPARACIÓN PARA MIGRACIÓN DECIMAL: no habilitar ajustes KG hasta que
-las columnas, las funciones SQL y el resto del backend estén migrados.
-La actualización del stock y su historial aún no son atómicos; migrar
-ambas escrituras a una RPC transaccional antes del despliegue.
-"""
-
-from decimal import Decimal
+"""Servicio de stock del comercio autenticado."""
 
 from app.models.stock_model import (
     obtener_stock_producto,
-    actualizar_stock_producto,
-    registrar_movimiento_stock,
+    ajustar_stock_atomico as ejecutar_ajuste_atomico,
     obtener_stock_general,
     obtener_historial_stock,
 )
@@ -54,50 +45,29 @@ def ajustar_stock(id_producto, cantidad, tipo_ajuste, id_usuario, id_comercio):
     unidad = _unidad_producto(producto)
     cantidad_decimal = validar_cantidad(cantidad, unidad)
 
-    stock_bruto = producto.get("stock")
-    if stock_bruto is None:
-        raise ValueError("El producto no posee un stock válido")
-    stock_actual = validar_cantidad(stock_bruto, unidad, permitir_cero=True)
-
-    if tipo_ajuste == "AUMENTAR":
-        nuevo_stock = stock_actual + cantidad_decimal
-        tipo_movimiento = "AJUSTE_ENTRADA"
-    else:
-        nuevo_stock = stock_actual - cantidad_decimal
-        tipo_movimiento = "AJUSTE_SALIDA"
-
-    if nuevo_stock < Decimal("0"):
-        raise ValueError("El stock no puede quedar negativo")
-
-    # NOTA: son dos escrituras independientes. Antes de producción,
-    # reemplazarlas por una única función SQL transaccional con bloqueo.
-    producto_actualizado = actualizar_stock_producto(
-        id_producto, id_comercio, _numero_json(nuevo_stock)
-    )
-    if not producto_actualizado:
-        raise ValueError("No se pudo actualizar el stock del producto")
-
-    movimiento = {
-        "id_producto": id_producto,
-        "id_usuario": id_usuario,
-        "tipo_movimiento": tipo_movimiento,
-        "cantidad": _numero_json(cantidad_decimal),
-        "stock_anterior": _numero_json(stock_actual),
-        "stock_nuevo": _numero_json(nuevo_stock),
-        "observaciones": "Ajuste manual de stock",
-    }
-    movimiento_registrado = registrar_movimiento_stock(movimiento)
-    if not movimiento_registrado:
-        raise ValueError("No se pudo registrar el movimiento de stock")
-
-    return {
-        "id_producto": id_producto,
-        "nombre_producto": producto["nombre_producto"],
-        "stock_anterior": _numero_json(stock_actual),
-        "stock_nuevo": _numero_json(nuevo_stock),
-        "cantidad": _numero_json(cantidad_decimal),
-        "tipo_movimiento": tipo_movimiento,
-    }
+    try:
+        return ejecutar_ajuste_atomico(
+            id_producto=id_producto,
+            id_comercio=id_comercio,
+            id_usuario=id_usuario,
+            cantidad=cantidad_decimal,
+            tipo_ajuste=tipo_ajuste,
+        )
+    except Exception as error:
+        # Errores de negocio conocidos: mantener respuesta 400/404 del controller.
+        mensaje = str(error)
+        errores_negocio = (
+            "Producto no encontrado",
+            "No se puede ajustar el stock de un producto inactivo",
+            "El stock no puede quedar negativo",
+            "Usuario no autorizado para este comercio",
+            "Cantidad inválida",
+            "La cantidad en unidades debe ser entera",
+        )
+        for texto in errores_negocio:
+            if texto in mensaje:
+                raise ValueError(texto) from error
+        raise
 
 
 def consultar_stock_general(id_comercio, buscar=None):
