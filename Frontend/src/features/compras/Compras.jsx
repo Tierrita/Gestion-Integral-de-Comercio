@@ -31,7 +31,7 @@ const fechaFiltro = (valor) => {
   return local.toISOString().slice(0, 10)
 }
 
-export default function Compras() {
+export default function Compras({ esPropietario = false }) {
   const navigate = useNavigate()
 
   const [compras, setCompras] = useState([])
@@ -48,6 +48,8 @@ export default function Compras() {
   const [detalleId, setDetalleId] = useState(null)
   const [cargandoDetalle, setCargandoDetalle] = useState(false)
   const [errorDetalle, setErrorDetalle] = useState('')
+  const [anulando, setAnulando] = useState(false)
+  const [mensaje, setMensaje] = useState('')
 
   async function cargarCompras(signal) {
     setCargando(true)
@@ -189,8 +191,28 @@ export default function Compras() {
     }
   }
 
+  async function anularCompra() {
+    if (!esPropietario || !detalle || anulando || normalizar(detalle.compra.estado) !== 'COMPLETADA') return
+    const id = detalle.compra.id_compra
+    if (!window.confirm(`¿Anular la compra #${detalle.compra.numero_compra ?? id}?\n\nSe descontará del stock la mercadería registrada en esta compra. Esta acción no se puede deshacer.`)) return
+    setAnulando(true)
+    setErrorDetalle('')
+    setMensaje('')
+    try {
+      await api.patch(`/compras/${id}/anular`)
+      await cargarCompras()
+      setDetalle(null)
+      setDetalleId(null)
+      setMensaje('Compra anulada correctamente. El stock fue actualizado.')
+    } catch (err) {
+      setErrorDetalle(err.response?.data?.error || 'No se pudo anular la compra. Verificá su estado y el stock.')
+    } finally {
+      setAnulando(false)
+    }
+  }
+
   function cerrarDetalle() {
-    if (cargandoDetalle) return
+    if (cargandoDetalle || anulando) return
     setDetalleId(null)
     setDetalle(null)
     setErrorDetalle('')
@@ -288,6 +310,8 @@ export default function Compras() {
             </button>
           </div>
         </div>
+
+        {mensaje && <p role="status" className={styles.conteo}>{mensaje}</p>}
 
         {errorProveedores && (
           <p role="alert" className={styles.error}>
@@ -390,7 +414,7 @@ export default function Compras() {
                 type="button"
                 className={styles.secundario}
                 onClick={cerrarDetalle}
-                disabled={cargandoDetalle}
+                disabled={cargandoDetalle || anulando}
               >
                 Cerrar
               </button>
@@ -466,6 +490,16 @@ export default function Compras() {
                     {dinero(detalle.compra.total_compra)}
                   </strong>
                 </div>
+
+                {esPropietario && normalizar(detalle.compra.estado) === 'COMPLETADA' && (
+                  <div className={styles.modalTotal}>
+                    <span>La anulación revierte el stock de esta compra.</span>
+                    <button type="button" className={styles.secundario} disabled={anulando}
+                      onClick={anularCompra}>
+                      {anulando ? 'Anulando…' : 'Anular compra'}
+                    </button>
+                  </div>
+                )}
 
                 <div className={styles.observaciones}>
                   <strong>Observaciones</strong>
