@@ -271,3 +271,18 @@ def obtener_historial_stock(id_comercio, id_producto=None):
         )
 
     return movimientos
+
+
+def ajustar_stock_atomico(id_producto, id_comercio, id_usuario, cantidad, tipo_ajuste):
+    """Actualiza existencias e historial dentro de una sola transaccion PostgreSQL."""
+    response = get_client().rpc(
+        "ajustar_stock_atomico",
+        {
+            "p_id_producto": id_producto,
+            "p_id_comercio": id_comercio,
+            "p_id_usuario": id_usuario,
+            "p_cantidad": str(cantidad),
+            "p_tipo_ajuste": tipo_ajuste,
+        },
+    ).execute()
+    return response.data
