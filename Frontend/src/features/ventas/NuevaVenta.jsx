@@ -2,6 +2,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
+import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
+import Alert from '../../shared/components/Alert.jsx'
 import styles from './NuevaVenta.module.css'
 
 const dinero = (valor) =>
@@ -27,6 +29,7 @@ export default function NuevaVenta() {
   const enviandoRef = useRef(false)
   const [enviando, setEnviando] = useState(false)
   const [errorVenta, setErrorVenta] = useState('')
+  const [confirmando, setConfirmando] = useState(false)
 
   const [fechaActual] = useState(() =>
     new Intl.DateTimeFormat('es-AR', {
@@ -239,6 +242,12 @@ useEffect(() => {
     (metodoPago === 'CUENTA_CORRIENTE' || Boolean(cuentaSeleccionada)) &&
     !enviando
 
+  function solicitarConfirmacion() {
+    if (!puedeConfirmar || enviandoRef.current) return
+    setErrorVenta('')
+    setConfirmando(true)
+  }
+
   async function confirmarVenta() {
     if (enviandoRef.current) return
 
@@ -247,10 +256,6 @@ useEffect(() => {
       setErrorVenta('Seleccioná un cliente, agregá productos válidos y elegí una cuenta de destino cuando corresponda.')
       return
     }
-
-    const clienteElegido = clientes.find((item) => String(item.id_cliente) === String(cliente))
-    const resumen = `Cliente: ${clienteElegido?.nombre_completo || cliente}\nTotal estimado: ${dinero(total)}\nMétodo: ${metodoPago}\n\n¿Confirmás registrar esta venta real?`
-    if (!window.confirm(resumen)) return
 
     enviandoRef.current = true
     setEnviando(true)
@@ -272,6 +277,7 @@ useEffect(() => {
 
     try {
       await api.post('/ventas', payload)
+      setConfirmando(false)
       navigate('/ventas', { replace: true })
     } catch (err) {
       const respuesta = err.response?.data
@@ -587,21 +593,27 @@ useEffect(() => {
           Cancelar
         </button>
 
-        {errorVenta && (
-          <p role="alert" className={styles.error}>
-            {errorVenta}
-          </p>
-        )}
+        {errorVenta && !confirmando && <Alert type="error">{errorVenta}</Alert>}
 
         <button
           type="button"
           className={styles.confirmar}
           disabled={!puedeConfirmar}
-          onClick={confirmarVenta}
+          onClick={solicitarConfirmacion}
         >
           {enviando ? 'Registrando venta…' : 'Confirmar venta'}
         </button>
       </footer>
+      <ConfirmDialog open={confirmando} onClose={() => { if (!enviando) setConfirmando(false) }}
+        onConfirm={confirmarVenta} title="¿Registrar esta venta?"
+        description="Confirmá los datos antes de registrar la venta."
+        details={[
+          { label: 'Cliente', value: clientes.find((item) => String(item.id_cliente) === String(cliente))?.nombre_completo || `Cliente #${cliente}` },
+          { label: 'Total estimado', value: dinero(total) },
+          { label: 'Método de pago', value: metodoPago.replaceAll('_', ' ') },
+        ]}
+        warning="Se descontará el stock y se registrará la operación comercial."
+        error={errorVenta} busy={enviando} confirmLabel="Registrar venta" />
     </section>
   )
 }

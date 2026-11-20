@@ -3,7 +3,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import styles from './Ventas.module.css'
-import confirmStyles from './ConfirmarAnulacion.module.css'
+import Alert from '../../shared/components/Alert.jsx'
+import Modal from '../../shared/components/Modal.jsx'
+import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
 
 const dinero = (valor) =>
   new Intl.NumberFormat('es-AR', {
@@ -75,24 +77,7 @@ export default function Ventas({ esPropietario = false }) {
     setCargandoDetalle(false)
   }
 
-    useEffect(() => {
-    if (seleccionada === null) return undefined
-
-    const onKeyDown = (event) => {
-      if (event.key === 'Escape' && !mostrarConfirmacion && !anulando) {
-        detalleRequest.current += 1
-        setSeleccionada(null)
-        setDetalle(null)
-        setErrorDetalle('')
-        setCargandoDetalle(false)
-      }
-    }
-
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [seleccionada, mostrarConfirmacion, anulando])
-
-  async function cargarVentas() {
+    async function cargarVentas() {
     setCargando(true)
     setError('')
 
@@ -324,9 +309,7 @@ export default function Ventas({ esPropietario = false }) {
       </div>
 
       {mensajeExito && (
-        <p role="status" className={confirmStyles.exito}>
-          ✓ {mensajeExito}
-        </p>
+        <Alert type="success" title="Venta anulada">{mensajeExito}</Alert>
       )}
 
       <div className={styles.panel}>
@@ -490,45 +473,9 @@ export default function Ventas({ esPropietario = false }) {
         )}
       </div>
 
-      {seleccionada !== null && (
-        <div
-          className={styles.modalBackdrop}
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget && !mostrarConfirmacion && !anulando) {
-              cerrarDetalle()
-            }
-          }}
-        >
-          <section
-            className={styles.modal}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="venta-detalle-titulo"
-          >
-            <header className={styles.modalHeader}>
-              <div>
-                <p className={styles.etiqueta}>
-                  DETALLE DE OPERACIÓN
-                </p>
-                <h2 id="venta-detalle-titulo">
-                  Venta #
-                  {detalle?.venta?.numero_venta ??
-                     ventas.find((venta) => venta.id_venta === seleccionada)?.numero_venta ??
-                     seleccionada}
-                </h2>
-              </div>
-
-              <button
-                type="button"
-                className={styles.secundario}
-                onClick={cerrarDetalle}
-                disabled={anulando || mostrarConfirmacion}
-                autoFocus
-              >
-                Cerrar ×
-              </button>
-            </header>
-
+      <Modal open={seleccionada !== null && !mostrarConfirmacion} onClose={cerrarDetalle}
+        title={`Venta #${detalle?.venta?.numero_venta ?? ventas.find((venta) => venta.id_venta === seleccionada)?.numero_venta ?? seleccionada}`}
+        description="Detalle de operación" busy={anulando} size="large">
             {cargandoDetalle && (
               <p role="status" className={styles.vacio}>
                 Cargando detalle…
@@ -655,69 +602,23 @@ export default function Ventas({ esPropietario = false }) {
                   )}
               </div>
             )}
-          </section>
-        </div>
-      )}
+      </Modal>
 
-      {mostrarConfirmacion && detalle?.venta && (
-        <div className={confirmStyles.fondo}>
-          <section
-            className={confirmStyles.caja}
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="confirmar-anulacion-titulo"
-            aria-describedby="confirmar-anulacion-descripcion"
-          >
-            <div className={confirmStyles.encabezado}>
-              <span className={confirmStyles.icono} aria-hidden="true">!</span>
-              <div>
-                <p className={confirmStyles.etiqueta}>OPERACIÓN SENSIBLE</p>
-                <h2 id="confirmar-anulacion-titulo">¿Anular esta venta?</h2>
-                <p id="confirmar-anulacion-descripcion">
-                  Revisá los datos antes de confirmar la operación.
-                </p>
-              </div>
-            </div>
-
-            <div className={confirmStyles.datos}>
-              <div><span>Venta</span><strong>#{detalle.venta.numero_venta ?? detalle.venta.id_venta}</strong></div>
-              <div><span>Importe</span><strong>{dinero(detalle.venta.total)}</strong></div>
-              <div><span>Método de pago</span><strong>{normalizar(detalle.venta.metodo_pago).replaceAll('_', ' ')}</strong></div>
-              <div><span>Estado</span><strong>COMPLETADA</strong></div>
-            </div>
-
-            <p className={confirmStyles.advertencia}>
-              Los productos volverán al stock. En ventas en efectivo o transferencia,
-              se revertirá el ingreso financiero correspondiente. La operación quedará
-              registrada en el historial.
-            </p>
-
-            {errorAnulacion && (
-              <p role="alert" className={confirmStyles.error}>{errorAnulacion}</p>
-            )}
-
-            <div className={confirmStyles.acciones}>
-              <button
-                type="button"
-                className={confirmStyles.cancelar}
-                onClick={() => { setMostrarConfirmacion(false); setErrorAnulacion('') }}
-                disabled={anulando}
-                autoFocus
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className={confirmStyles.confirmar}
-                onClick={confirmarAnulacion}
-                disabled={anulando}
-              >
-                {anulando ? 'Anulando venta…' : 'Confirmar anulación'}
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
+      <ConfirmDialog
+        open={mostrarConfirmacion && Boolean(detalle?.venta)}
+        onClose={() => { if (!anulando) { setMostrarConfirmacion(false); setErrorAnulacion('') } }}
+        onConfirm={confirmarAnulacion}
+        title={`¿Anular la venta #${detalle?.venta?.numero_venta ?? seleccionada}?`}
+        description="Revisá los datos antes de confirmar la operación."
+        details={[
+          { label: 'Venta', value: `#${detalle?.venta?.numero_venta ?? seleccionada}` },
+          { label: 'Importe', value: dinero(detalle?.venta?.total) },
+          { label: 'Método de pago', value: normalizar(detalle?.venta?.metodo_pago).replaceAll('_', ' ') },
+          { label: 'Estado', value: normalizar(detalle?.venta?.estado) },
+        ]}
+        warning="Los productos volverán al stock. En ventas en efectivo o transferencia, se revertirá el ingreso financiero correspondiente. La operación quedará registrada en el historial."
+        error={errorAnulacion} busy={anulando} destructive confirmLabel="Confirmar anulación"
+      />
     </section>
   )
 }
