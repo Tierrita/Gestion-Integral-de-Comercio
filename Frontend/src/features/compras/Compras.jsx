@@ -1,0 +1,484 @@
+
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { api } from '../../shared/api/client.js'
+import styles from '../ventas/Ventas.module.css'
+
+const normalizar = (valor) =>
+  String(valor ?? '').trim().toUpperCase()
+
+const dinero = (valor) =>
+  new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+  }).format(Number(valor) || 0)
+
+const fechaLocal = (valor) =>
+  valor
+    ? new Date(valor).toLocaleString('es-AR', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      })
+    : '—'
+
+const fechaFiltro = (valor) => {
+  if (!valor) return ''
+  const fecha = new Date(valor)
+  if (Number.isNaN(fecha.getTime())) return ''
+  const local = new Date(
+    fecha.getTime() - fecha.getTimezoneOffset() * 60000,
+  )
+  return local.toISOString().slice(0, 10)
+}
+
+export default function Compras() {
+  const navigate = useNavigate()
+
+  const [compras, setCompras] = useState([])
+  const [proveedores, setProveedores] = useState([])
+  const [busqueda, setBusqueda] = useState('')
+  const [estado, setEstado] = useState('TODOS')
+  const [desde, setDesde] = useState('')
+  const [hasta, setHasta] = useState('')
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState('')
+  const [errorProveedores, setErrorProveedores] = useState('')
+
+  const [detalle, setDetalle] = useState(null)
+  const [detalleId, setDetalleId] = useState(null)
+  const [cargandoDetalle, setCargandoDetalle] = useState(false)
+  const [errorDetalle, setErrorDetalle] = useState('')
+
+  async function cargarCompras(signal) {
+    setCargando(true)
+    setError('')
+
+    try {
+      const { data } = await api.get('/compras', { signal })
+
+      if (!Array.isArray(data)) {
+        throw new Error('Respuesta de compras inválida')
+      }
+
+      if (!signal?.aborted) setCompras(data)
+    } catch (err) {
+      if (signal?.aborted) return
+      setError(
+        err.response?.data?.error ||
+        'No se pudieron cargar las compras.',
+      )
+    } finally {
+      if (!signal?.aborted) setCargando(false)
+    }
+  }
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    const timer = setTimeout(() => {
+      void cargarCompras(controller.signal)
+    }, 0)
+
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function cargarProveedores() {
+      try {
+        const { data } = await api.get('/proveedores', {
+          signal: controller.signal,
+        })
+
+        const lista = Array.isArray(data)
+          ? data
+          : data?.proveedores
+
+        if (!Array.isArray(lista)) {
+          throw new Error('Respuesta de proveedores inválida')
+        }
+
+        if (!controller.signal.aborted) setProveedores(lista)
+      } catch (err) {
+        if (controller.signal.aborted) return
+
+        setErrorProveedores(
+          err.response?.status === 403
+            ? 'Sin permiso para consultar proveedores. Se mostrarán sus identificadores.'
+            : 'No se pudieron cargar los nombres de proveedores.',
+        )
+      }
+    }
+
+    void cargarProveedores()
+    return () => controller.abort()
+  }, [])
+
+  const nombreProveedor = (id) =>
+    proveedores.find(
+      (item) => String(item.id_proveedor) === String(id),
+    )?.nombre_proveedor || `Proveedor #${id}`
+
+  const filtradas = useMemo(() => {
+    const texto = busqueda.trim().toLowerCase()
+
+    return compras.filter((compra) => {
+      const nombre = proveedores.find(
+        (item) =>
+          String(item.id_proveedor) === String(compra.id_proveedor),
+      )?.nombre_proveedor
+
+      const coincideBusqueda = [
+        compra.numero_compra,
+        compra.id_proveedor,
+        nombre,
+        compra.observaciones,
+      ].some((valor) =>
+        String(valor ?? '').toLowerCase().includes(texto),
+      )
+
+      const fecha = fechaFiltro(compra.fecha_compra)
+
+      return (
+        coincideBusqueda &&
+        (estado === 'TODOS' || normalizar(compra.estado) === estado) &&
+        (!desde || fecha >= desde) &&
+        (!hasta || fecha <= hasta)
+      )
+    })
+  }, [compras, proveedores, busqueda, estado, desde, hasta])
+
+  const completadas = filtradas.filter(
+    (compra) => normalizar(compra.estado) === 'COMPLETADA',
+  )
+
+  const anuladas = filtradas.filter(
+    (compra) => normalizar(compra.estado) === 'ANULADA',
+  )
+
+  const totalComprado = completadas.reduce(
+    (suma, compra) => suma + Number(compra.total_compra || 0),
+    0,
+  )
+
+  async function verDetalle(id) {
+    setDetalleId(id)
+    setDetalle(null)
+    setErrorDetalle('')
+    setCargandoDetalle(true)
+
+    try {
+      const { data } = await api.get(`/compras/${id}`)
+
+      if (!data?.compra || !Array.isArray(data.detalles)) {
+        throw new Error('Respuesta de detalle inválida')
+      }
+
+      setDetalle(data)
+    } catch (err) {
+      setErrorDetalle(
+        err.response?.data?.error ||
+        'No se pudo cargar el detalle de la compra.',
+      )
+    } finally {
+      setCargandoDetalle(false)
+    }
+  }
+
+  function cerrarDetalle() {
+    if (cargandoDetalle) return
+    setDetalleId(null)
+    setDetalle(null)
+    setErrorDetalle('')
+  }
+
+  return (
+    <section className={styles.pagina}>
+      <header className={styles.encabezado}>
+        <div>
+          <p className={styles.etiqueta}>GESTIÓN COMERCIAL</p>
+          <h1>Compras</h1>
+          <p className={styles.descripcion}>
+            Consultá las compras registradas en tu comercio.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className={styles.principal}
+          onClick={() => navigate('/compras/nueva')}
+        >
+          + Nueva compra
+        </button>
+      </header>
+
+      <div className={styles.indicadores}>
+        <article>
+          <span>Compras completadas</span>
+          <strong>{completadas.length}</strong>
+        </article>
+        <article>
+          <span>Total comprado</span>
+          <strong>{dinero(totalComprado)}</strong>
+        </article>
+        <article>
+          <span>Compras anuladas</span>
+          <strong>{anuladas.length}</strong>
+        </article>
+        <article>
+          <span>Registros encontrados</span>
+          <strong>{filtradas.length}</strong>
+        </article>
+      </div>
+
+      <div className={styles.panel}>
+        <div className={styles.panelContenido}>
+          <div className={styles.filtros}>
+            <label>
+              Buscar
+              <input
+                type="search"
+                placeholder="N.º, proveedor u observación"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+              />
+            </label>
+
+            <label>
+              Desde
+              <input
+                type="date"
+                value={desde}
+                onChange={(e) => setDesde(e.target.value)}
+              />
+            </label>
+
+            <label>
+              Hasta
+              <input
+                type="date"
+                value={hasta}
+                onChange={(e) => setHasta(e.target.value)}
+              />
+            </label>
+
+            <label>
+              Estado
+              <select
+                value={estado}
+                onChange={(e) => setEstado(e.target.value)}
+              >
+                <option value="TODOS">Todos</option>
+                <option value="COMPLETADA">Completadas</option>
+                <option value="ANULADA">Anuladas</option>
+              </select>
+            </label>
+
+            <button
+              type="button"
+              className={styles.secundario}
+              onClick={() => cargarCompras()}
+              disabled={cargando}
+            >
+              Actualizar
+            </button>
+          </div>
+        </div>
+
+        {errorProveedores && (
+          <p role="alert" className={styles.error}>
+            {errorProveedores}
+          </p>
+        )}
+
+        {error && (
+          <p role="alert" className={styles.error}>
+            {error}
+          </p>
+        )}
+
+        {!cargando && (
+          <p className={styles.conteo}>
+            Mostrando {filtradas.length} de {compras.length} compras
+          </p>
+        )}
+
+        {cargando ? (
+          <p className={styles.vacio}>Cargando compras…</p>
+        ) : filtradas.length === 0 ? (
+          <p className={styles.vacio}>
+            No hay compras para mostrar.
+          </p>
+        ) : (
+          <div className={`${styles.tablaScroll} ${styles.tablaListado}`}>
+            <table>
+              <thead>
+                <tr>
+                  <th>N.º</th>
+                  <th>Fecha</th>
+                  <th>Proveedor</th>
+                  <th>Estado</th>
+                  <th>Total</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {filtradas.map((compra) => (
+                  <tr key={compra.id_compra}>
+                    <td>
+                      <strong>
+                        #{compra.numero_compra ?? compra.id_compra}
+                      </strong>
+                    </td>
+                    <td>{fechaLocal(compra.fecha_compra)}</td>
+                    <td>{nombreProveedor(compra.id_proveedor)}</td>
+                    <td>
+                      <span
+                        className={
+                          normalizar(compra.estado) === 'ANULADA'
+                            ? styles.anulada
+                            : styles.completada
+                        }
+                      >
+                        {normalizar(compra.estado)}
+                      </span>
+                    </td>
+                    <td className={styles.importe}>
+                      <strong>{dinero(compra.total_compra)}</strong>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className={`${styles.secundario} ${styles.botonTabla}`}
+                        onClick={() => verDetalle(compra.id_compra)}
+                      >
+                        Ver detalle
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {detalleId !== null && (
+        <div className={styles.modalBackdrop}>
+          <section
+            className={styles.modal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="detalle-compra-titulo"
+          >
+            <header className={styles.modalHeader}>
+              <div>
+                <p className={styles.etiqueta}>
+                  DETALLE DE OPERACIÓN
+                </p>
+                <h2 id="detalle-compra-titulo">
+                  Compra #{detalle?.compra?.numero_compra ?? detalleId}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                className={styles.secundario}
+                onClick={cerrarDetalle}
+                disabled={cargandoDetalle}
+              >
+                Cerrar
+              </button>
+            </header>
+
+            {cargandoDetalle && (
+              <p className={styles.vacio}>Cargando detalle…</p>
+            )}
+
+            {errorDetalle && (
+              <p role="alert" className={styles.error}>
+                {errorDetalle}
+              </p>
+            )}
+
+            {detalle && (
+              <div className={styles.modalBody}>
+                <div className={styles.modalSummary}>
+                  <div>
+                    <span>Estado</span>
+                    <strong>
+                      {normalizar(detalle.compra.estado)}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Fecha</span>
+                    <strong>
+                      {fechaLocal(detalle.compra.fecha_compra)}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Proveedor</span>
+                    <strong>
+                      {nombreProveedor(detalle.compra.id_proveedor)}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Registrada por</span>
+                    <strong>
+                      Usuario #{detalle.compra.id_usuario}
+                    </strong>
+                  </div>
+                </div>
+
+                <h3>Productos de la compra</h3>
+
+                <div className={styles.tablaScroll}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Precio unitario</th>
+                        <th>Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detalle.detalles.map((item) => (
+                        <tr key={item.id_detalle_compra}>
+                          <td>Producto #{item.id_producto}</td>
+                          <td>{item.cantidad}</td>
+                          <td>{dinero(item.precio_unitario)}</td>
+                          <td>{dinero(item.subtotal)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className={styles.modalTotal}>
+                  <span>Total de la compra</span>
+                  <strong>
+                    {dinero(detalle.compra.total_compra)}
+                  </strong>
+                </div>
+
+                <div className={styles.observaciones}>
+                  <strong>Observaciones</strong>
+                  <p>
+                    {detalle.compra.observaciones ||
+                      'Sin observaciones'}
+                  </p>
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+    </section>
+  )
+}
