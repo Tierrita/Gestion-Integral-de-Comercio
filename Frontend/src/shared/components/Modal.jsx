@@ -10,6 +10,8 @@ export default function Modal({
   const descriptionId = useId()
   const panelRef = useRef(null)
   const previousFocusRef = useRef(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
   useEffect(() => {
     if (!open) return undefined
@@ -28,7 +30,7 @@ export default function Modal({
       if (event.key === 'Escape' && closeOnEscape && !busy) {
         event.preventDefault()
         event.stopPropagation()
-        onClose?.()
+        onCloseRef.current?.()
       }
       if (event.key !== 'Tab') return
       const elements = focusables()
@@ -55,7 +57,7 @@ export default function Modal({
       const previousFocus = previousFocusRef.current
       if (previousFocus?.isConnected) previousFocus.focus()
     }
-  }, [open, busy, closeOnEscape, onClose])
+  }, [open, busy, closeOnEscape])
 
   if (!open) return null
 
