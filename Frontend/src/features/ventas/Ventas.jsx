@@ -1,3 +1,4 @@
+import { formatoMoneda } from '../../shared/utils/formatters.js'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -6,13 +7,6 @@ import styles from './Ventas.module.css'
 import Alert from '../../shared/components/Alert.jsx'
 import Modal from '../../shared/components/Modal.jsx'
 import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
-
-const dinero = (valor) =>
-  new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-  }).format(Number(valor) || 0)
-
 
 const cantidadFormato = (valor) =>
   new Intl.NumberFormat('es-AR', {
@@ -288,7 +282,7 @@ export default function Ventas({ esPropietario = false }) {
 
         <article>
           <span>Total vendido</span>
-          <strong>{dinero(total)}</strong>
+          <strong>{formatoMoneda(total)}</strong>
         </article>
 
         <article>
@@ -453,7 +447,7 @@ export default function Ventas({ esPropietario = false }) {
                     </td>
 
                     <td className={styles.importe}>
-                      <strong>{dinero(venta.total)}</strong>
+                      <strong>{formatoMoneda(venta.total)}</strong>
                     </td>
 
                     <td>
@@ -555,10 +549,10 @@ export default function Ventas({ esPropietario = false }) {
                           </td>
                           <td>{cantidadFormato(item.cantidad)}</td>
                           <td>
-                            {dinero(item.precio_unitario)}
+                            {formatoMoneda(item.precio_unitario)}
                           </td>
                           <td>
-                            {dinero(item.subtotal)}
+                            {formatoMoneda(item.subtotal)}
                           </td>
                         </tr>
                       ))}
@@ -569,7 +563,7 @@ export default function Ventas({ esPropietario = false }) {
                 <div className={styles.modalTotal}>
                   <span>Total de la venta</span>
                   <strong>
-                    {dinero(detalle.venta.total)}
+                    {formatoMoneda(detalle.venta.total)}
                   </strong>
                 </div>
 
@@ -612,7 +606,7 @@ export default function Ventas({ esPropietario = false }) {
         description="Revisá los datos antes de confirmar la operación."
         details={[
           { label: 'Venta', value: `#${detalle?.venta?.numero_venta ?? seleccionada}` },
-          { label: 'Importe', value: dinero(detalle?.venta?.total) },
+          { label: 'Importe', value: formatoMoneda(detalle?.venta?.total) },
           { label: 'Método de pago', value: normalizar(detalle?.venta?.metodo_pago).replaceAll('_', ' ') },
           { label: 'Estado', value: normalizar(detalle?.venta?.estado) },
         ]}
