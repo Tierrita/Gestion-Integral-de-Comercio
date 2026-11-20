@@ -39,6 +39,8 @@ export default function Compras({ esPropietario = false }) {
 
   const [compras, setCompras] = useState([])
   const [proveedores, setProveedores] = useState([])
+  const [productos, setProductos] = useState([])
+  const [usuarios, setUsuarios] = useState([])
   const [busqueda, setBusqueda] = useState('')
   const [estado, setEstado] = useState('TODOS')
   const [desde, setDesde] = useState('')
@@ -123,6 +125,23 @@ export default function Compras({ esPropietario = false }) {
     }
 
     void cargarProveedores()
+    async function cargarNombres() {
+      const respuestas = await Promise.allSettled([
+        api.get('/productos', { signal: controller.signal }),
+        api.get('/usuarios', { signal: controller.signal }),
+      ])
+      if (controller.signal.aborted) return
+      const [rProductos, rUsuarios] = respuestas
+      if (rProductos.status === 'fulfilled') {
+        const datos = rProductos.value.data
+        setProductos(Array.isArray(datos) ? datos : Array.isArray(datos?.productos) ? datos.productos : [])
+      }
+      if (rUsuarios.status === 'fulfilled') {
+        const datos = rUsuarios.value.data
+        setUsuarios(Array.isArray(datos) ? datos : Array.isArray(datos?.usuarios) ? datos.usuarios : [])
+      }
+    }
+    void cargarNombres()
     return () => controller.abort()
   }, [])
 
@@ -130,6 +149,9 @@ export default function Compras({ esPropietario = false }) {
     proveedores.find(
       (item) => String(item.id_proveedor) === String(id),
     )?.nombre_proveedor || `Proveedor #${id}`
+
+  const nombreProducto = (id) => productos.find((item) => String(item.id_producto) === String(id))?.nombre_producto || `Producto #${id}`
+  const nombreUsuario = (id) => usuarios.find((item) => String(item.id_usuario) === String(id))?.nombre_completo || `Usuario #${id}`
 
   const filtradas = useMemo(() => {
     const texto = busqueda.trim().toLowerCase()
@@ -443,7 +465,7 @@ export default function Compras({ esPropietario = false }) {
                   <div>
                     <span>Registrada por</span>
                     <strong>
-                      Usuario #{detalle.compra.id_usuario}
+                      {nombreUsuario(detalle.compra.id_usuario)}
                     </strong>
                   </div>
                 </div>
@@ -463,7 +485,7 @@ export default function Compras({ esPropietario = false }) {
                     <tbody>
                       {detalle.detalles.map((item) => (
                         <tr key={item.id_detalle_compra}>
-                          <td>Producto #{item.id_producto}</td>
+                          <td>{nombreProducto(item.id_producto)}</td>
                           <td>{item.cantidad}</td>
                           <td>{dinero(item.precio_unitario)}</td>
                           <td>{dinero(item.subtotal)}</td>
