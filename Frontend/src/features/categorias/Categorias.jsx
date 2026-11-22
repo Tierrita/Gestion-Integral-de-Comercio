@@ -125,7 +125,7 @@ export default function Categorias() {
         <label>Mostrar<select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1) }}>{PAGE_SIZES.map((n) => <option key={n} value={n}>{n} registros</option>)}</select></label>
         <button type="button" className={styles.secondary} disabled={loading} onClick={() => void load()}>Actualizar</button>
       </div>
-      <p className={styles.muted}>{filtered.length} categorías encontradas</p>
+      <p key={`resultados-${filter}-${query}-${filtered.length}`} className={styles.muted}>{`${filtered.length} ${filtered.length === 1 ? "categoría encontrada" : "categorías encontradas"}`}</p>
       {loading ? <p role="status">Cargando categorías…</p> : error && categorias.length === 0 ? <p>No se pudo cargar el listado.</p> : filtered.length === 0 ? <p>No hay categorías para mostrar.</p> : <div className={styles.scroll}>
         <table><thead><tr>
           <th><button type="button" onClick={() => changeSort('id_categoria')}>ID{sortMark('id_categoria')}</button></th>
