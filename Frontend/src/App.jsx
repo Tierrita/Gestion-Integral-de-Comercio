@@ -101,7 +101,7 @@ function SessionRoutes() {
   return (
     <Routes>
       <Route
-        path="/login"
+        path="/login/*"
         element={profile ? <Navigate to="/inicio" replace /> : (
           <AuthPage notice={notice} onLogin={handleLogin} />
         )}
