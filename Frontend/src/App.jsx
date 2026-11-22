@@ -12,6 +12,7 @@ import NuevaVenta from './features/ventas/NuevaVenta.jsx'
 import Compras from './features/compras/Compras.jsx'
 import NuevaCompra from './features/compras/NuevaCompra.jsx'
 import Clientes from './features/clientes/Clientes.jsx'
+import Proveedores from './features/proveedores/Proveedores.jsx'
 
 
 function Login({ notice, onLogin }) {
@@ -208,6 +209,7 @@ function SessionRoutes() {
   />
   <Route path="/ventas/nueva" element={<NuevaVenta />} />
   <Route path="/clientes" element={<Clientes />} />
+  <Route path="/proveedores" element={<Proveedores />} />
   <Route path="/compras" element={<Compras esPropietario={profile?.usuario?.es_propietario === true} />} />
   <Route path="/compras/nueva" element={<NuevaCompra />} />
   <Route path="/perfil"
