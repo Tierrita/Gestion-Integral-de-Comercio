@@ -82,7 +82,9 @@ export default function Clientes() {
     setSaving(true)
     setFormError('')
     try {
-      const payload = { nombre_completo: nombre, telefono: form.telefono.trim() || null }
+      const payload = editing !== 'new' && Number(editing.numero_cliente) === 1
+        ? { telefono: form.telefono.trim() || null }
+        : { nombre_completo: nombre, telefono: form.telefono.trim() || null }
       const { data } = editing === 'new' ? await api.post('/clientes', payload) : await api.patch(`/clientes/${editing.id_cliente}`, payload)
       setEditing(null)
       setNotice(data.message || 'Cliente guardado correctamente.')
