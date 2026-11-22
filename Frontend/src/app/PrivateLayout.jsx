@@ -95,6 +95,14 @@ export default function PrivateLayout({ profile, onLogout }) {
           </NavLink>
 
           <NavLink
+            to="/proveedores"
+            onClick={closeMenu}
+            className={({ isActive }) => isActive ? styles.active : ''}
+          >
+            <span aria-hidden="true">▧</span> Proveedores
+          </NavLink>
+
+          <NavLink
             to="/perfil"
             end
             onClick={closeMenu}
