@@ -1,6 +1,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import MercaderiaNav from '../productos/MercaderiaNav.jsx'
 import styles from './Inventario.module.css'
@@ -60,6 +60,8 @@ const validQuantity = (value, unit) => {
 }
 
 export default function Inventario() {
+  const [searchParams] = useSearchParams()
+  const selectedProductId = searchParams.get('producto')
   const [items, setItems] = useState([])
   const [alerts, setAlerts] = useState([])
   const [categories, setCategories] = useState([])
@@ -150,6 +152,7 @@ export default function Inventario() {
     const query = search.trim().toLocaleLowerCase('es-AR')
 
     return items.filter((product) => {
+      const matchesSelectedProduct = !selectedProductId || String(product.id_producto) === selectedProductId
       const matchesSearch = [
         product.nombre_producto,
         product.numero_producto,
@@ -168,9 +171,9 @@ export default function Inventario() {
         filter === 'todos' ||
         classify(product) === filter
 
-      return matchesSearch && matchesCategory && matchesSituation
+      return matchesSelectedProduct && matchesSearch && matchesCategory && matchesSituation
     })
-  }, [items, search, category, filter])
+  }, [items, search, category, filter, selectedProductId])
 
   const activeCount = items.filter(
     (product) => product.estado !== false
@@ -411,6 +414,13 @@ export default function Inventario() {
             </select>
           </label>
         </div>
+
+        {selectedProductId && (
+          <p className={styles.muted}>
+            Mostrando el inventario del producto seleccionado.{' '}
+            <Link to="/inventario">Ver todos los productos</Link>
+          </p>
+        )}
 
         <div className={styles.tableInfo}>
           <span>
