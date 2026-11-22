@@ -27,3 +27,15 @@
 .aionix-register-preview p { font-size:14px; line-height:1.5; color:#475569; }
 @media(max-width:800px) { .aionix-auth-page { grid-template-columns:1fr; } .aionix-brand { padding:32px 24px; } .aionix-brand-logo { margin-bottom:22px; } .aionix-brand-items { gap:18px; } .aionix-info-icon { width:54px; height:54px; } .aionix-info-item h2 { font-size:17px; } .aionix-info-item p { font-size:14px; } .aionix-auth-side { padding:30px 16px 44px; } }
 @media(max-width:420px) { .aionix-brand-items { gap:15px; } .aionix-brand { padding:26px 18px; } .aionix-info-item { gap:12px; } }
+
+/* Navegación informativa del acceso */
+.aionix-info-button { border:2px solid transparent; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+.aionix-info-button:hover { transform:translateY(-2px); box-shadow:0 5px 14px #0004; }
+.aionix-info-button[aria-pressed="true"] { border-color:#6bd1ef; box-shadow:0 0 0 3px #6bd1ef55; }
+.aionix-section-card { background:#fff; width:min(100%,490px); border-radius:10px; padding:28px; box-shadow:0 7px 24px #17273a22; }
+.aionix-section-card h1 { color:#0b315b; font-size:clamp(24px,3vw,30px); margin:18px 0; }
+.aionix-section-card p, .aionix-section-card li { color:#334155; line-height:1.65; font-size:15px; }
+.aionix-section-card ul { padding-left:22px; }
+.aionix-section-card li { margin-bottom:8px; }
+.aionix-back-button { display:inline-flex; align-items:center; gap:8px; border:0; background:transparent; color:#0b315b; padding:6px 0; cursor:pointer; font:inherit; font-size:14px; }
+.aionix-back-button:hover { text-decoration:underline; }
