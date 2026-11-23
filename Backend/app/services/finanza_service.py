@@ -2665,3 +2665,26 @@ def calcular_dashboard_financiero(
                 principal_proveedor
         }
     }
+
+def calcular_cuentas_por_cobrar_actuales(id_comercio):
+    """Saldo vigente de todos los clientes del comercio, sin filtro temporal.
+
+    Reutiliza la lógica validada de cuentas corrientes. No incluye al
+    CLIENTE GENERAL ni confunde saldo a favor con deuda.
+    """
+    from app.models.cliente_model import obtener_clientes
+
+    total = 0.0
+    cantidad = 0
+    for cliente in obtener_clientes(id_comercio):
+        if cliente.get("numero_cliente") == 1:
+            continue
+        saldo_info = consultar_saldo_cliente(cliente["id_cliente"], id_comercio)
+        saldo = float(saldo_info.get("saldo") or 0)
+        if saldo_info.get("situacion") == "DEUDA" and saldo > 0:
+            total += saldo
+            cantidad += 1
+    return {
+        "total_por_cobrar": round(total, 2),
+        "cantidad_clientes_con_deuda": cantidad,
+    }
