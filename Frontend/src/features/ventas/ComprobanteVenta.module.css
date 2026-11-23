@@ -35,3 +35,11 @@
   .acciones{display:none!important}
   .tabla tr{break-inside:avoid}
 }
+
+.datoCliente{display:contents}
+.estadoCuenta{margin:18px 0;border:1px solid #333;padding:14px;font-family:Arial,sans-serif}
+.estadoCuenta h2{font-size:1rem;margin:0 0 12px;text-transform:uppercase;letter-spacing:.04em}
+.estadoCuenta>div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.estadoCuenta strong{font-size:1.1rem}
+.estadoCuenta p{font-size:.72rem;line-height:1.4;margin:12px 0 0;color:#333}
+@media print{.estadoCuenta{break-inside:avoid}}
