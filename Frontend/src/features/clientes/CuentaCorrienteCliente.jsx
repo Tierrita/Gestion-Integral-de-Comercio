@@ -17,6 +17,63 @@ export default function CuentaCorrienteCliente({ cliente, onClose }) {
   const [errores, setErrores] = useState({})
   const [cargando, setCargando] = useState(false)
   const [revision, setRevision] = useState(0)
+  const [cuentas, setCuentas] = useState([])
+  const [mostrarCobro, setMostrarCobro] = useState(false)
+  const [monto, setMonto] = useState('')
+  const [cuenta, setCuenta] = useState('')
+  const [observaciones, setObservaciones] = useState('')
+  const [guardando, setGuardando] = useState(false)
+  const [errorCobro, setErrorCobro] = useState('')
+  const [exitoCobro, setExitoCobro] = useState('')
+
+  async function abrirCobro() {
+    setErrorCobro('')
+    try {
+      const { data } = await api.get('/cuentas')
+      const activas = (data?.cuentas || []).filter((item) => item.estado === true)
+      if (!activas.length) throw new Error('No hay cuentas financieras activas.')
+      setCuentas(activas)
+      setCuenta(String(activas[0].id_cuenta))
+      setMostrarCobro(true)
+    } catch (error) {
+      setErrorCobro(error.response?.data?.error || error.message || 'No se pudieron cargar las cuentas.')
+    }
+  }
+
+  async function registrarCobro(event) {
+    event.preventDefault()
+    if (guardando || !cliente) return
+    const limpio = monto.trim().replace(',', '.')
+    const importe = Number(limpio)
+    if (!/^\d+(?:\.\d{1,2})?$/.test(limpio) || !Number.isFinite(importe) || importe <= 0) {
+      setErrorCobro('Ingresá un importe positivo con hasta dos decimales.')
+      return
+    }
+    if (!cuentas.some((item) => item.id_cuenta === Number(cuenta))) {
+      setErrorCobro('Seleccioná una cuenta válida.')
+      return
+    }
+    setGuardando(true)
+    setErrorCobro('')
+    try {
+      await api.post('/cobros', {
+        id_cliente: cliente.id_cliente,
+        id_cuenta: Number(cuenta),
+        monto: importe,
+        observaciones: observaciones.trim() || null,
+      })
+      setMostrarCobro(false)
+      setMonto('')
+      setObservaciones('')
+      setExitoCobro('Cobro registrado correctamente.')
+      setRevision((valor) => valor + 1)
+    } catch (error) {
+      setErrorCobro(error.response?.data?.error || errorDe(error))
+    } finally {
+      setGuardando(false)
+    }
+  }
+
 
   useEffect(() => {
     if (!cliente) return
@@ -66,8 +123,23 @@ export default function CuentaCorrienteCliente({ cliente, onClose }) {
     <div className={styles.contenido}>
       <div className={styles.barra}>
         <span>Cliente #{cliente?.numero_cliente}</span>
-        <button type="button" className={styles.boton} disabled={cargando} onClick={() => setRevision((v) => v + 1)}>Actualizar cuenta</button>
+        <div className={styles.acciones}>
+          <button type="button" className={styles.boton} disabled={cargando || guardando} onClick={() => setRevision((v) => v + 1)}>Actualizar cuenta</button>
+          <button type="button" className={styles.principal} disabled={guardando || cliente?.estado === false} onClick={() => { if (mostrarCobro) setMostrarCobro(false); else void abrirCobro() }}>{mostrarCobro ? 'Cancelar' : '+ Registrar cobro'}</button>
+        </div>
       </div>
+      {exitoCobro && <Alert type="success">{exitoCobro}</Alert>}
+      {errorCobro && <Alert type="error">{errorCobro}</Alert>}
+      {mostrarCobro && <form className={styles.formulario} onSubmit={(event) => void registrarCobro(event)}>
+        <h3>Registrar cobro</h3>
+        <p className={styles.aclaracion}>Se permiten cobros parciales y anticipos con saldo a favor.</p>
+        <label>Importe recibido (ARS)<input required inputMode="decimal" value={monto} onChange={(event) => setMonto(event.target.value)} placeholder="15000,50" disabled={guardando} /></label>
+        <label>Cuenta de destino<select required value={cuenta} onChange={(event) => setCuenta(event.target.value)} disabled={guardando}>
+          {cuentas.map((item) => <option key={item.id_cuenta} value={item.id_cuenta}>{item.nombre_cuenta}</option>)}
+        </select></label>
+        <label>Observaciones (opcional)<textarea rows={2} maxLength={500} value={observaciones} onChange={(event) => setObservaciones(event.target.value)} disabled={guardando} /></label>
+        <button className={styles.principal} type="submit" disabled={guardando}>{guardando ? 'Registrando…' : 'Confirmar cobro'}</button>
+      </form>}
       {cargando && <p role="status">Consultando movimientos…</p>}
       {errores.saldo && <Alert type="error">Saldo: {errores.saldo}</Alert>}
       {saldo && <div className={styles.resumen}>
@@ -86,7 +158,7 @@ export default function CuentaCorrienteCliente({ cliente, onClose }) {
       {cobros && (cobros.length ? <div className={styles.scroll}><table><thead><tr><th>N.º</th><th>Fecha</th><th>Estado</th><th>Importe</th></tr></thead><tbody>
         {cobros.map((c) => <tr key={c.id_cobro}><td>#{c.id_cobro}</td><td>{fecha(c.fecha_cobro)}</td><td>{c.estado}</td><td>{dinero(c.monto)}</td></tr>)}
       </tbody></table></div> : <p className={styles.vacio}>Este cliente todavía no tiene cobros registrados.</p>)}
-      <p className={styles.aclaracion}>El registro y la anulación de cobros se incorporarán en Cobros V1. Esta pantalla es de consulta.</p>
+      <p className={styles.aclaracion}>Los cobros se acreditan en la cuenta financiera seleccionada. La anulación está reservada al propietario.</p>
     </div>
   </Modal>
 }
