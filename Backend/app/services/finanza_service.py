@@ -2667,23 +2667,23 @@ def calcular_dashboard_financiero(
     }
 
 def calcular_cuentas_por_cobrar_actuales(id_comercio):
-    """Saldo vigente de todos los clientes del comercio, sin filtro temporal.
+    """Saldo vigente agregado por comercio en una única RPC de PostgreSQL."""
+    from core.supabase_client import get_client
 
-    Reutiliza la lógica validada de cuentas corrientes. No incluye al
-    CLIENTE GENERAL ni confunde saldo a favor con deuda.
-    """
-    from app.models.cliente_model import obtener_clientes
+    resultado = (
+        get_client()
+        .rpc("obtener_cuentas_por_cobrar_actuales", {"p_id_comercio": id_comercio})
+        .execute()
+    )
+    datos = resultado.data
+    if not isinstance(datos, dict):
+        raise ValueError("Respuesta inválida de cuentas por cobrar")
 
-    total = 0.0
-    cantidad = 0
-    for cliente in obtener_clientes(id_comercio):
-        if cliente.get("numero_cliente") == 1:
-            continue
-        saldo_info = consultar_saldo_cliente(cliente["id_cliente"], id_comercio)
-        saldo = float(saldo_info.get("saldo") or 0)
-        if saldo_info.get("situacion") == "DEUDA" and saldo > 0:
-            total += saldo
-            cantidad += 1
+    total = float(datos["total_por_cobrar"])
+    cantidad = int(datos["cantidad_clientes_con_deuda"])
+    if total < 0 or cantidad < 0:
+        raise ValueError("Saldo o cantidad inválidos")
+
     return {
         "total_por_cobrar": round(total, 2),
         "cantidad_clientes_con_deuda": cantidad,
