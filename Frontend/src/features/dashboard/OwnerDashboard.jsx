@@ -213,6 +213,9 @@ export default function OwnerDashboard() {
   const [evolucion, setEvolucion] = useState(null)
   const [errorEvolucion, setErrorEvolucion] = useState('')
   const [cargandoEvolucion, setCargandoEvolucion] = useState(true)
+  const [deudaActual, setDeudaActual] = useState(null)
+  const [cargandoDeuda, setCargandoDeuda] = useState(true)
+  const [errorDeuda, setErrorDeuda] = useState('')
   const [alertasStock, setAlertasStock] = useState(null)
   const [errorAlertas, setErrorAlertas] = useState('')
   const [cargandoAlertas, setCargandoAlertas] = useState(true)
@@ -305,10 +308,34 @@ export default function OwnerDashboard() {
     return () => controller.abort()
   }, [intento])
 
+  useEffect(() => {
+    const controller = new AbortController()
+    async function cargarDeudaActual() {
+      setCargandoDeuda(true)
+      setErrorDeuda('')
+      setDeudaActual(null)
+      try {
+        const { data } = await api.get('/finanzas/cuentas-por-cobrar/actual', {
+          signal: controller.signal,
+          timeout: 30000,
+        })
+        if (!Number.isFinite(data?.total_por_cobrar) || !Number.isInteger(data?.cantidad_clientes_con_deuda)) {
+          throw new Error('Respuesta de cuentas por cobrar inválida')
+        }
+        if (!controller.signal.aborted) setDeudaActual(data)
+      } catch (err) {
+        if (!controller.signal.aborted) setErrorDeuda(mensajeError(err))
+      } finally {
+        if (!controller.signal.aborted) setCargandoDeuda(false)
+      }
+    }
+    cargarDeudaActual()
+    return () => controller.abort()
+  }, [intento])
+
   const ventas = resumen?.ventas
   const rentabilidad = resumen?.rentabilidad
   const caja = resumen?.caja
-  const clientes = resumen?.clientes
   const proveedores = resumen?.proveedores
   const stock = resumen?.stock
   const rankings = resumen?.rankings
@@ -354,7 +381,7 @@ export default function OwnerDashboard() {
             <Tarjeta titulo="Facturación" valor={valorMoneda(ventas?.facturacion)} detalle={`${valorNumero(ventas?.cantidad_ventas)} ventas en el período`} acento />
             <Tarjeta titulo="Ganancia bruta" valor={rentabilidad?.rentabilidad_calculable === true ? valorMoneda(rentabilidad.ganancia_bruta) : 'No disponible'} detalle={rentabilidad?.rentabilidad_calculable === true ? 'Ventas menos costo de mercadería vendida' : 'Faltan costos históricos para calcularla'} />
             <Tarjeta titulo="Flujo neto de caja" valor={valorMoneda(caja?.saldo_neto)} detalle="Entradas menos salidas del período; no es el saldo disponible" />
-            <Tarjeta titulo="Cuentas por cobrar" valor={valorMoneda(clientes?.total_por_cobrar)} detalle={`${valorNumero(clientes?.cantidad_clientes_con_deuda)} clientes con deuda · saldo actual`} />
+            <Tarjeta titulo="Cuentas por cobrar (actual)" valor={cargandoDeuda ? "Consultando…" : deudaActual ? valorMoneda(deudaActual.total_por_cobrar) : "No disponible"} detalle={errorDeuda || (deudaActual ? `${valorNumero(deudaActual.cantidad_clientes_con_deuda)} clientes con deuda · independiente del período` : "Saldo vigente del comercio")} />
             <Tarjeta titulo="Ticket promedio" valor={valorMoneda(ventas?.ticket_promedio)} detalle={`${valorNumero(ventas?.unidades_vendidas)} unidades vendidas`} />
             <Tarjeta titulo="Margen bruto" valor={rentabilidad?.rentabilidad_calculable === true && Number.isFinite(rentabilidad?.margen_bruto) ? `${numero.format(rentabilidad.margen_bruto)} %` : 'No disponible'} detalle="Margen sobre ventas; no equivale a utilidad neta" />
           </div>
@@ -420,9 +447,9 @@ export default function OwnerDashboard() {
               <div className={styles.alertaItem}>
                 <div className={styles.alertaEncabezado}>
                   <strong>Clientes con deuda</strong>
-                  <strong>{valorNumero(clientes?.cantidad_clientes_con_deuda)}</strong>
+                  <strong>{cargandoDeuda ? "…" : deudaActual ? valorNumero(deudaActual.cantidad_clientes_con_deuda) : "—"}</strong>
                 </div>
-                <p className={styles.detalle}>Saldo total pendiente: {valorMoneda(clientes?.total_por_cobrar)}. No implica que la deuda esté vencida.</p>
+                <p className={styles.detalle}>{errorDeuda || (deudaActual ? `Saldo total pendiente: ${valorMoneda(deudaActual.total_por_cobrar)}. No implica que la deuda esté vencida.` : "Consultando saldo vigente…")}</p>
                 <Link className={styles.pulsoAcceso} to="/clientes">Revisar clientes ↗</Link>
               </div>
             </aside>
