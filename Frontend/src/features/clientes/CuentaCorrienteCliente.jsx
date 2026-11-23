@@ -128,13 +128,13 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
     return () => { clearTimeout(timer); controller.abort() }
   }, [cliente, revision])
 
-  return <Modal open={Boolean(cliente)} onClose={onClose} title={`${modo === 'cobro' ? 'Registrar cobro' : 'Detalle del cliente'} · ${cliente?.nombre_completo || ''}`} description="Saldo actual, ventas y cobros registrados." size="large">
+  return <Modal open={Boolean(cliente)} onClose={onClose} title={`${modo === 'cobro' ? 'Registrar cobro' : 'Detalle del cliente'} · ${cliente?.nombre_completo || ''}`} description={modo === "cobro" ? "Registrá el importe recibido y elegí la cuenta de destino." : "Saldo actual, ventas y cobros registrados."} size="large">
     <div className={styles.contenido}>
       {modo !== "cobro" && <div className={styles.barra}>
         <span>Cliente #{cliente?.numero_cliente}</span>
         <div className={styles.acciones}>
           <button type="button" className={styles.boton} disabled={cargando || guardando} onClick={() => setRevision((v) => v + 1)}>Actualizar cuenta</button>
-          <button type="button" className={styles.principal} disabled={guardando || cliente?.estado === false} onClick={() => { if (mostrarCobro) setMostrarCobro(false); else void abrirCobro() }}>{mostrarCobro ? 'Cancelar' : '+ Registrar cobro'}</button>
+
         </div>
       </div>}
       {exitoCobro && <Alert type="success">{exitoCobro}</Alert>}
@@ -156,7 +156,7 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
         <article><span>Ventas vigentes</span><strong>{dinero(saldo.total_ventas)}</strong></article>
         <article><span>Cobros completados</span><strong>{dinero(saldo.total_cobros)}</strong></article>
       </div>}
-      {modo !== "cobro" && <p className={styles.aclaracion}>El saldo se calcula con ventas no anuladas menos cobros completados. Un saldo a favor no es una deuda.</p>}
+      {modo !== "cobro" && <p className={styles.aclaracion}>El saldo se calcula con ventas vigentes a cuenta corriente menos cobros completados. Un saldo a favor no es una deuda.</p>}
       {modo !== "cobro" && <><h3>Ventas del cliente</h3>
       {errores.ventas && <Alert type="error">Ventas: {errores.ventas}</Alert>}
       {ventas && (ventas.length ? <div className={styles.scroll}><table><thead><tr><th>Venta</th><th>Fecha</th><th>Estado</th><th>Total</th><th>Comprobante</th></tr></thead><tbody>
