@@ -52,7 +52,6 @@
 .actionMenu summary{display:grid;place-items:center;min-width:36px;min-height:32px;padding:0 .55rem;border:1px solid var(--color-border);border-radius:.6rem;background:var(--color-surface-raised);color:var(--color-text);font-size:1.25rem;cursor:pointer;list-style:none}
 .actionMenu summary::-webkit-details-marker{display:none}
 .actionMenu summary:hover,.actionMenu summary:focus-visible{border-color:var(--color-primary)}
-.actionMenuItems{position:absolute;z-index:10;right:0;top:calc(100% + 4px);display:grid;gap:.25rem;min-width:170px;padding:.4rem;background:var(--color-surface);border:1px solid var(--color-border);border-radius:.6rem;box-shadow:0 8px 24px #0005}
+.actionMenuItems{position:static;display:grid;gap:.25rem;min-width:170px;padding:.4rem;background:var(--color-surface);border:1px solid var(--color-border);border-radius:.6rem;box-shadow:0 8px 24px #0005}
 .actionMenuItems button{padding:.65rem .7rem;text-align:left;border:0;border-radius:.4rem;background:transparent;color:var(--color-text);font:inherit;cursor:pointer;white-space:nowrap}
 .actionMenuItems button:hover{background:var(--color-surface-raised)}
-.scroll{overflow-x:auto;overflow-y:visible}
