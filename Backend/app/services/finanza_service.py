@@ -2381,6 +2381,40 @@ def calcular_estadisticas_stock(
 # DASHBOARD FINANCIERO
 # ======================================================
 
+def _dashboard_rpc_validado(id_comercio, periodo=None, desde=None, hasta=None):
+    """Calcula el dashboard con una sola RPC.
+
+    Se mantiene desactivado hasta validar equivalencia de rankings y
+    credenciales en el entorno de ejecución.
+    """
+    from app.models.dashboard_rpc_model import obtener_dashboard_rpc
+
+    tipo, fecha_desde, fecha_hasta = _obtener_rango_periodo(
+        periodo, desde, hasta
+    )
+    resultado = obtener_dashboard_rpc(id_comercio, fecha_desde, fecha_hasta)
+    secciones = {
+        "ventas": ("facturacion", "cantidad_ventas", "ticket_promedio", "unidades_vendidas"),
+        "rentabilidad": ("costo_vendido", "ganancia_bruta", "margen_bruto",
+                         "rentabilidad_calculable", "detalles_sin_costo_historico"),
+        "caja": ("total_entradas", "total_salidas", "saldo_neto"),
+        "clientes": ("total_por_cobrar", "cantidad_clientes_con_deuda"),
+        "proveedores": ("total_comprado", "deuda_total_proveedores"),
+        "stock": ("unidades_en_stock", "valor_stock_costo", "valor_stock_venta",
+                  "ganancia_potencial", "capital_inmovilizado_sin_ventas"),
+        "rankings": ("producto_mas_vendido", "mejor_cliente", "principal_proveedor"),
+    }
+    for seccion, campos in secciones.items():
+        datos = resultado.get(seccion)
+        if not isinstance(datos, dict) or any(campo not in datos for campo in campos):
+            raise RuntimeError("Respuesta RPC incompleta: " + seccion)
+
+    resultado["periodo"] = _crear_periodo_respuesta(
+        tipo, fecha_desde, fecha_hasta
+    )
+    return resultado
+
+
 def calcular_dashboard_financiero(
     id_comercio,
     periodo=None,
@@ -2403,6 +2437,12 @@ def calcular_dashboard_financiero(
     Su función es centralizar la información más importante
     para la pantalla principal del sistema.
     """
+
+    # RPC validada: activa por defecto. Para volver temporalmente al
+    # cálculo anterior, establecer DASHBOARD_USAR_RPC=false.
+    import os
+    if os.getenv("DASHBOARD_USAR_RPC", "true").strip().lower() == "true":
+        return _dashboard_rpc_validado(id_comercio, periodo, desde, hasta)
 
     # --------------------------------------------------
     # OBTENER INFORMACIÓN DE LOS MÓDULOS FINANCIEROS
