@@ -79,9 +79,8 @@ function completarIntervalos(puntos, agrupacion, rango) {
 function GraficoVentas({ puntos, agrupacion, rango }) {
   const datos = completarIntervalos(puntos, agrupacion, rango)
     .filter((p) => Number.isFinite(p.valor) && p.valor >= 0)
-  if (!datos.length) return <p className={styles.detalle}>No hay intervalos para este período.</p>
-
   const [seleccion, setSeleccion] = useState(null)
+  if (!datos.length) return <p className={styles.detalle}>No hay intervalos para este período.</p>
   const ancho = 760
   const alto = 238
   const izquierda = 78
@@ -153,6 +152,9 @@ export default function OwnerDashboard() {
   const [evolucion, setEvolucion] = useState(null)
   const [errorEvolucion, setErrorEvolucion] = useState('')
   const [cargandoEvolucion, setCargandoEvolucion] = useState(true)
+  const [alertasStock, setAlertasStock] = useState(null)
+  const [errorAlertas, setErrorAlertas] = useState('')
+  const [cargandoAlertas, setCargandoAlertas] = useState(true)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -203,6 +205,26 @@ export default function OwnerDashboard() {
     cargarEvolucion()
     return () => controller.abort()
   }, [periodo, intento])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    async function cargarAlertas() {
+      setCargandoAlertas(true)
+      setErrorAlertas('')
+      setAlertasStock(null)
+      try {
+        const { data } = await api.get('/stock/alertas', { signal: controller.signal, timeout: 30000 })
+        if (!Array.isArray(data)) throw new Error('Respuesta de alertas inválida')
+        if (!controller.signal.aborted) setAlertasStock(data)
+      } catch (err) {
+        if (!controller.signal.aborted) setErrorAlertas(mensajeError(err))
+      } finally {
+        if (!controller.signal.aborted) setCargandoAlertas(false)
+      }
+    }
+    cargarAlertas()
+    return () => controller.abort()
+  }, [intento])
 
   const ventas = resumen?.ventas
   const rentabilidad = resumen?.rentabilidad
@@ -273,15 +295,37 @@ export default function OwnerDashboard() {
             )}
           </section>
 
-            <aside className={styles.panel} aria-labelledby="titulo-pulso">
-              <span className={styles.sobretitulo}>ANÁLISIS COMERCIAL</span>
-              <h2 id="titulo-pulso">Pulso del negocio</h2>
-              <p className={styles.detalle}>Indicadores actuales para tomar decisiones.</p>
-              <div className={styles.pulsoFila}><span>Ticket promedio</span><strong>{valorMoneda(ventas?.ticket_promedio)}</strong></div>
-              <div className={styles.pulsoFila}><span>Unidades vendidas</span><strong>{valorNumero(ventas?.unidades_vendidas)}</strong></div>
-              <div className={styles.pulsoFila}><span>Clientes con deuda</span><strong>{valorNumero(clientes?.cantidad_clientes_con_deuda)}</strong></div>
-              <div className={styles.pulsoFila}><span>Deuda a cobrar</span><strong>{valorMoneda(clientes?.total_por_cobrar)}</strong></div>
-              <Link className={styles.pulsoAcceso} to="/clientes">Ver clientes ↗</Link>
+            <aside className={styles.panel} aria-labelledby="titulo-alertas">
+              <span className={styles.sobretitulo}>PRIORIDADES DEL COMERCIO</span>
+              <h2 id="titulo-alertas">Centro de alertas</h2>
+              <p className={styles.detalle}>Situaciones reales que conviene revisar.</p>
+              <div className={styles.alertaItem}>
+                <div className={styles.alertaEncabezado}>
+                  <strong>Stock bajo o agotado</strong>
+                  {cargandoAlertas ? <span>Consultando…</span> : alertasStock && <strong>{alertasStock.length}</strong>}
+                </div>
+                {errorAlertas && <p role="alert" className={styles.detalle}>No se pudieron consultar las alertas de stock.</p>}
+                {alertasStock && (
+                  <>
+                    <p className={styles.detalle}>{alertasStock.length === 0 ? 'Sin productos activos bajo el mínimo.' : `${alertasStock.length} productos activos alcanzaron su stock mínimo.`}</p>
+                    {alertasStock.slice(0, 3).map((producto) => (
+                      <div className={styles.alertaProducto} key={producto.id_producto}>
+                        <span>{producto.nombre_producto || `Producto #${producto.id_producto}`}</span>
+                        <strong>{producto.stock} / mín. {producto.stock_minimo}</strong>
+                      </div>
+                    ))}
+                  </>
+                )}
+                <Link className={styles.pulsoAcceso} to="/inventario">Revisar inventario ↗</Link>
+              </div>
+              <div className={styles.alertaItem}>
+                <div className={styles.alertaEncabezado}>
+                  <strong>Clientes con deuda</strong>
+                  <strong>{valorNumero(clientes?.cantidad_clientes_con_deuda)}</strong>
+                </div>
+                <p className={styles.detalle}>Saldo total pendiente: {valorMoneda(clientes?.total_por_cobrar)}. No implica que la deuda esté vencida.</p>
+                <Link className={styles.pulsoAcceso} to="/clientes">Revisar clientes ↗</Link>
+              </div>
             </aside>
           </div>
 
