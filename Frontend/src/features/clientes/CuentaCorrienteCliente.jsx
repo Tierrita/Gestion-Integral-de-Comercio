@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import Alert from '../../shared/components/Alert.jsx'
@@ -17,6 +17,9 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
   const [cobros, setCobros] = useState(null)
   const [movimientos, setMovimientos] = useState(null)
   const [errores, setErrores] = useState({})
+  const [filtro, setFiltro] = useState('TODOS')
+  const [busqueda, setBusqueda] = useState('')
+  const [expandido, setExpandido] = useState(null)
   const [cargando, setCargando] = useState(false)
   const [revision, setRevision] = useState(0)
   const [cuentas, setCuentas] = useState([])
@@ -34,6 +37,21 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
   const [errorAnulacion, setErrorAnulacion] = useState('')
   const [exitoAnulacion, setExitoAnulacion] = useState('')
 
+
+  const movimientosFiltrados = useMemo(() => {
+    const termino = busqueda.trim().toLocaleLowerCase('es-AR')
+    return (movimientos || []).filter((m) => {
+      const esReversion = m.tipo.startsWith('ANULACION_')
+      const clase = esReversion ? 'ANULACIONES' : m.origen === 'VENTA' ? 'VENTAS' : 'COBROS'
+      if (filtro !== 'TODOS' && clase !== filtro) return false
+      if (!termino) return true
+      return [m.numero_venta, m.cuenta, m.metodo_pago, m.tipo, m.origen, m.monto, m.id_operacion]
+        .some((dato) => String(dato ?? '').toLocaleLowerCase('es-AR').includes(termino))
+    })
+  }, [movimientos, filtro, busqueda])
+
+  const cobrosPorId = useMemo(() => new Map((cobros || []).map((c) => [Number(c.id_cobro), c])), [cobros])
+  const ventasPorId = useMemo(() => new Map((ventas || []).map(({ venta }) => [Number(venta.id_venta), venta])), [ventas])
 
   async function registrarCobro(event) {
     event.preventDefault()
@@ -215,33 +233,67 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
         <article><span>Cobros completados</span><strong>{dinero(saldo.total_cobros)}</strong></article>
       </div>}
       {modo !== "cobro" && <p className={styles.aclaracion}>El saldo se calcula con ventas vigentes a cuenta corriente menos cobros completados. Un saldo a favor no es una deuda.</p>}
-      {modo !== "cobro" && <><h3>Ventas del cliente</h3>
-      {errores.ventas && <Alert type="error">Ventas: {errores.ventas}</Alert>}
-      {ventas && (ventas.length ? <div className={styles.scroll}><table><thead><tr><th>Venta</th><th>Fecha</th><th>Estado</th><th>Total</th><th>Comprobante</th></tr></thead><tbody>
-        {ventas.map(({ venta }) => <tr key={venta.id_venta}><td>{venta.numero_venta != null ? `#${venta.numero_venta}` : "—"}</td><td>{fecha(venta.fecha_venta)}</td><td>{venta.estado}</td><td>{totalVenta(venta) == null ? "—" : dinero(totalVenta(venta))}</td><td><Link to={`/ventas/${venta.id_venta}/comprobante`} onClick={onClose}>Ver comprobante</Link></td></tr>)}
-      </tbody></table></div> : <p className={styles.vacio}>Este cliente todavía no tiene ventas.</p>)}
-      <h3>Historial financiero unificado</h3>
-      <p className={styles.aclaracion}>Incluye ingresos por ventas y cobros posteriores, con sus anulaciones. Las anulaciones de ventas se realizan desde Ventas; las de cobros, desde el historial inferior.</p>
+      {modo !== "cobro" && <>
+      <div className={styles.historialEncabezado}>
+        <div>
+          <h3>Movimientos del cliente</h3>
+          <p className={styles.aclaracion}>Ventas cobradas, cobros de deuda y anulaciones. Las ventas a crédito figuran en «Todas las ventas».</p>
+        </div>
+        <span className={styles.contador}>{movimientosFiltrados.length} movimientos</span>
+      </div>
       {errores.movimientos && <Alert type="error">Movimientos: {errores.movimientos}</Alert>}
-      {movimientos && (movimientos.length ? <div className={styles.scroll}><table><thead><tr><th>Fecha</th><th>Origen</th><th>Operación</th><th>Cuenta</th><th>Importe</th><th>Acción</th></tr></thead><tbody>
-        {movimientos.map((m) => {
-          const esVenta = m.origen === 'VENTA'
-          const anulado = m.tipo.startsWith('ANULACION_')
-          return <tr key={m.id_movimiento}>
-            <td>{fecha(m.fecha)}</td>
-            <td>{esVenta ? (m.numero_venta != null ? `Venta #${m.numero_venta}` : 'Venta') : 'Cobro posterior'}</td>
-            <td>{anulado ? 'Reversión' : esVenta ? (m.metodo_pago === 'TRANSFERENCIA' ? 'Transferencia' : m.metodo_pago === 'EFECTIVO' ? 'Efectivo' : 'Ingreso de venta') : 'Cobro de cliente'}</td>
-            <td>{m.cuenta}</td>
-            <td>{anulado ? '−' : '+'}{dinero(m.monto)}</td>
-            <td>{esVenta ? <Link to={`/ventas/${m.id_operacion}/comprobante`} onClick={onClose}>Ver venta</Link> : 'Ver cobros abajo'}</td>
-          </tr>
-        })}</tbody></table></div> : <p className={styles.vacio}>Todavía no hay ingresos financieros registrados para este cliente.</p>)}
-      <h3>Cobros registrados</h3>
       {errores.cobros && <Alert type="error">Cobros: {errores.cobros}</Alert>}
-      {cobros && (cobros.length ? <div className={styles.scroll}><table><thead><tr><th>N.º</th><th>Fecha</th><th>Estado</th><th>Importe</th>{esPropietario && <th>Acciones</th>}</tr></thead><tbody>
-        {cobros.map((c) => <tr key={c.id_cobro}><td>{c.numero_cobro != null ? `#${c.numero_cobro}` : "—"}</td><td>{fecha(c.fecha_cobro)}</td><td>{c.estado}</td><td>{dinero(c.monto)}</td>{esPropietario && <td>{String(c.estado).toUpperCase() === 'COMPLETADO' ? <button type="button" className={styles.anular} onClick={() => { setCobroAnular(c); setMotivoAnulacion(''); setErrorAnulacion(''); setExitoAnulacion('') }}>Anular cobro</button> : '—'}</td>}</tr>)}
-      </tbody></table></div> : <p className={styles.vacio}>Este cliente todavía no tiene cobros registrados.</p>)}
-      <p className={styles.aclaracion}>Los cobros se acreditan en la cuenta financiera seleccionada. La anulación está reservada al propietario.</p>
+      <div className={styles.filtros}>
+        <div className={styles.pestanas} role="group" aria-label="Filtrar movimientos">
+          {['TODOS', 'VENTAS', 'COBROS', 'ANULACIONES'].map((opcion) => <button key={opcion} type="button" aria-pressed={filtro === opcion} className={filtro === opcion ? styles.pestanaActiva : styles.pestana} onClick={() => setFiltro(opcion)}>{opcion === 'TODOS' ? 'Todos' : opcion === 'VENTAS' ? 'Ventas' : opcion === 'COBROS' ? 'Cobros' : 'Anulaciones'}</button>)}
+        </div>
+        <input className={styles.buscar} type="search" aria-label="Buscar movimientos" placeholder="Buscar por venta, cuenta o importe" value={busqueda} onChange={(event) => setBusqueda(event.target.value)} />
+      </div>
+      {movimientos && (movimientosFiltrados.length ? <div className={styles.movimientos}>
+        {movimientosFiltrados.map((m) => {
+          const esVenta = m.origen === 'VENTA'
+          const reversion = m.tipo.startsWith('ANULACION_')
+          const venta = esVenta ? ventasPorId.get(Number(m.id_operacion)) : null
+          const cobro = !esVenta ? cobrosPorId.get(Number(m.id_operacion)) : null
+          const vigente = esVenta ? String(venta?.estado ?? m.estado_operacion).toUpperCase() === 'COMPLETADA' : String(cobro?.estado ?? m.estado_operacion).toUpperCase() === 'COMPLETADO'
+          const titulo = reversion ? (esVenta ? 'Anulación de venta' : 'Anulación de cobro') : esVenta ? 'Venta cobrada' : 'Cobro de cliente'
+          const numero = esVenta && m.numero_venta != null ? `#${m.numero_venta}` : ''
+          const metodo = esVenta ? String(m.metodo_pago || 'Pago').replaceAll('_', ' ') : 'Cobro de deuda'
+          const abierto = expandido === m.id_movimiento
+          return <article key={m.id_movimiento} className={styles.movimiento}>
+            <div className={styles.movimientoFila}>
+              <div className={styles.movimientoInfo}>
+                <div className={styles.movimientoTitulo}><strong>{titulo} {numero}</strong><span className={reversion ? styles.etiquetaAnulada : vigente ? styles.etiquetaVigente : styles.etiquetaAnulada}>{reversion ? 'Reversión' : vigente ? 'Registrado' : 'Anulado'}</span></div>
+                <span className={styles.aclaracion}>{metodo} · {m.cuenta}</span>
+                <span className={styles.aclaracion}>{fecha(m.fecha)}</span>
+              </div>
+              <div className={styles.movimientoDerecha}>
+                <strong className={reversion ? styles.importeNegativo : styles.importePositivo}>{reversion ? '−' : '+'}{dinero(m.monto)}</strong>
+                <button type="button" className={styles.boton} aria-expanded={abierto} onClick={() => setExpandido(abierto ? null : m.id_movimiento)}>{abierto ? 'Ocultar' : 'Ver detalle'}</button>
+              </div>
+            </div>
+            {abierto && <div className={styles.movimientoDetalle}>
+              <p><strong>Origen:</strong> {esVenta ? 'Venta' : 'Cobro posterior'} · <strong>Estado:</strong> {String(m.estado_operacion).replaceAll('_', ' ')}</p>
+              <p><strong>Cuenta:</strong> {m.cuenta} · <strong>Fecha:</strong> {fecha(m.fecha)}</p>
+              <div className={styles.acciones}>
+                {esVenta && <Link to={`/ventas/${m.id_operacion}/comprobante`} onClick={onClose}>Ver comprobante</Link>}
+                {esVenta && <Link to="/ventas" onClick={onClose}>Gestionar venta</Link>}
+                {!esVenta && !reversion && vigente && esPropietario && cobro && <button type="button" className={styles.anular} onClick={() => { setCobroAnular(cobro); setMotivoAnulacion(''); setErrorAnulacion(''); setExitoAnulacion('') }}>Anular cobro</button>}
+                {esVenta && !reversion && vigente && esPropietario && <span className={styles.aclaracion}>Para anular la venta completa, ingresá a Ventas → Ver detalle. Esto también devuelve el stock.</span>}
+              </div>
+            </div>}
+          </article>
+        })}
+      </div> : <p className={styles.vacio}>No hay movimientos para este filtro.</p>)}
+      <details className={styles.ventasAdicionales}>
+        <summary>Todas las ventas del cliente (incluidas las ventas a crédito)</summary>
+        {errores.ventas && <Alert type="error">Ventas: {errores.ventas}</Alert>}
+        {ventas && (ventas.length ? <div className={styles.scroll}><table><thead><tr><th>Venta</th><th>Fecha</th><th>Estado</th><th>Total</th><th>Comprobante</th></tr></thead><tbody>
+          {ventas.map(({ venta }) => <tr key={venta.id_venta}><td>{venta.numero_venta != null ? `#${venta.numero_venta}` : '—'}</td><td>{fecha(venta.fecha_venta)}</td><td>{venta.estado}</td><td>{totalVenta(venta) == null ? '—' : dinero(totalVenta(venta))}</td><td><Link to={`/ventas/${venta.id_venta}/comprobante`} onClick={onClose}>Ver comprobante</Link></td></tr>)}
+        </tbody></table></div> : <p className={styles.vacio}>Este cliente todavía no tiene ventas.</p>)}
+      </details>
+      <p className={styles.aclaracion}>Anular un cobro no devuelve mercadería. Anular una venta completa sí revierte el stock y su ingreso. La anulación independiente de un pago de venta aún no está disponible.</p>
+
 </>}
     </div>
   </Modal>
