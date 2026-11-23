@@ -29,3 +29,30 @@
 .anular:hover,.anular:focus-visible{background:#d57b8020}
 .anularConfirmar{padding:.6rem .9rem;border:1px solid #c65d63;border-radius:.6rem;background:#a73e46;color:white;font:inherit;font-weight:700;cursor:pointer}
 .anularConfirmar:disabled{opacity:.5;cursor:not-allowed}
+
+.historialEncabezado{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.historialEncabezado h3{margin:0 0 .4rem}
+.contador{color:var(--color-text-muted);font-size:.8rem}
+.filtros{display:flex;gap:.65rem;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.pestanas{display:flex;gap:.3rem;flex-wrap:wrap}
+.pestana,.pestanaActiva{padding:.55rem .75rem;border:1px solid var(--color-border);border-radius:.55rem;background:transparent;color:var(--color-text-muted);cursor:pointer;font:inherit;font-size:.82rem}
+.pestanaActiva{background:var(--color-surface-raised);border-color:var(--color-primary);color:var(--color-text);font-weight:700}
+.buscar{padding:.6rem .8rem;border:1px solid var(--color-border);border-radius:.6rem;background:var(--color-surface-raised);color:var(--color-text);font:inherit;min-width:210px;flex:1;max-width:310px}
+.movimientos{display:grid;gap:.55rem}
+.movimiento{border:1px solid var(--color-border);border-radius:.8rem;background:var(--color-surface-raised);overflow:hidden}
+.movimientoFila{padding:.85rem 1rem;display:flex;justify-content:space-between;gap:1rem;align-items:center}
+.movimientoInfo{display:grid;gap:.32rem;min-width:0}
+.movimientoTitulo{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;font-size:.9rem}
+.etiquetaVigente,.etiquetaAnulada{padding:.18rem .5rem;border-radius:999px;font-size:.7rem;font-weight:700}
+.etiquetaVigente{color:#78d6ae;background:#78d6ae16}
+.etiquetaAnulada{color:#efacb0;background:#efacb016}
+.movimientoDerecha{display:grid;justify-items:end;gap:.45rem;white-space:nowrap}
+.importePositivo{color:#78d6ae;font-size:.98rem}
+.importeNegativo{color:#efacb0;font-size:.98rem}
+.movimientoDetalle{padding:.8rem 1rem;border-top:1px solid var(--color-border);display:grid;gap:.6rem;font-size:.82rem}
+.movimientoDetalle p{margin:0;color:var(--color-text-muted)}
+.movimientoDetalle a{color:var(--color-primary)}
+.ventasAdicionales{border:1px solid var(--color-border);border-radius:.7rem;padding:.9rem}
+.ventasAdicionales summary{cursor:pointer;font-weight:650;font-size:.85rem}
+.ventasAdicionales .scroll{margin-top:.8rem}
+@media(max-width:650px){.movimientoFila{align-items:flex-start}.movimientoDerecha{white-space:normal}.filtros{align-items:stretch}.buscar{max-width:none;width:100%}}
