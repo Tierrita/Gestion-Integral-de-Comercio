@@ -1,3 +1,6 @@
+from decimal import Decimal
+from collections import defaultdict
+
 """
 Servicio de cobros.
 Reglas de negocio, seguridad y aislamiento multicomercio.
@@ -173,6 +176,33 @@ def anular_cobro(
     )
 
 
+def _calcular_saldo(ventas, cobros):
+    total_ventas = sum((Decimal(str(v["total"])) for v in ventas
+        if str(v.get("estado", "")).upper() != "ANULADA"
+        and str(v.get("metodo_pago", "")).upper() == "CUENTA_CORRIENTE"), Decimal("0"))
+    total_cobros = sum((Decimal(str(c["monto"])) for c in cobros
+        if str(c.get("estado", "")).upper() == "COMPLETADO"), Decimal("0"))
+    saldo = total_ventas - total_cobros
+    return {"total_ventas": float(total_ventas), "total_cobros": float(total_cobros),
+            "saldo": float(saldo), "situacion": "DEUDA" if saldo > 0 else "SALDO_A_FAVOR" if saldo < 0 else "AL_DIA"}
+
+
+def listar_saldos_clientes(id_comercio):
+    from app.models.cobro_model import obtener_cobros
+    from app.models.venta_model import obtener_ventas
+    from app.models.cliente_model import obtener_clientes
+    ventas_por_cliente = defaultdict(list)
+    cobros_por_cliente = defaultdict(list)
+    for venta in obtener_ventas(id_comercio):
+        ventas_por_cliente[venta["id_cliente"]].append(venta)
+    for cobro in obtener_cobros(id_comercio):
+        cobros_por_cliente[cobro["id_cliente"]].append(cobro)
+    return [{"id_cliente": cliente["id_cliente"],
+             **_calcular_saldo(ventas_por_cliente[cliente["id_cliente"]],
+                              cobros_por_cliente[cliente["id_cliente"]])}
+            for cliente in obtener_clientes(id_comercio)]
+
+
 def consultar_saldo_cliente(
     id_cliente,
     id_comercio
@@ -195,35 +225,7 @@ def consultar_saldo_cliente(
         id_comercio
     )
 
-    total_ventas = sum(
-        float(venta["total"])
-        for venta in ventas
-        if venta["estado"].upper() != "ANULADA"
-    )
-
-    total_cobros = sum(
-        float(cobro["monto"])
-        for cobro in cobros
-        if cobro["estado"].upper() == "COMPLETADO"
-    )
-
-    saldo = total_ventas - total_cobros
-
-    if saldo > 0:
-        situacion = "DEUDA"
-    elif saldo < 0:
-        situacion = "SALDO_A_FAVOR"
-    else:
-        situacion = "AL_DIA"
-
-    return {
-        "cliente": {
-            "id_cliente": cliente["id_cliente"],
-            "nombre_completo": cliente["nombre_completo"],
-            "estado": cliente["estado"]
-        },
-        "total_ventas": total_ventas,
-        "total_cobros": total_cobros,
-        "saldo": saldo,
-        "situacion": situacion
-    }
+    return {"cliente": {"id_cliente": cliente["id_cliente"],
+                        "nombre_completo": cliente["nombre_completo"],
+                        "estado": cliente["estado"]},
+            **_calcular_saldo(ventas, cobros)}
