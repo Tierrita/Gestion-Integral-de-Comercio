@@ -211,7 +211,7 @@ function SessionRoutes() {
   />
   <Route path="/ventas/nueva" element={<NuevaVenta />} />
   <Route path="/ventas/:id/comprobante" element={<ComprobanteVenta />} />
-  <Route path="/clientes" element={<Clientes />} />
+  <Route path="/clientes" element={<Clientes esPropietario={profile?.usuario?.es_propietario === true} />} />
   <Route path="/categorias" element={<Categorias />} />
   <Route path="/proveedores" element={<Proveedores />} />
   <Route path="/compras" element={<Compras esPropietario={profile?.usuario?.es_propietario === true} />} />
