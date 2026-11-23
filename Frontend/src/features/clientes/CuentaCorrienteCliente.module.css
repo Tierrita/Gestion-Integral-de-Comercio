@@ -15,3 +15,12 @@
 .scroll th{color:var(--color-text-muted);font-size:.74rem}
 .scroll a{color:var(--color-primary)}
 @media(max-width:650px){.resumen{grid-template-columns:1fr}}
+
+.acciones{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.principal{min-height:40px;padding:.6rem 1rem;border:0;border-radius:.6rem;background:var(--color-primary);color:#071c2a;font:inherit;font-weight:750;cursor:pointer}
+.principal:disabled{opacity:.55;cursor:not-allowed}
+.formulario{display:grid;gap:.8rem;padding:1rem;border:1px solid var(--color-border);border-radius:.8rem;background:var(--color-surface-raised)}
+.formulario h3{margin:0}
+.formulario label{display:grid;gap:.4rem;font-size:.83rem;font-weight:650;color:var(--color-text-muted)}
+.formulario input,.formulario select,.formulario textarea{width:100%;box-sizing:border-box;padding:.65rem;border:1px solid var(--color-border);border-radius:.55rem;background:var(--color-background);color:var(--color-text);font:inherit}
+.formulario input:focus-visible,.formulario select:focus-visible,.formulario textarea:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
