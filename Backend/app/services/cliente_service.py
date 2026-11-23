@@ -295,3 +295,72 @@ def consultar_historial_ventas_cliente(
         "cantidad_ventas": len(ventas),
         "ventas": historial,
     }
+
+def consultar_movimientos_financieros_cliente(id_cliente, id_comercio):
+    """Historial de ingresos y reversiones del cliente, sin alterar saldos.
+
+    Primero se obtienen las operaciones del comercio autenticado y luego
+    sus movimientos asociados. No se exponen movimientos de otros comercios.
+    """
+    from core.supabase_client import get_client
+
+    cliente = obtener_cliente_por_id(id_cliente, id_comercio)
+    if not cliente:
+        raise ValueError("Cliente no encontrado")
+
+    db = get_client()
+    ventas = (db.table("ventas")
+              .select("id_venta,numero_venta,fecha_venta,metodo_pago,estado,total")
+              .eq("id_cliente", id_cliente).eq("id_comercio", id_comercio)
+              .execute().data or [])
+    cobros = (db.table("cobros")
+              .select("id_cobro,fecha_cobro,estado,monto")
+              .eq("id_cliente", id_cliente).eq("id_comercio", id_comercio)
+              .execute().data or [])
+
+    operaciones = []
+    for origen, registros, clave in (
+        ("VENTA", ventas, "id_venta"),
+        ("COBRO", cobros, "id_cobro"),
+    ):
+        ids = [registro[clave] for registro in registros]
+        if not ids:
+            continue
+        movimientos = (db.table("movimientos_financieros")
+                       .select("id_movimiento,id_cuenta,tipo_movimiento,monto,fecha_movimiento,id_origen")
+                       .eq("tipo_origen", origen).in_("id_origen", ids)
+                       .order("fecha_movimiento", desc=True).execute().data or [])
+        indice = {registro[clave]: registro for registro in registros}
+        for movimiento in movimientos:
+            original = indice.get(movimiento["id_origen"])
+            if original is None:
+                continue
+            tipo = movimiento["tipo_movimiento"]
+            permitidos = ("VENTA", "ANULACION_VENTA") if origen == "VENTA" else ("COBRO", "ANULACION_COBRO")
+            if tipo not in permitidos:
+                continue
+            operaciones.append({
+                "id_movimiento": movimiento["id_movimiento"],
+                "tipo": tipo,
+                "origen": origen,
+                "id_operacion": movimiento["id_origen"],
+                "numero_venta": original.get("numero_venta") if origen == "VENTA" else None,
+                "metodo_pago": original.get("metodo_pago") if origen == "VENTA" else None,
+                "estado_operacion": original["estado"],
+                "monto": movimiento["monto"],
+                "fecha": movimiento["fecha_movimiento"],
+                "id_cuenta": movimiento["id_cuenta"],
+            })
+
+    ids_cuentas = sorted({m["id_cuenta"] for m in operaciones if m["id_cuenta"] is not None})
+    nombres = {}
+    if ids_cuentas:
+        cuentas = (db.table("cuentas").select("id_cuenta,nombre_cuenta")
+                   .eq("id_comercio", id_comercio).in_("id_cuenta", ids_cuentas)
+                   .execute().data or [])
+        nombres = {c["id_cuenta"]: c["nombre_cuenta"] for c in cuentas}
+    for movimiento in operaciones:
+        movimiento["cuenta"] = nombres.get(movimiento.pop("id_cuenta"), "Cuenta no disponible")
+
+    operaciones.sort(key=lambda m: (m["fecha"] or "", m["id_movimiento"]), reverse=True)
+    return {"movimientos": operaciones}
