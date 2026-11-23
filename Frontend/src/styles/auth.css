@@ -44,3 +44,66 @@
 #root:has(> .aionix-auth-page) { display:block; padding:0; }
 #root > .aionix-auth-page { max-width:none; padding:0; border:0; border-radius:0; background:transparent; }
 .aionix-info-icon span { font-size:2rem; line-height:1; }
+
+/* Corrección de integración: aislar AuthPage de los estilos globales del login V1. */
+#root:has(> main.aionix-auth-page) {
+  display: block;
+  padding: 0;
+  min-height: 100vh;
+}
+#root > main.aionix-auth-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+#root > main.aionix-auth-page h1 { margin: 18px 0; }
+#root > main.aionix-auth-page input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #b9c3cc;
+  border-radius: 6px;
+  background: #fff;
+  color: #17273a;
+}
+#root > main.aionix-auth-page button.aionix-primary-button {
+  min-height: 44px;
+  background: #0b315b;
+  color: #fff;
+  border-radius: 6px;
+}
+#root > main.aionix-auth-page button.aionix-primary-button:hover:not(:disabled) { background: #154775; }
+#root > main.aionix-auth-page .aionix-auth-tabs button {
+  min-height: 52px;
+  border-radius: 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: #fff;
+  color: #5b6571;
+}
+#root > main.aionix-auth-page .aionix-auth-tabs button.is-active {
+  border-bottom-color: #0b315b;
+  color: #0b315b;
+}
+#root > main.aionix-auth-page .aionix-info-button {
+  background: #fff;
+  color: #103e6b;
+  border: 2px solid transparent;
+}
+#root > main.aionix-auth-page .aionix-info-button[aria-pressed='true'] { border-color: #6bd1ef; }
+#root > main.aionix-auth-page .aionix-back-button {
+  background: transparent;
+  color: #0b315b;
+  border: 0;
+}
+@media (max-width: 800px) {
+  #root > main.aionix-auth-page { grid-template-columns: minmax(0, 1fr); }
+  #root > main.aionix-auth-page .aionix-brand { padding: 32px 24px; }
+}
