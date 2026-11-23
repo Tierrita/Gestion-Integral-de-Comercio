@@ -7,6 +7,7 @@ import styles from './CuentaCorrienteCliente.module.css'
 
 const dinero = (n) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number(n || 0))
 const fecha = (v) => v ? new Date(v).toLocaleString('es-AR') : '—'
+const totalVenta = (venta) => venta.total ?? venta.total_venta
 const errorDe = (e) => e.response?.data?.error || (e.response?.status === 403 ? 'No tenés permiso para consultar esta información.' : 'No se pudo consultar la cuenta corriente.')
 const etiquetas = { DEUDA: 'Con deuda', AL_DIA: 'Al día', SALDO_A_FAVOR: 'Saldo a favor' }
 
@@ -160,12 +161,12 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
       {modo !== "cobro" && <><h3>Ventas del cliente</h3>
       {errores.ventas && <Alert type="error">Ventas: {errores.ventas}</Alert>}
       {ventas && (ventas.length ? <div className={styles.scroll}><table><thead><tr><th>Venta</th><th>Fecha</th><th>Estado</th><th>Total</th><th>Comprobante</th></tr></thead><tbody>
-        {ventas.map(({ venta }) => <tr key={venta.id_venta}><td>#{venta.numero_venta ?? venta.id_venta}</td><td>{fecha(venta.fecha_venta)}</td><td>{venta.estado}</td><td>{dinero(venta.total_venta ?? venta.total)}</td><td><Link to={`/ventas/${venta.id_venta}/comprobante`} onClick={onClose}>Ver X</Link></td></tr>)}
+        {ventas.map(({ venta }) => <tr key={venta.id_venta}><td>{venta.numero_venta != null ? `#${venta.numero_venta}` : "—"}</td><td>{fecha(venta.fecha_venta)}</td><td>{venta.estado}</td><td>{totalVenta(venta) == null ? "—" : dinero(totalVenta(venta))}</td><td><Link to={`/ventas/${venta.id_venta}/comprobante`} onClick={onClose}>Ver comprobante</Link></td></tr>)}
       </tbody></table></div> : <p className={styles.vacio}>Este cliente todavía no tiene ventas.</p>)}
       <h3>Cobros registrados</h3>
       {errores.cobros && <Alert type="error">Cobros: {errores.cobros}</Alert>}
       {cobros && (cobros.length ? <div className={styles.scroll}><table><thead><tr><th>N.º</th><th>Fecha</th><th>Estado</th><th>Importe</th></tr></thead><tbody>
-        {cobros.map((c) => <tr key={c.id_cobro}><td>#{c.id_cobro}</td><td>{fecha(c.fecha_cobro)}</td><td>{c.estado}</td><td>{dinero(c.monto)}</td></tr>)}
+        {cobros.map((c) => <tr key={c.id_cobro}><td>{c.numero_cobro != null ? `#${c.numero_cobro}` : "—"}</td><td>{fecha(c.fecha_cobro)}</td><td>{c.estado}</td><td>{dinero(c.monto)}</td></tr>)}
       </tbody></table></div> : <p className={styles.vacio}>Este cliente todavía no tiene cobros registrados.</p>)}
       <p className={styles.aclaracion}>Los cobros se acreditan en la cuenta financiera seleccionada. La anulación está reservada al propietario.</p></>}
     </div>
