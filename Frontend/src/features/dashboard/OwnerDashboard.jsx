@@ -31,7 +31,7 @@ function Tarjeta({ titulo, valor, detalle, acento = false }) {
 }
 
 function Ranking({ titulo, dato, campo }) {
-  const nombre = dato?.nombre_producto ?? dato?.nombre_cliente ?? dato?.nombre_proveedor ?? dato?.nombre ?? null
+  const nombre = dato?.nombre_producto ?? dato?.nombre_completo ?? dato?.nombre_cliente ?? dato?.nombre_proveedor ?? dato?.nombre ?? null
   return (
     <article className={styles.ranking}>
       <span className={styles.etiqueta}>{titulo}</span>
@@ -157,7 +157,7 @@ export default function OwnerDashboard() {
             <h2 id="titulo-rankings">Destacados del período</h2>
             <div className={styles.rankingGrid}>
               <Ranking titulo="Producto más vendido" dato={rankings?.producto_mas_vendido} campo="facturacion" />
-              <Ranking titulo="Mejor cliente" dato={rankings?.mejor_cliente} campo="total_comprado" />
+              <Ranking titulo="Mejor cliente" dato={rankings?.mejor_cliente} campo="facturacion" />
               <Ranking titulo="Principal proveedor" dato={rankings?.principal_proveedor} campo="total_comprado" />
             </div>
           </section>
