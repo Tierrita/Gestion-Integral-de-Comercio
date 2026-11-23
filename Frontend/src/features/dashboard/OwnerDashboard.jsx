@@ -142,8 +142,8 @@ export default function OwnerDashboard() {
           signal: controller.signal,
           timeout: 30000,
         })
-        if (!Array.isArray(data?.evolucion)) throw new Error('Respuesta de evolución inválida')
-        if (!controller.signal.aborted) setEvolucion(data)
+        if (!Array.isArray(data?.ventas?.evolucion)) throw new Error('Respuesta de evolución inválida')
+        if (!controller.signal.aborted) setEvolucion(data.ventas)
       } catch (err) {
         if (!controller.signal.aborted) setErrorEvolucion(mensajeError(err))
       } finally {
