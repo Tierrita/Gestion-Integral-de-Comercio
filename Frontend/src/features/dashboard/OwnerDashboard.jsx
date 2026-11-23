@@ -81,6 +81,7 @@ function GraficoVentas({ puntos, agrupacion, rango }) {
     .filter((p) => Number.isFinite(p.valor) && p.valor >= 0)
   if (!datos.length) return <p className={styles.detalle}>No hay intervalos para este período.</p>
 
+  const [seleccion, setSeleccion] = useState(null)
   const ancho = 760
   const alto = 238
   const izquierda = 78
@@ -94,7 +95,12 @@ function GraficoVentas({ puntos, agrupacion, rango }) {
   const y = (valor) => arriba + rangoY * (1 - valor / maximo)
   const linea = datos.map((p, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${y(p.valor).toFixed(1)}`).join(' ')
   const area = `${linea} L ${x(datos.length - 1)} ${y(0)} L ${x(0)} ${y(0)} Z`
-  const marcas = [...new Set([0, Math.floor((datos.length - 1) / 2), datos.length - 1])]
+  const marcas = [...new Set([0, Math.floor((datos.length - 1) / 2), datos.length - 1])] 
+  const abreviar = (etiqueta) => {
+    if (agrupacion === 'hora') return etiqueta
+    if (agrupacion === 'mes') return new Intl.DateTimeFormat('es-AR', { month: 'short', timeZone: 'UTC' }).format(new Date(`${etiqueta}-01T12:00:00Z`))
+    return new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: 'short', timeZone: 'UTC' }).format(new Date(`${etiqueta}T12:00:00Z`))
+  }
   const total = datos.reduce((s, p) => s + p.valor, 0)
   const activos = datos.filter((p) => p.valor > 0).length
   const mayor = Math.max(...datos.map((p) => p.valor))
@@ -105,6 +111,7 @@ function GraficoVentas({ puntos, agrupacion, rango }) {
         <div><span className={styles.etiqueta}>Intervalos con ventas</span><strong>{activos} de {datos.length}</strong></div>
         <div><span className={styles.etiqueta}>Pico de facturación</span><strong>{valorMoneda(mayor)}</strong></div>
       </div>
+      <div className={styles.detalleInteractivo} role="status" aria-live="polite">{seleccion === null ? 'Seleccioná un punto para ver el detalle' : `${abreviar(datos[seleccion].etiqueta)} · ${valorMoneda(datos[seleccion].valor)}`}</div>
       <svg className={styles.grafico} viewBox={`0 0 ${ancho} ${alto}`} role="img"
         aria-label={`Evolución de facturación por ${agrupacion || 'período'}: ${datos.length} intervalos, ${activos} con ventas`}>
         <defs>
@@ -124,15 +131,15 @@ function GraficoVentas({ puntos, agrupacion, rango }) {
         <path d={area} fill="url(#dashboard-area-ventas)" />
         <path d={linea} className={styles.lineaVentas} />
         {datos.map((p, i) => (
-          <circle key={p.etiqueta} cx={x(i)} cy={y(p.valor)} r={p.valor > 0 ? 4 : 2} className={styles.puntoVentas}>
+          <circle key={p.etiqueta} cx={x(i)} cy={y(p.valor)} r={seleccion === i ? 6 : p.valor > 0 ? 4 : 2.5} className={styles.puntoVentas} onMouseEnter={() => setSeleccion(i)} onFocus={() => setSeleccion(i)} onClick={() => setSeleccion(i)} tabIndex={0} role="button" aria-label={`${abreviar(p.etiqueta)}: ${valorMoneda(p.valor)}`}>
             <title>{`${p.etiqueta}: ${valorMoneda(p.valor)}`}</title>
           </circle>
         ))}
         {marcas.map((i) => (
-          <text key={i} x={x(i)} y={alto - 14} textAnchor="middle" className={styles.etiquetaEje}>{datos[i].etiqueta}</text>
+          <text key={i} x={x(i)} y={alto - 14} textAnchor="middle" className={styles.etiquetaEje}>{abreviar(datos[i].etiqueta)}</text>
         ))}
       </svg>
-      <p className={styles.detalle}>Facturación en ARS · Se muestran también los intervalos sin ventas, con valor cero. Pasá el cursor por los puntos para ver su importe.</p>
+      <p className={styles.detalle}>Facturación en ARS · Se muestran también los intervalos sin ventas, con valor cero. Pasá el cursor o seleccioná un punto para consultar su importe.</p>
     </div>
   )
 }
@@ -251,6 +258,7 @@ export default function OwnerDashboard() {
             <Tarjeta titulo="Margen bruto" valor={rentabilidad?.rentabilidad_calculable === true && Number.isFinite(rentabilidad?.margen_bruto) ? `${numero.format(rentabilidad.margen_bruto)} %` : 'No disponible'} detalle="Margen sobre ventas; no equivale a utilidad neta" />
           </div>
 
+          <div className={styles.zonaAnalitica}>
           <section className={styles.panel} aria-labelledby="titulo-evolucion">
             <h2 id="titulo-evolucion">Evolución de ventas</h2>
             {cargandoEvolucion && <p role="status">Cargando evolución de ventas…</p>}
@@ -264,6 +272,18 @@ export default function OwnerDashboard() {
               <GraficoVentas puntos={evolucion.evolucion} agrupacion={evolucion.agrupacion} rango={evolucion.periodo} />
             )}
           </section>
+
+            <aside className={styles.panel} aria-labelledby="titulo-pulso">
+              <span className={styles.sobretitulo}>ANÁLISIS COMERCIAL</span>
+              <h2 id="titulo-pulso">Pulso del negocio</h2>
+              <p className={styles.detalle}>Indicadores actuales para tomar decisiones.</p>
+              <div className={styles.pulsoFila}><span>Ticket promedio</span><strong>{valorMoneda(ventas?.ticket_promedio)}</strong></div>
+              <div className={styles.pulsoFila}><span>Unidades vendidas</span><strong>{valorNumero(ventas?.unidades_vendidas)}</strong></div>
+              <div className={styles.pulsoFila}><span>Clientes con deuda</span><strong>{valorNumero(clientes?.cantidad_clientes_con_deuda)}</strong></div>
+              <div className={styles.pulsoFila}><span>Deuda a cobrar</span><strong>{valorMoneda(clientes?.total_por_cobrar)}</strong></div>
+              <Link className={styles.pulsoAcceso} to="/clientes">Ver clientes ↗</Link>
+            </aside>
+          </div>
 
           <div className={styles.columnas}>
             <section className={styles.panel} aria-labelledby="titulo-caja">
