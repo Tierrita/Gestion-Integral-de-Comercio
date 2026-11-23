@@ -13,6 +13,8 @@ export default function ComprobanteVenta() {
   const [comercio, setComercio] = useState(null)
   const [cliente, setCliente] = useState(null)
   const [productos, setProductos] = useState({})
+  const [saldoCliente, setSaldoCliente] = useState(null)
+  const [fechaConsultaSaldo, setFechaConsultaSaldo] = useState(null)
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(true)
 
@@ -28,12 +30,17 @@ export default function ComprobanteVenta() {
         if (controller.signal.aborted) return
         setDatos(data)
         // Datos auxiliares: un error de permisos no debe impedir ver el comprobante.
-        const [perfil, ficha, catalogo] = await Promise.allSettled([
+        const [perfil, ficha, catalogo, saldo] = await Promise.allSettled([
           api.get('/auth/me', { signal: controller.signal }),
           api.get(`/clientes/${data.venta.id_cliente}`, { signal: controller.signal }),
           api.get('/productos', { signal: controller.signal }),
+          api.get(`/clientes/${data.venta.id_cliente}/saldo`, { signal: controller.signal }),
         ])
         if (controller.signal.aborted) return
+        if (saldo.status === 'fulfilled' && typeof saldo.value.data?.saldo === 'number') {
+          setSaldoCliente(saldo.value.data)
+          setFechaConsultaSaldo(new Date())
+        }
         if (perfil.status === 'fulfilled') setComercio(perfil.value.data?.comercio ?? null)
         if (ficha.status === 'fulfilled') setCliente(ficha.value.data ?? null)
         if (catalogo.status === 'fulfilled' && Array.isArray(catalogo.value.data)) {
@@ -51,7 +58,9 @@ export default function ComprobanteVenta() {
 
   const venta = datos?.venta
   const anulada = normalizar(venta?.estado) === 'ANULADA'
-  const numero = venta?.numero_venta ?? venta?.id_venta
+  const numero = venta?.numero_venta != null ? String(venta.numero_venta).padStart(6, '0') : null
+  const nombreCliente = cliente?.nombre_completo || 'Cliente sin datos disponibles'
+  const datosCliente = [cliente?.telefono && ['Teléfono', cliente.telefono], cliente?.domicilio && ['Domicilio', cliente.domicilio], cliente?.direccion && !cliente?.domicilio && ['Dirección', cliente.direccion], cliente?.cuit && ['CUIT', cliente.cuit], cliente?.dni && ['DNI', cliente.dni]].filter(Boolean)
 
   return <section className={styles.pagina}>
     <header className={styles.acciones}>
@@ -64,12 +73,13 @@ export default function ComprobanteVenta() {
       <div className={styles.encabezado}>
         <div><strong className={styles.marca}>{comercio?.nombre_comercio || 'Comercio'}</strong><p>Comprobante interno de operación</p></div>
         <div className={styles.tipo}><strong>X</strong><span>NO FISCAL</span></div>
-        <div className={styles.numero}><strong>ORDEN DE VENTA #{numero}</strong><span>Fecha: {formatoFechaHora(venta.fecha_venta)}</span></div>
+        <div className={styles.numero}><strong>COMPROBANTE N.º {numero || 'SIN NUMERACIÓN'}</strong><span>Fecha: {formatoFechaHora(venta.fecha_venta)}</span></div>
       </div>
       <div className={styles.advertencia}>DOCUMENTO INTERNO · NO VÁLIDO COMO FACTURA FISCAL</div>
       {anulada && <div className={styles.anulada}>VENTA ANULADA · SIN VALIDEZ COMO COMPROBANTE DE OPERACIÓN VIGENTE</div>}
       <div className={styles.cliente}>
-        <span>Cliente</span><strong>{cliente?.nombre_completo || `Cliente #${venta.id_cliente}`}</strong>
+        <span>Cliente</span><strong>{nombreCliente}</strong>
+        {datosCliente.map(([etiqueta, valor]) => <div className={styles.datoCliente} key={etiqueta}><span>{etiqueta}</span><strong>{valor}</strong></div>)}
         <span>Forma de pago</span><strong>{normalizar(venta.metodo_pago).replaceAll('_', ' ')}</strong>
       </div>
       <table className={styles.tabla}>
@@ -82,6 +92,11 @@ export default function ComprobanteVenta() {
         </tr>)}</tbody>
       </table>
       <div className={styles.total}><span>Total de la venta</span><strong>{formatoMoneda(venta.total)}</strong></div>
+      {saldoCliente && <section className={styles.estadoCuenta}>
+        <h2>Estado de cuenta del cliente</h2>
+        <div><span>Saldo actual al {fechaConsultaSaldo?.toLocaleString('es-AR')}</span><strong>{formatoMoneda(Math.abs(saldoCliente.saldo))} · {saldoCliente.saldo > 0 ? 'Deuda pendiente' : saldoCliente.saldo < 0 ? 'Saldo a favor' : 'Al día'}</strong></div>
+        <p>Saldo consultado al generar este documento. Puede incluir operaciones posteriores a esta venta y no representa el saldo histórico al momento de emitirla.</p>
+      </section>}
       {venta.observaciones && <p className={styles.observaciones}><strong>Observaciones:</strong> {venta.observaciones}</p>}
       <footer className={styles.pie}>Gracias por su compra · Comprobante emitido a partir de la venta registrada en el sistema. No reemplaza una factura autorizada por ARCA.</footer>
     </article>}
