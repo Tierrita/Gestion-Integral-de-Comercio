@@ -42,3 +42,8 @@
 .panel>p:not(.muted){padding:1rem 1.25rem;color:var(--color-text-muted)}
 .pagination{justify-content:space-between;padding:1rem 1.25rem}
 @media(max-width:750px){.metrics{grid-template-columns:1fr}.header{align-items:stretch}.toolbar label:first-child{flex-basis:100%}.scroll .actions{flex-wrap:wrap}}
+
+.deuda{color:#f17b82;font-weight:750;white-space:nowrap}
+.favor{color:#29c58f;font-weight:750;white-space:nowrap}
+.neutro{color:var(--color-text-muted);font-weight:650;white-space:nowrap}
+.scroll .actions .primary{min-height:32px;padding:.35rem .65rem;font-size:.78rem;white-space:nowrap}
