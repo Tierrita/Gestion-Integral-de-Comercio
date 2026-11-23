@@ -20,7 +20,8 @@ from app.controllers.finanza_controller import (
     obtener_estadisticas_proveedores,
     obtener_estadisticas_clientes,
     obtener_estadisticas_stock_controller,
-    obtener_dashboard_financiero_controller
+    obtener_dashboard_financiero_controller,
+    obtener_cuentas_por_cobrar_actuales_controller
 )
 
 from core.auth import (
@@ -160,3 +161,10 @@ def obtener_dashboard_financiero():
     Obtiene el resumen principal del módulo financiero.
     """
     return obtener_dashboard_financiero_controller()
+
+@finanza_bp.route("/cuentas-por-cobrar/actual", methods=["GET"])
+@login_requerido
+@solo_propietario
+def cuentas_por_cobrar_actuales():
+    """Saldo pendiente vigente, independiente del período del dashboard."""
+    return obtener_cuentas_por_cobrar_actuales_controller()
