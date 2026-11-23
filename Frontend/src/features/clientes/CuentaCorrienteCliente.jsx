@@ -10,7 +10,7 @@ const fecha = (v) => v ? new Date(v).toLocaleString('es-AR') : '—'
 const errorDe = (e) => e.response?.data?.error || (e.response?.status === 403 ? 'No tenés permiso para consultar esta información.' : 'No se pudo consultar la cuenta corriente.')
 const etiquetas = { DEUDA: 'Con deuda', AL_DIA: 'Al día', SALDO_A_FAVOR: 'Saldo a favor' }
 
-export default function CuentaCorrienteCliente({ cliente, onClose }) {
+export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detalle', onCobroRegistrado }) {
   const [saldo, setSaldo] = useState(null)
   const [ventas, setVentas] = useState(null)
   const [cobros, setCobros] = useState(null)
@@ -66,6 +66,8 @@ export default function CuentaCorrienteCliente({ cliente, onClose }) {
       setMonto('')
       setObservaciones('')
       setExitoCobro('Cobro registrado correctamente.')
+      onCobroRegistrado?.()
+      if (modo === 'cobro') onClose?.()
       setRevision((valor) => valor + 1)
     } catch (error) {
       setErrorCobro(error.response?.data?.error || errorDe(error))
@@ -74,6 +76,13 @@ export default function CuentaCorrienteCliente({ cliente, onClose }) {
     }
   }
 
+
+  useEffect(() => {
+    if (cliente && modo === 'cobro') void abrirCobro()
+    else setMostrarCobro(false)
+    setExitoCobro('')
+    setErrorCobro('')
+  }, [cliente, modo])
 
   useEffect(() => {
     if (!cliente) return
@@ -119,15 +128,15 @@ export default function CuentaCorrienteCliente({ cliente, onClose }) {
     return () => { clearTimeout(timer); controller.abort() }
   }, [cliente, revision])
 
-  return <Modal open={Boolean(cliente)} onClose={onClose} title={`Cuenta corriente · ${cliente?.nombre_completo || ''}`} description="Saldo actual, ventas y cobros registrados." size="large">
+  return <Modal open={Boolean(cliente)} onClose={onClose} title={`${modo === 'cobro' ? 'Registrar cobro' : 'Detalle del cliente'} · ${cliente?.nombre_completo || ''}`} description="Saldo actual, ventas y cobros registrados." size="large">
     <div className={styles.contenido}>
-      <div className={styles.barra}>
+      {modo !== "cobro" && <div className={styles.barra}>
         <span>Cliente #{cliente?.numero_cliente}</span>
         <div className={styles.acciones}>
           <button type="button" className={styles.boton} disabled={cargando || guardando} onClick={() => setRevision((v) => v + 1)}>Actualizar cuenta</button>
           <button type="button" className={styles.principal} disabled={guardando || cliente?.estado === false} onClick={() => { if (mostrarCobro) setMostrarCobro(false); else void abrirCobro() }}>{mostrarCobro ? 'Cancelar' : '+ Registrar cobro'}</button>
         </div>
-      </div>
+      </div>}
       {exitoCobro && <Alert type="success">{exitoCobro}</Alert>}
       {errorCobro && <Alert type="error">{errorCobro}</Alert>}
       {mostrarCobro && <form className={styles.formulario} onSubmit={(event) => void registrarCobro(event)}>
@@ -140,15 +149,15 @@ export default function CuentaCorrienteCliente({ cliente, onClose }) {
         <label>Observaciones (opcional)<textarea rows={2} maxLength={500} value={observaciones} onChange={(event) => setObservaciones(event.target.value)} disabled={guardando} /></label>
         <button className={styles.principal} type="submit" disabled={guardando}>{guardando ? 'Registrando…' : 'Confirmar cobro'}</button>
       </form>}
-      {cargando && <p role="status">Consultando movimientos…</p>}
-      {errores.saldo && <Alert type="error">Saldo: {errores.saldo}</Alert>}
+      {modo !== "cobro" && cargando && <p role="status">Consultando movimientos…</p>}
+      {modo !== "cobro" && errores.saldo && <Alert type="error">Saldo: {errores.saldo}</Alert>}
       {saldo && <div className={styles.resumen}>
         <article><span>Saldo actual</span><strong className={saldo.situacion === 'DEUDA' ? styles.deuda : styles.saldo}>{dinero(Math.abs(saldo.saldo))}</strong><small>{etiquetas[saldo.situacion] || saldo.situacion}</small></article>
         <article><span>Ventas vigentes</span><strong>{dinero(saldo.total_ventas)}</strong></article>
         <article><span>Cobros completados</span><strong>{dinero(saldo.total_cobros)}</strong></article>
       </div>}
-      <p className={styles.aclaracion}>El saldo se calcula con ventas no anuladas menos cobros completados. Un saldo a favor no es una deuda.</p>
-      <h3>Ventas del cliente</h3>
+      {modo !== "cobro" && <p className={styles.aclaracion}>El saldo se calcula con ventas no anuladas menos cobros completados. Un saldo a favor no es una deuda.</p>}
+      {modo !== "cobro" && <><h3>Ventas del cliente</h3>
       {errores.ventas && <Alert type="error">Ventas: {errores.ventas}</Alert>}
       {ventas && (ventas.length ? <div className={styles.scroll}><table><thead><tr><th>Venta</th><th>Fecha</th><th>Estado</th><th>Total</th><th>Comprobante</th></tr></thead><tbody>
         {ventas.map(({ venta }) => <tr key={venta.id_venta}><td>#{venta.numero_venta ?? venta.id_venta}</td><td>{fecha(venta.fecha_venta)}</td><td>{venta.estado}</td><td>{dinero(venta.total_venta ?? venta.total)}</td><td><Link to={`/ventas/${venta.id_venta}/comprobante`} onClick={onClose}>Ver X</Link></td></tr>)}
@@ -158,7 +167,7 @@ export default function CuentaCorrienteCliente({ cliente, onClose }) {
       {cobros && (cobros.length ? <div className={styles.scroll}><table><thead><tr><th>N.º</th><th>Fecha</th><th>Estado</th><th>Importe</th></tr></thead><tbody>
         {cobros.map((c) => <tr key={c.id_cobro}><td>#{c.id_cobro}</td><td>{fecha(c.fecha_cobro)}</td><td>{c.estado}</td><td>{dinero(c.monto)}</td></tr>)}
       </tbody></table></div> : <p className={styles.vacio}>Este cliente todavía no tiene cobros registrados.</p>)}
-      <p className={styles.aclaracion}>Los cobros se acreditan en la cuenta financiera seleccionada. La anulación está reservada al propietario.</p>
+      <p className={styles.aclaracion}>Los cobros se acreditan en la cuenta financiera seleccionada. La anulación está reservada al propietario.</p></>}
     </div>
   </Modal>
 }
