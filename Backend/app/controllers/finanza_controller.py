@@ -355,7 +355,9 @@ def obtener_dashboard_financiero_controller():
             "error": str(error)
         }), 400
 
-    except Exception as error:
+    except Exception:
+        from flask import current_app
+        current_app.logger.exception("Error al obtener el dashboard financiero")
         return jsonify({
-            "error": str(error)
+            "error": "No se pudo obtener el dashboard financiero"
         }), 500
