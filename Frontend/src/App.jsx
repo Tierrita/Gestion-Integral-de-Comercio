@@ -1,3 +1,4 @@
+import AuthPage from './pages/AuthPage.jsx'
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { api, clearToken, readToken, saveToken } from './shared/api/client.js'
@@ -15,78 +16,6 @@ import Clientes from './features/clientes/Clientes.jsx'
 import Categorias from './features/categorias/Categorias.jsx'
 import Proveedores from './features/proveedores/Proveedores.jsx'
 
-
-function Login({ notice, onLogin }) {
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
-
-  async function handleSubmit(event) {
-    event.preventDefault()
-    if (submitting) return
-
-    const form = event.currentTarget
-    const fields = new FormData(form)
-
-    setSubmitting(true)
-    setError('')
-
-    try {
-      const { data } = await api.post('/auth/login', {
-        email: fields.get('email').trim(),
-        password: fields.get('password'),
-      })
-
-      if (typeof data?.token !== 'string' || !data.token) {
-        setError('Flask devolvió una respuesta de acceso incompleta.')
-        return
-      }
-
-      form.reset()
-      onLogin(data.token)
-    } catch (error) {
-      const status = error.response?.status
-
-      if (status === 400 || status === 403) {
-        setError(error.response.data?.error || 'Flask rechazó el acceso.')
-      } else if (!status || status === 502 || status === 504) {
-        setError('No se pudo conectar con Flask. Verificá que esté activo.')
-      } else {
-        setError('No pudimos iniciar sesión. Volvé a intentar.')
-      }
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <main>
-      <h1>Gestión Integral de Comercio</h1>
-      {notice && !error && <p role="status">{notice}</p>}
-      <form onSubmit={handleSubmit}>
-        <p>
-          <label htmlFor="email">Correo electrónico</label>
-          <br />
-          <input id="email" name="email" type="email" autoComplete="username" required />
-        </p>
-        <p>
-          <label htmlFor="password">Contraseña</label>
-          <br />
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-          />
-        </p>
-        <button type="submit" disabled={submitting}>
-          {submitting ? 'Ingresando…' : 'Ingresar'}
-        </button>
-        {error && <p role="alert">{error}</p>}
-      </form>
-    </main>
-  )
-}
 
 function SessionRoutes() {
   const [token, setToken] = useState(readToken)
@@ -175,9 +104,9 @@ function SessionRoutes() {
   return (
     <Routes>
       <Route
-        path="/login"
+        path="/login/*"
         element={profile ? <Navigate to="/inicio" replace /> : (
-          <Login notice={notice} onLogin={handleLogin} />
+          <AuthPage notice={notice} onLogin={handleLogin} />
         )}
       />
       <Route
