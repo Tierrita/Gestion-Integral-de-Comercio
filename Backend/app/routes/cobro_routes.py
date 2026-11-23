@@ -72,3 +72,10 @@ def consultar_saldo_cliente_route(id_cliente):
     return consultar_saldo_cliente_controller(
         id_cliente
     )
+@cobro_bp.route("/clientes/saldos", methods=["GET"])
+@login_requerido
+@permiso_requerido("clientes.ver_deuda")
+def listar_saldos_clientes_route():
+    from flask import jsonify, g
+    from app.services.cobro_service import listar_saldos_clientes
+    return jsonify({"saldos": listar_saldos_clientes(g.id_comercio)}), 200
