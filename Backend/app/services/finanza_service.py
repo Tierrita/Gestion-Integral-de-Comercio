@@ -2438,10 +2438,10 @@ def calcular_dashboard_financiero(
     para la pantalla principal del sistema.
     """
 
-    # Activación controlada: por defecto se conserva el cálculo V1.
-    # No activar antes de validar la paridad de los rankings.
+    # RPC validada: activa por defecto. Para volver temporalmente al
+    # cálculo anterior, establecer DASHBOARD_USAR_RPC=false.
     import os
-    if os.getenv("DASHBOARD_USAR_RPC", "false").lower() == "true":
+    if os.getenv("DASHBOARD_USAR_RPC", "true").strip().lower() == "true":
         return _dashboard_rpc_validado(id_comercio, periodo, desde, hasta)
 
     # --------------------------------------------------
