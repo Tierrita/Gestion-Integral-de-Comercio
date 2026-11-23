@@ -4,6 +4,7 @@ import Alert from '../../shared/components/Alert.jsx'
 import Modal from '../../shared/components/Modal.jsx'
 import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
 import styles from './Clientes.module.css'
+import CuentaCorrienteCliente from './CuentaCorrienteCliente.jsx'
 
 const messageOf = (error) => error.response?.data?.error || (error.response?.status === 403 ? 'No tenés permisos para esta operación.' : 'No se pudo completar la operación. Verificá la conexión con Flask.')
 const money = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number(value || 0))
@@ -27,6 +28,7 @@ export default function Clientes() {
   const [pending, setPending] = useState(null)
   const [statusError, setStatusError] = useState('')
   const [changing, setChanging] = useState(false)
+  const [accountClient, setAccountClient] = useState(null)
   const [historyClient, setHistoryClient] = useState(null)
   const [history, setHistory] = useState(null)
   const [historyError, setHistoryError] = useState('')
@@ -148,6 +150,7 @@ export default function Clientes() {
         <td><span className={c.estado === false ? styles.inactive : styles.active}>{c.estado === false ? 'Inactivo' : 'Activo'}</span></td>
         <td><div className={styles.actions}>
           <button className={styles.secondary} type="button" onClick={() => openForm(c)}>Editar</button>
+          <button className={styles.secondary} type="button" onClick={() => setAccountClient(c)}>Cuenta corriente</button>
           <button className={styles.secondary} type="button" onClick={() => void openHistory(c)}>Ver ventas</button>
           {Number(c.numero_cliente) !== 1 && <button className={styles.secondary} type="button" onClick={() => { setPending(c); setStatusError('') }}>{c.estado === false ? 'Activar' : 'Desactivar'}</button>}
         </div></td>
@@ -164,6 +167,7 @@ export default function Clientes() {
       </form>
     </Modal>
     <ConfirmDialog open={Boolean(pending)} onClose={() => { if (!changing) { setPending(null); setStatusError('') } }} onConfirm={() => void changeStatus()} title={pending?.estado === false ? 'Activar cliente' : 'Desactivar cliente'} description="Confirmá el cambio de estado del cliente." details={pending ? [{ label: 'Cliente', value: pending.nombre_completo }] : []} error={statusError} busy={changing} destructive={pending?.estado !== false} confirmLabel={pending?.estado === false ? 'Activar' : 'Desactivar'} />
+    <CuentaCorrienteCliente cliente={accountClient} onClose={() => setAccountClient(null)} />
     <Modal open={historyClient !== null} onClose={() => { setHistoryClient(null); setHistory(null) }} title={`Ventas de ${historyClient?.nombre_completo || ''}`} description="Historial de operaciones del cliente." size="large">
       {historyLoading && <p role="status">Cargando historial…</p>}
       {historyError && <Alert type="error">{historyError}</Alert>}
