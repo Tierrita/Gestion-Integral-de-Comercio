@@ -361,3 +361,14 @@ def obtener_dashboard_financiero_controller():
         return jsonify({
             "error": "No se pudo obtener el dashboard financiero"
         }), 500
+
+def obtener_cuentas_por_cobrar_actuales_controller():
+    """Consulta independiente del período y aislada por comercio autenticado."""
+    from flask import current_app
+    from app.services.finanza_service import calcular_cuentas_por_cobrar_actuales
+
+    try:
+        return jsonify(calcular_cuentas_por_cobrar_actuales(g.id_comercio)), 200
+    except Exception:
+        current_app.logger.exception("Error al consultar cuentas por cobrar actuales")
+        return jsonify({"error": "No se pudieron consultar las cuentas por cobrar"}), 500
