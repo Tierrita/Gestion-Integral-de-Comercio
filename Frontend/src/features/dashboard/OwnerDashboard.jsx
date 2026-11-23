@@ -49,28 +49,70 @@ function mensajeError(error) {
   return 'No pudimos cargar las estadísticas. Comprobá la conexión con el servidor.'
 }
 
-function GraficoVentas({ puntos, agrupacion }) {
-  const datos = puntos.map((p) => ({ etiqueta: String(p.periodo), valor: Number(p.facturacion) }))
+// Los períodos del backend usan fechas de Argentina y un límite superior inclusivo en la respuesta.
+function completarIntervalos(puntos, agrupacion, rango) {
+  const mapa = new Map(puntos.map((p) => [String(p.periodo), Number(p.facturacion)]))
+  const desde = rango?.desde
+  const hasta = rango?.hasta
+  if (!desde || !hasta) return puntos.map((p) => ({ etiqueta: String(p.periodo), valor: Number(p.facturacion) }))
+  const fechas = []
+  if (agrupacion === 'hora') {
+    for (let h = 0; h < 24; h += 1) fechas.push(`${String(h).padStart(2, '0')}:00`)
+  } else if (agrupacion === 'mes') {
+    const inicio = Number(desde.slice(0, 4))
+    const fin = Number(hasta.slice(0, 4))
+    for (let anio = inicio; anio <= fin && fechas.length < 24; anio += 1) {
+      const primerMes = anio === inicio ? Number(desde.slice(5, 7)) : 1
+      const ultimoMes = anio === fin ? Number(hasta.slice(5, 7)) : 12
+      for (let mes = primerMes; mes <= ultimoMes; mes += 1) fechas.push(`${anio}-${String(mes).padStart(2, '0')}`)
+    }
+  } else {
+    const inicio = new Date(`${desde}T12:00:00Z`)
+    const fin = new Date(`${hasta}T12:00:00Z`)
+    for (let dia = new Date(inicio); dia <= fin && fechas.length < 366; dia.setUTCDate(dia.getUTCDate() + 1)) {
+      fechas.push(dia.toISOString().slice(0, 10))
+    }
+  }
+  return fechas.map((etiqueta) => ({ etiqueta, valor: mapa.get(etiqueta) ?? 0 }))
+}
+
+function GraficoVentas({ puntos, agrupacion, rango }) {
+  const datos = completarIntervalos(puntos, agrupacion, rango)
     .filter((p) => Number.isFinite(p.valor) && p.valor >= 0)
-  if (!datos.length) return <p className={styles.detalle}>No hay ventas registradas para este período.</p>
+  if (!datos.length) return <p className={styles.detalle}>No hay intervalos para este período.</p>
 
   const ancho = 760
-  const alto = 240
-  const izquierda = 72
-  const derecha = 18
-  const arriba = 16
-  const abajo = 45
+  const alto = 238
+  const izquierda = 78
+  const derecha = 20
+  const arriba = 22
+  const abajo = 42
   const maximo = Math.max(1, ...datos.map((p) => p.valor))
   const rangoX = ancho - izquierda - derecha
   const rangoY = alto - arriba - abajo
   const x = (i) => izquierda + (datos.length === 1 ? rangoX / 2 : (i / (datos.length - 1)) * rangoX)
   const y = (valor) => arriba + rangoY * (1 - valor / maximo)
   const linea = datos.map((p, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${y(p.valor).toFixed(1)}`).join(' ')
+  const area = `${linea} L ${x(datos.length - 1)} ${y(0)} L ${x(0)} ${y(0)} Z`
   const marcas = [...new Set([0, Math.floor((datos.length - 1) / 2), datos.length - 1])]
+  const total = datos.reduce((s, p) => s + p.valor, 0)
+  const activos = datos.filter((p) => p.valor > 0).length
+  const mayor = Math.max(...datos.map((p) => p.valor))
   return (
     <div className={styles.graficoContenedor}>
+      <div className={styles.resumenGrafico}>
+        <div><span className={styles.etiqueta}>Facturación del período</span><strong>{valorMoneda(total)}</strong></div>
+        <div><span className={styles.etiqueta}>Intervalos con ventas</span><strong>{activos} de {datos.length}</strong></div>
+        <div><span className={styles.etiqueta}>Pico de facturación</span><strong>{valorMoneda(mayor)}</strong></div>
+      </div>
       <svg className={styles.grafico} viewBox={`0 0 ${ancho} ${alto}`} role="img"
-        aria-label={`Evolución de facturación por ${agrupacion || 'período'}: ${datos.length} puntos`}>
+        aria-label={`Evolución de facturación por ${agrupacion || 'período'}: ${datos.length} intervalos, ${activos} con ventas`}>
+        <defs>
+          <linearGradient id="dashboard-area-ventas" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.01" />
+          </linearGradient>
+        </defs>
         {[0, 0.5, 1].map((nivel) => (
           <g key={nivel}>
             <line x1={izquierda} x2={ancho - derecha} y1={y(maximo * nivel)} y2={y(maximo * nivel)} className={styles.lineaGuia} />
@@ -79,9 +121,10 @@ function GraficoVentas({ puntos, agrupacion }) {
             </text>
           </g>
         ))}
+        <path d={area} fill="url(#dashboard-area-ventas)" />
         <path d={linea} className={styles.lineaVentas} />
         {datos.map((p, i) => (
-          <circle key={`${p.etiqueta}-${i}`} cx={x(i)} cy={y(p.valor)} r="3.5" className={styles.puntoVentas}>
+          <circle key={p.etiqueta} cx={x(i)} cy={y(p.valor)} r={p.valor > 0 ? 4 : 2} className={styles.puntoVentas}>
             <title>{`${p.etiqueta}: ${valorMoneda(p.valor)}`}</title>
           </circle>
         ))}
@@ -89,7 +132,7 @@ function GraficoVentas({ puntos, agrupacion }) {
           <text key={i} x={x(i)} y={alto - 14} textAnchor="middle" className={styles.etiquetaEje}>{datos[i].etiqueta}</text>
         ))}
       </svg>
-      <p className={styles.detalle}>Facturación en ARS · {datos.length} intervalos con ventas. Los intervalos sin ventas no se representan.</p>
+      <p className={styles.detalle}>Facturación en ARS · Se muestran también los intervalos sin ventas, con valor cero. Pasá el cursor por los puntos para ver su importe.</p>
     </div>
   )
 }
@@ -218,7 +261,7 @@ export default function OwnerDashboard() {
               </div>
             )}
             {!cargandoEvolucion && evolucion && (
-              <GraficoVentas puntos={evolucion.evolucion} agrupacion={evolucion.agrupacion} />
+              <GraficoVentas puntos={evolucion.evolucion} agrupacion={evolucion.agrupacion} rango={evolucion.periodo} />
             )}
           </section>
 
