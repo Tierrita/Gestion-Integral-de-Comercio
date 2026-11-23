@@ -11,7 +11,7 @@ const totalVenta = (venta) => venta.total ?? venta.total_venta
 const errorDe = (e) => e.response?.data?.error || (e.response?.status === 403 ? 'No tenés permiso para consultar esta información.' : 'No se pudo consultar la cuenta corriente.')
 const etiquetas = { DEUDA: 'Con deuda', AL_DIA: 'Al día', SALDO_A_FAVOR: 'Saldo a favor' }
 
-export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detalle', onCobroRegistrado }) {
+export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detalle', onCobroRegistrado, esPropietario = false }) {
   const [saldo, setSaldo] = useState(null)
   const [ventas, setVentas] = useState(null)
   const [cobros, setCobros] = useState(null)
@@ -26,6 +26,11 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
   const [guardando, setGuardando] = useState(false)
   const [errorCobro, setErrorCobro] = useState('')
   const [exitoCobro, setExitoCobro] = useState('')
+  const [cobroAnular, setCobroAnular] = useState(null)
+  const [motivoAnulacion, setMotivoAnulacion] = useState('')
+  const [anulando, setAnulando] = useState(false)
+  const [errorAnulacion, setErrorAnulacion] = useState('')
+  const [exitoAnulacion, setExitoAnulacion] = useState('')
 
 
   async function registrarCobro(event) {
@@ -63,6 +68,30 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
     }
   }
 
+
+  async function confirmarAnulacion(event) {
+    event.preventDefault()
+    if (!esPropietario || !cobroAnular || anulando) return
+    const motivo = motivoAnulacion.trim()
+    if (motivo.length < 5) {
+      setErrorAnulacion('El motivo debe tener al menos 5 caracteres.')
+      return
+    }
+    setAnulando(true)
+    setErrorAnulacion('')
+    try {
+      await api.patch('/cobros/' + cobroAnular.id_cobro + '/anular', { motivo_anulacion: motivo })
+      setCobroAnular(null)
+      setMotivoAnulacion('')
+      setExitoAnulacion('Cobro anulado correctamente. Revisá el saldo y la caja.')
+      setRevision((valor) => valor + 1)
+      onCobroRegistrado?.()
+    } catch (error) {
+      setErrorAnulacion(error.response?.data?.error || 'No se pudo anular el cobro.')
+    } finally {
+      setAnulando(false)
+    }
+  }
 
   useEffect(() => {
     if (!cliente || modo !== 'cobro') return
@@ -140,6 +169,7 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
         </div>
       </div>}
       {exitoCobro && <Alert type="success">{exitoCobro}</Alert>}
+      {exitoAnulacion && <Alert type="success">{exitoAnulacion}</Alert>}
       {errorCobro && <Alert type="error">{errorCobro}</Alert>}
       {mostrarCobro && <form className={styles.formulario} onSubmit={(event) => void registrarCobro(event)}>
         <h3>Registrar cobro</h3>
@@ -166,10 +196,22 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
       </tbody></table></div> : <p className={styles.vacio}>Este cliente todavía no tiene ventas.</p>)}
       <h3>Cobros registrados</h3>
       {errores.cobros && <Alert type="error">Cobros: {errores.cobros}</Alert>}
-      {cobros && (cobros.length ? <div className={styles.scroll}><table><thead><tr><th>N.º</th><th>Fecha</th><th>Estado</th><th>Importe</th></tr></thead><tbody>
-        {cobros.map((c) => <tr key={c.id_cobro}><td>{c.numero_cobro != null ? `#${c.numero_cobro}` : "—"}</td><td>{fecha(c.fecha_cobro)}</td><td>{c.estado}</td><td>{dinero(c.monto)}</td></tr>)}
+      {cobros && (cobros.length ? <div className={styles.scroll}><table><thead><tr><th>N.º</th><th>Fecha</th><th>Estado</th><th>Importe</th>{esPropietario && <th>Acciones</th>}</tr></thead><tbody>
+        {cobros.map((c) => <tr key={c.id_cobro}><td>{c.numero_cobro != null ? `#${c.numero_cobro}` : "—"}</td><td>{fecha(c.fecha_cobro)}</td><td>{c.estado}</td><td>{dinero(c.monto)}</td>{esPropietario && <td>{String(c.estado).toUpperCase() === 'COMPLETADO' ? <button type="button" className={styles.anular} onClick={() => { setCobroAnular(c); setMotivoAnulacion(''); setErrorAnulacion(''); setExitoAnulacion('') }}>Anular cobro</button> : '—'}</td>}</tr>)}
       </tbody></table></div> : <p className={styles.vacio}>Este cliente todavía no tiene cobros registrados.</p>)}
-      <p className={styles.aclaracion}>Los cobros se acreditan en la cuenta financiera seleccionada. La anulación está reservada al propietario.</p></>}
+      <p className={styles.aclaracion}>Los cobros se acreditan en la cuenta financiera seleccionada. La anulación está reservada al propietario.</p>
+      {cobroAnular && esPropietario && <form className={styles.formulario} onSubmit={(event) => void confirmarAnulacion(event)}>
+        <h3>Anular cobro</h3>
+        <p className={styles.aclaracion}>Cobro seleccionado: <strong>{dinero(cobroAnular.monto)}</strong>. Esta operación revierte el ingreso financiero y modifica el saldo del cliente.</p>
+        <label>Motivo de anulación (mínimo 5 caracteres)
+          <textarea required minLength={5} maxLength={500} rows={3} value={motivoAnulacion} onChange={(event) => setMotivoAnulacion(event.target.value)} disabled={anulando} placeholder="Ej.: Cobro registrado por error" />
+        </label>
+        {errorAnulacion && <Alert type="error">{errorAnulacion}</Alert>}
+        <div className={styles.acciones}>
+          <button type="button" className={styles.boton} disabled={anulando} onClick={() => setCobroAnular(null)}>Cancelar</button>
+          <button type="submit" className={styles.anularConfirmar} disabled={anulando || motivoAnulacion.trim().length < 5}>{anulando ? 'Anulando…' : 'Confirmar anulación'}</button>
+        </div>
+      </form>}</>}
     </div>
   </Modal>
 }
