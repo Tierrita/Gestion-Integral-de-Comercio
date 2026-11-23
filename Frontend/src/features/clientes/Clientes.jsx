@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { api } from '../../shared/api/client.js'
 import Alert from '../../shared/components/Alert.jsx'
 import Modal from '../../shared/components/Modal.jsx'
@@ -31,6 +32,7 @@ export default function Clientes() {
   const [cobroClient, setCobroClient] = useState(null)
   const [saldos, setSaldos] = useState({})
   const [saldosError, setSaldosError] = useState('')
+  const [menu, setMenu] = useState(null)
 
   const loadSaldos = useCallback(async () => {
     try {
@@ -153,16 +155,23 @@ export default function Clientes() {
         <td><div className={styles.actions}>
           {Number(c.numero_cliente) !== 1 && c.estado !== false && <button className={styles.primary} type="button" onClick={() => setCobroClient(c)}>Cobrar</button>}
           <button className={styles.secondary} type="button" onClick={() => setAccountClient(c)}>Ver detalle</button>
-          <details className={styles.actionMenu}>
-            <summary aria-label={`Más opciones para ${c.nombre_completo}`} title="Más opciones">···</summary>
-            <div className={styles.actionMenuItems}>
-              <button type="button" onClick={(event) => { openForm(c); event.currentTarget.closest('details').open = false }}>Editar cliente</button>
-              {Number(c.numero_cliente) !== 1 && <button type="button" onClick={(event) => { setPending(c); setStatusError(''); event.currentTarget.closest('details').open = false }}>{c.estado === false ? 'Activar cliente' : 'Desactivar cliente'}</button>}
-            </div>
-          </details></div></td>
+          <button className={styles.menuTrigger} type="button" aria-label={`Más opciones para ${c.nombre_completo}`} aria-expanded={menu?.cliente.id_cliente === c.id_cliente} onClick={(event) => {
+            if (menu?.cliente.id_cliente === c.id_cliente) { setMenu(null); return }
+            const rect = event.currentTarget.getBoundingClientRect()
+            const width = 190
+            const height = 110
+            setMenu({ cliente: c, top: rect.bottom + height > window.innerHeight ? Math.max(8, rect.top - height) : rect.bottom + 4, left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)) })
+          }}>···</button></div></td>
       </tr>)}</tbody></table></div>}
       {!loading && filtered.length > 0 && <div className={styles.pagination}><span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} de {filtered.length}</span><div className={styles.actions}><button className={styles.secondary} type="button" disabled={currentPage === 1} onClick={() => setPage((n) => n - 1)}>Anterior</button><span>Página {currentPage} de {pages}</span><button className={styles.secondary} type="button" disabled={currentPage === pages} onClick={() => setPage((n) => n + 1)}>Siguiente</button></div></div>}
     </div>
+    {menu && createPortal(<>
+      <button type="button" className={styles.menuBackdrop} aria-label="Cerrar opciones" onClick={() => setMenu(null)} />
+      <div className={styles.floatingMenu} role="group" aria-label={`Opciones de ${menu.cliente.nombre_completo}`} style={{ top: menu.top, left: menu.left }}>
+        <button type="button" onClick={() => { openForm(menu.cliente); setMenu(null) }}>Editar cliente</button>
+        {Number(menu.cliente.numero_cliente) !== 1 && <button type="button" onClick={() => { setPending(menu.cliente); setStatusError(''); setMenu(null) }}>{menu.cliente.estado === false ? 'Activar cliente' : 'Desactivar cliente'}</button>}
+      </div>
+    </>, document.body)}
     <Modal open={editing !== null} onClose={() => { if (!saving) setEditing(null) }} title={editing === 'new' ? 'Nuevo cliente' : 'Editar cliente'} description="Completá los datos del cliente." busy={saving} size="small">
       <form className={styles.form} onSubmit={(event) => void submit(event)}>
         <label>Nombre completo<input required minLength={2} maxLength={150} disabled={editing !== 'new' && Number(editing?.numero_cliente) === 1} value={form.nombre_completo} onChange={(e) => setForm((f) => ({ ...f, nombre_completo: e.target.value }))} /></label>
