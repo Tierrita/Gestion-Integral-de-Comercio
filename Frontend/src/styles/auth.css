@@ -1,0 +1,46 @@
+.aionix-auth-page { display:grid; grid-template-columns:1fr 1fr; min-height:100vh; width:100%; font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#17273a; }
+.aionix-brand { background:linear-gradient(145deg,#103e6b 0%,#092f59 100%); color:white; display:flex; align-items:center; justify-content:center; padding:48px 36px; }
+.aionix-brand-inner { width:min(100%,460px); }
+.aionix-brand-logo { display:flex; align-items:center; gap:18px; font-size:clamp(38px,4vw,56px); font-weight:400; margin-bottom:40px; letter-spacing:-1.5px; }
+.aionix-brand-mark { color:#bce6fa; font-weight:800; font-style:italic; letter-spacing:-7px; padding-right:8px; }
+.aionix-brand-items { display:grid; gap:32px; }
+.aionix-info-item { display:flex; gap:16px; align-items:flex-start; }
+.aionix-info-icon { width:74px; height:74px; flex:none; border-radius:9px; background:white; color:#103e6b; display:grid; place-items:center; box-shadow:0 2px 8px #0002; }
+.aionix-info-item h2 { color:white; font-size:20px; line-height:1.3; margin:1px 0 8px; font-weight:650; }
+.aionix-info-item p { color:white; font-size:15px; line-height:1.5; margin:0; }
+.aionix-auth-side { background:#eff2f5; display:flex; justify-content:center; align-items:center; padding:36px 24px; }
+.aionix-auth-card { background:#fff; width:min(100%,390px); border-radius:10px; overflow:hidden; box-shadow:0 7px 24px #17273a22; }
+.aionix-auth-tabs { display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid #d8dfe6; }
+.aionix-auth-tabs button { border:0; border-bottom:2px solid transparent; background:#fff; color:#5b6571; font:inherit; padding:16px 8px 13px; cursor:pointer; }
+.aionix-auth-tabs button.is-active { color:#0b315b; border-bottom-color:#0b315b; font-weight:600; }
+.aionix-auth-body { padding:24px 22px 26px; }
+.aionix-login-form { display:flex; flex-direction:column; gap:10px; }
+.aionix-login-form label { font-size:14px; font-weight:550; color:#17273a; }
+.aionix-login-form input { width:100%; min-height:40px; padding:10px; border:1px solid #b9c3cc; border-radius:5px; background:white; color:#17273a; font:inherit; margin-bottom:6px; }
+.aionix-login-form input:focus-visible, .aionix-auth-page button:focus-visible { outline:2px solid #087e9e; outline-offset:2px; }
+.aionix-primary-button { display:block; width:100%; border:0; border-radius:5px; min-height:42px; padding:10px 12px; background:#0b315b; color:white; font:inherit; cursor:pointer; margin-top:8px; }
+.aionix-primary-button:hover:not(:disabled) { background:#154775; }
+.aionix-primary-button:disabled { opacity:.7; cursor:wait; }
+.aionix-error { color:#ad2430; font-size:14px; margin:4px 0; }
+.aionix-message { color:#285d72; font-size:14px; margin:0 0 8px; }
+.aionix-register-preview h2 { font-size:20px; margin:0 0 14px; color:#0b315b; }
+.aionix-register-preview p { font-size:14px; line-height:1.5; color:#475569; }
+@media(max-width:800px) { .aionix-auth-page { grid-template-columns:1fr; } .aionix-brand { padding:32px 24px; } .aionix-brand-logo { margin-bottom:22px; } .aionix-brand-items { gap:18px; } .aionix-info-icon { width:54px; height:54px; } .aionix-info-item h2 { font-size:17px; } .aionix-info-item p { font-size:14px; } .aionix-auth-side { padding:30px 16px 44px; } }
+@media(max-width:420px) { .aionix-brand-items { gap:15px; } .aionix-brand { padding:26px 18px; } .aionix-info-item { gap:12px; } }
+
+/* Navegación informativa del acceso */
+.aionix-info-button { border:2px solid transparent; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+.aionix-info-button:hover { transform:translateY(-2px); box-shadow:0 5px 14px #0004; }
+.aionix-info-button[aria-pressed="true"] { border-color:#6bd1ef; box-shadow:0 0 0 3px #6bd1ef55; }
+.aionix-section-card { background:#fff; width:min(100%,490px); border-radius:10px; padding:28px; box-shadow:0 7px 24px #17273a22; }
+.aionix-section-card h1 { color:#0b315b; font-size:clamp(24px,3vw,30px); margin:18px 0; }
+.aionix-section-card p, .aionix-section-card li { color:#334155; line-height:1.65; font-size:15px; }
+.aionix-section-card ul { padding-left:22px; }
+.aionix-section-card li { margin-bottom:8px; }
+.aionix-back-button { display:inline-flex; align-items:center; gap:8px; border:0; background:transparent; color:#0b315b; padding:6px 0; cursor:pointer; font:inherit; font-size:14px; }
+.aionix-back-button:hover { text-decoration:underline; }
+
+/* La pantalla de acceso debe ocupar todo el viewport sin estilos del login anterior. */
+#root:has(> .aionix-auth-page) { display:block; padding:0; }
+#root > .aionix-auth-page { max-width:none; padding:0; border:0; border-radius:0; background:transparent; }
+.aionix-info-icon span { font-size:2rem; line-height:1; }
