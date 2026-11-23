@@ -19,7 +19,7 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
   const [cargando, setCargando] = useState(false)
   const [revision, setRevision] = useState(0)
   const [cuentas, setCuentas] = useState([])
-  const [mostrarCobro, setMostrarCobro] = useState(false)
+  const mostrarCobro = modo === 'cobro' && cuentas.length > 0
   const [monto, setMonto] = useState('')
   const [cuenta, setCuenta] = useState('')
   const [observaciones, setObservaciones] = useState('')
@@ -27,19 +27,6 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
   const [errorCobro, setErrorCobro] = useState('')
   const [exitoCobro, setExitoCobro] = useState('')
 
-  async function abrirCobro() {
-    setErrorCobro('')
-    try {
-      const { data } = await api.get('/cuentas')
-      const activas = (data?.cuentas || []).filter((item) => item.estado === true)
-      if (!activas.length) throw new Error('No hay cuentas financieras activas.')
-      setCuentas(activas)
-      setCuenta(String(activas[0].id_cuenta))
-      setMostrarCobro(true)
-    } catch (error) {
-      setErrorCobro(error.response?.data?.error || error.message || 'No se pudieron cargar las cuentas.')
-    }
-  }
 
   async function registrarCobro(event) {
     event.preventDefault()
@@ -63,7 +50,6 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
         monto: importe,
         observaciones: observaciones.trim() || null,
       })
-      setMostrarCobro(false)
       setMonto('')
       setObservaciones('')
       setExitoCobro('Cobro registrado correctamente.')
@@ -79,10 +65,25 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
 
 
   useEffect(() => {
-    if (cliente && modo === 'cobro') void abrirCobro()
-    else setMostrarCobro(false)
-    setExitoCobro('')
-    setErrorCobro('')
+    if (!cliente || modo !== 'cobro') return
+    const controller = new AbortController()
+    api.get('/cuentas', { signal: controller.signal })
+      .then(({ data }) => {
+        if (controller.signal.aborted) return
+        const activas = (data?.cuentas || []).filter((item) => item.estado === true)
+        if (!activas.length) {
+          setErrorCobro('No hay cuentas financieras activas.')
+          return
+        }
+        setCuentas(activas)
+        setCuenta(String(activas[0].id_cuenta))
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) {
+          setErrorCobro(error.response?.data?.error || error.message || 'No se pudieron cargar las cuentas.')
+        }
+      })
+    return () => controller.abort()
   }, [cliente, modo])
 
   useEffect(() => {
