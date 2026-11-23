@@ -11,7 +11,7 @@ const messageOf = (error) => error.response?.data?.error || (error.response?.sta
 const money = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number(value || 0))
 const PAGE_SIZES = [10, 25, 50]
 
-export default function Clientes() {
+export default function Clientes({ esPropietario = false }) {
   const [clientes, setClientes] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -182,7 +182,7 @@ export default function Clientes() {
       </form>
     </Modal>
     <ConfirmDialog open={Boolean(pending)} onClose={() => { if (!changing) { setPending(null); setStatusError('') } }} onConfirm={() => void changeStatus()} title={pending?.estado === false ? 'Activar cliente' : 'Desactivar cliente'} description="Confirmá el cambio de estado del cliente." details={pending ? [{ label: 'Cliente', value: pending.nombre_completo }] : []} error={statusError} busy={changing} destructive={pending?.estado !== false} confirmLabel={pending?.estado === false ? 'Activar' : 'Desactivar'} />
-    <CuentaCorrienteCliente cliente={accountClient} onClose={() => setAccountClient(null)} />
+    <CuentaCorrienteCliente cliente={accountClient} esPropietario={esPropietario} onClose={() => setAccountClient(null)} onCobroRegistrado={() => void loadSaldos()} />
     <CuentaCorrienteCliente cliente={cobroClient} modo="cobro" onClose={() => setCobroClient(null)} onCobroRegistrado={() => void loadSaldos()} />
 
   </section>
