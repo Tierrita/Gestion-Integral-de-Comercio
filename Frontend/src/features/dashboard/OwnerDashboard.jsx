@@ -143,24 +143,45 @@ function GraficoVentas({ puntos, agrupacion, rango }) {
   )
 }
 
-function rangoAnterior(periodo, rango) {
+function rangosComparables(periodo, rango) {
   if (!rango?.desde || !rango?.hasta) return null
   const inicio = new Date(`${rango.desde}T12:00:00Z`)
   const fin = new Date(`${rango.hasta}T12:00:00Z`)
   if (Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime())) return null
   const iso = (fecha) => fecha.toISOString().slice(0, 10)
+  // Fecha del comercio: el navegador se usa solo para delimitar el día en curso.
+  const hoy = new Date()
+  const fechaHoy = new Date(Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 12))
+  const corte = fin < fechaHoy ? fin : fechaHoy
+  if (corte < inicio) return null
+  const diasTranscurridos = Math.round((corte - inicio) / 86400000)
+  let anteriorInicio
+  let anteriorFin
+  let nombre
   if (periodo === 'mes') {
-    const anterior = new Date(Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth() - 1, 12))
-    return { desde: iso(new Date(Date.UTC(anterior.getUTCFullYear(), anterior.getUTCMonth(), 1))), hasta: iso(new Date(Date.UTC(anterior.getUTCFullYear(), anterior.getUTCMonth() + 1, 0))), nombre: 'mes anterior' }
+    anteriorInicio = new Date(Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth() - 1, 1, 12))
+    const ultimoDiaAnterior = new Date(Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth(), 0)).getUTCDate()
+    anteriorFin = new Date(Date.UTC(anteriorInicio.getUTCFullYear(), anteriorInicio.getUTCMonth(), Math.min(corte.getUTCDate(), ultimoDiaAnterior), 12))
+    nombre = 'mismo tramo del mes anterior'
+  } else if (periodo === 'anio') {
+    anteriorInicio = new Date(Date.UTC(inicio.getUTCFullYear() - 1, 0, 1, 12))
+    anteriorFin = new Date(Date.UTC(corte.getUTCFullYear() - 1, corte.getUTCMonth(), corte.getUTCDate(), 12))
+    // Ajuste de 29 de febrero en años no bisiestos.
+    if (anteriorFin.getUTCMonth() !== corte.getUTCMonth()) anteriorFin = new Date(Date.UTC(corte.getUTCFullYear() - 1, 1, 28, 12))
+    nombre = 'mismo tramo del año anterior'
+  } else {
+    const desplazamiento = periodo === 'semana' ? 7 : 1
+    anteriorInicio = new Date(inicio)
+    anteriorInicio.setUTCDate(anteriorInicio.getUTCDate() - desplazamiento)
+    anteriorFin = new Date(anteriorInicio)
+    anteriorFin.setUTCDate(anteriorFin.getUTCDate() + diasTranscurridos)
+    nombre = periodo === 'semana' ? 'mismos días de la semana anterior' : 'día anterior'
   }
-  if (periodo === 'anio') {
-    const anio = inicio.getUTCFullYear() - 1
-    return { desde: `${anio}-01-01`, hasta: `${anio}-12-31`, nombre: 'año anterior' }
+  return {
+    actual: { desde: iso(inicio), hasta: iso(corte) },
+    anterior: { desde: iso(anteriorInicio), hasta: iso(anteriorFin) },
+    nombre,
   }
-  const dias = periodo === 'semana' ? 7 : 1
-  inicio.setUTCDate(inicio.getUTCDate() - dias)
-  fin.setUTCDate(fin.getUTCDate() - dias)
-  return { desde: iso(inicio), hasta: iso(fin), nombre: periodo === 'semana' ? 'semana anterior' : 'día anterior' }
 }
 
 function Comparacion({ titulo, actual, anterior, nombre }) {
@@ -174,7 +195,7 @@ function Comparacion({ titulo, actual, anterior, nombre }) {
     <article className={styles.comparacionTarjeta}>
       <span className={styles.etiqueta}>{titulo}</span>
       <strong className={styles.comparacionValor}>{titulo === 'Facturación' || titulo === 'Ticket promedio' ? valorMoneda(actual) : valorNumero(actual)}</strong>
-      <span className={disponibles && diferencia > 0 ? styles.variacionPositiva : disponibles && diferencia < 0 ? styles.variacionNegativa : styles.variacionNeutra}>{etiqueta}</span>
+      <span className={porcentaje !== null && porcentaje > 0 ? styles.variacionPositiva : porcentaje !== null && porcentaje < 0 ? styles.variacionNegativa : styles.variacionNeutra}>{etiqueta}</span>
       <small className={styles.detalle}>Anterior: {titulo === 'Facturación' || titulo === 'Ticket promedio' ? valorMoneda(anterior) : valorNumero(anterior)}</small>
     </article>
   )
@@ -215,18 +236,17 @@ export default function OwnerDashboard() {
           throw new Error('Respuesta financiera incompleta')
         }
         if (!controller.signal.aborted) setResumen(data)
-        const anterior = rangoAnterior(periodo, data.periodo)
-        if (!anterior) {
+        const rangos = rangosComparables(periodo, data.periodo)
+        if (!rangos) {
           if (!controller.signal.aborted) setErrorComparacion('No se pudo determinar el período anterior.')
         } else {
           try {
-            const { data: previo } = await api.get('/finanzas/dashboard', {
-              params: { desde: anterior.desde, hasta: anterior.hasta },
-              signal: controller.signal,
-              timeout: 30000,
-            })
-            if (!previo?.ventas) throw new Error('Respuesta comparativa inválida')
-            if (!controller.signal.aborted) setComparacion({ ventas: previo.ventas, nombre: anterior.nombre })
+            const [actual, previo] = await Promise.all([
+              api.get('/finanzas/dashboard', { params: rangos.actual, signal: controller.signal, timeout: 30000 }),
+              api.get('/finanzas/dashboard', { params: rangos.anterior, signal: controller.signal, timeout: 30000 }),
+            ])
+            if (!actual.data?.ventas || !previo.data?.ventas) throw new Error('Respuesta comparativa inválida')
+            if (!controller.signal.aborted) setComparacion({ ventas: actual.data.ventas, anterior: previo.data.ventas, nombre: rangos.nombre, rangos })
           } catch (err) {
             if (!controller.signal.aborted) setErrorComparacion(mensajeError(err))
           }
@@ -345,18 +365,18 @@ export default function OwnerDashboard() {
                 <span className={styles.sobretitulo}>TENDENCIA COMERCIAL</span>
                 <h2 id="titulo-comparacion">Comparación con el período anterior</h2>
               </div>
-              <span className={styles.detalle}>Comparación de períodos calendario completos</span>
+              <span className={styles.detalle}>Tramos equivalentes · hasta el día actual</span>
             </div>
             {cargandoComparacion && <p role="status">Calculando comparaciones…</p>}
             {!cargandoComparacion && errorComparacion && <p role="alert">{errorComparacion}</p>}
             {!cargandoComparacion && comparacion && (
               <div className={styles.comparacionGrid}>
-                <Comparacion titulo="Facturación" actual={ventas?.facturacion} anterior={comparacion.ventas.facturacion} nombre={comparacion.nombre} />
-                <Comparacion titulo="Cantidad de ventas" actual={ventas?.cantidad_ventas} anterior={comparacion.ventas.cantidad_ventas} nombre={comparacion.nombre} />
-                <Comparacion titulo="Ticket promedio" actual={ventas?.ticket_promedio} anterior={comparacion.ventas.ticket_promedio} nombre={comparacion.nombre} />
+                <Comparacion titulo="Facturación" actual={comparacion.ventas.facturacion} anterior={comparacion.anterior.facturacion} nombre={comparacion.nombre} />
+                <Comparacion titulo="Cantidad de ventas" actual={comparacion.ventas.cantidad_ventas} anterior={comparacion.anterior.cantidad_ventas} nombre={comparacion.nombre} />
+                <Comparacion titulo="Ticket promedio" actual={comparacion.ventas.ticket_promedio} anterior={comparacion.anterior.ticket_promedio} nombre={comparacion.nombre} />
               </div>
             )}
-            <p className={styles.detalle}>El período actual puede estar en curso; las cifras no son una proyección.</p>
+            <p className={styles.detalle}>Se comparan días calendario equivalentes. El día de hoy puede estar incompleto; no es una proyección.</p>
           </section>
 
           <div className={styles.zonaAnalitica}>
