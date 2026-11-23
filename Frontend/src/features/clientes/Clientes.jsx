@@ -8,7 +8,6 @@ import CuentaCorrienteCliente from './CuentaCorrienteCliente.jsx'
 
 const messageOf = (error) => error.response?.data?.error || (error.response?.status === 403 ? 'No tenés permisos para esta operación.' : 'No se pudo completar la operación. Verificá la conexión con Flask.')
 const money = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number(value || 0))
-const date = (value) => value ? new Date(value).toLocaleString('es-AR') : '—'
 const PAGE_SIZES = [10, 25, 50]
 
 export default function Clientes() {
@@ -32,10 +31,6 @@ export default function Clientes() {
   const [cobroClient, setCobroClient] = useState(null)
   const [saldos, setSaldos] = useState({})
   const [saldosError, setSaldosError] = useState('')
-  const [historyClient, setHistoryClient] = useState(null)
-  const [history, setHistory] = useState(null)
-  const [historyError, setHistoryError] = useState('')
-  const [historyLoading, setHistoryLoading] = useState(false)
 
   const loadSaldos = useCallback(async () => {
     try {
@@ -125,18 +120,6 @@ export default function Clientes() {
     finally { setChanging(false) }
   }
 
-  async function openHistory(client) {
-    setHistoryClient(client)
-    setHistory(null)
-    setHistoryError('')
-    setHistoryLoading(true)
-    try {
-      const { data } = await api.get(`/clientes/${client.id_cliente}/ventas`)
-      if (!Array.isArray(data?.ventas)) throw new Error('Formato de historial inválido')
-      setHistory(data)
-    } catch (err) { setHistoryError(messageOf(err)) }
-    finally { setHistoryLoading(false) }
-  }
 
   return <section className={styles.page}>
     <header className={styles.header}>
@@ -168,12 +151,15 @@ export default function Clientes() {
         <td><span className={c.estado === false ? styles.inactive : styles.active}>{c.estado === false ? 'Inactivo' : 'Activo'}</span></td>
         <td>{saldos[c.id_cliente] ? <span className={saldos[c.id_cliente].saldo > 0 ? styles.deuda : saldos[c.id_cliente].saldo < 0 ? styles.favor : styles.neutro}>{money(Math.abs(saldos[c.id_cliente].saldo))} · {saldos[c.id_cliente].saldo > 0 ? 'Debe' : saldos[c.id_cliente].saldo < 0 ? 'A favor' : 'Al día'}</span> : '—'}</td>
         <td><div className={styles.actions}>
-          <button className={styles.secondary} type="button" onClick={() => openForm(c)}>Editar</button>
           {Number(c.numero_cliente) !== 1 && c.estado !== false && <button className={styles.primary} type="button" onClick={() => setCobroClient(c)}>Cobrar</button>}
           <button className={styles.secondary} type="button" onClick={() => setAccountClient(c)}>Ver detalle</button>
-          <button className={styles.secondary} type="button" onClick={() => void openHistory(c)}>Ver ventas</button>
-          {Number(c.numero_cliente) !== 1 && <button className={styles.secondary} type="button" onClick={() => { setPending(c); setStatusError('') }}>{c.estado === false ? 'Activar' : 'Desactivar'}</button>}
-        </div></td>
+          <details className={styles.actionMenu}>
+            <summary aria-label={`Más opciones para ${c.nombre_completo}`} title="Más opciones">···</summary>
+            <div className={styles.actionMenuItems}>
+              <button type="button" onClick={(event) => { openForm(c); event.currentTarget.closest('details').open = false }}>Editar cliente</button>
+              {Number(c.numero_cliente) !== 1 && <button type="button" onClick={(event) => { setPending(c); setStatusError(''); event.currentTarget.closest('details').open = false }}>{c.estado === false ? 'Activar cliente' : 'Desactivar cliente'}</button>}
+            </div>
+          </details></div></td>
       </tr>)}</tbody></table></div>}
       {!loading && filtered.length > 0 && <div className={styles.pagination}><span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} de {filtered.length}</span><div className={styles.actions}><button className={styles.secondary} type="button" disabled={currentPage === 1} onClick={() => setPage((n) => n - 1)}>Anterior</button><span>Página {currentPage} de {pages}</span><button className={styles.secondary} type="button" disabled={currentPage === pages} onClick={() => setPage((n) => n + 1)}>Siguiente</button></div></div>}
     </div>
@@ -189,10 +175,6 @@ export default function Clientes() {
     <ConfirmDialog open={Boolean(pending)} onClose={() => { if (!changing) { setPending(null); setStatusError('') } }} onConfirm={() => void changeStatus()} title={pending?.estado === false ? 'Activar cliente' : 'Desactivar cliente'} description="Confirmá el cambio de estado del cliente." details={pending ? [{ label: 'Cliente', value: pending.nombre_completo }] : []} error={statusError} busy={changing} destructive={pending?.estado !== false} confirmLabel={pending?.estado === false ? 'Activar' : 'Desactivar'} />
     <CuentaCorrienteCliente cliente={accountClient} onClose={() => setAccountClient(null)} />
     <CuentaCorrienteCliente cliente={cobroClient} modo="cobro" onClose={() => setCobroClient(null)} onCobroRegistrado={() => void loadSaldos()} />
-    <Modal open={historyClient !== null} onClose={() => { setHistoryClient(null); setHistory(null) }} title={`Ventas de ${historyClient?.nombre_completo || ''}`} description="Historial de operaciones del cliente." size="large">
-      {historyLoading && <p role="status">Cargando historial…</p>}
-      {historyError && <Alert type="error">{historyError}</Alert>}
-      {history && (history.ventas.length === 0 ? <p>Este cliente todavía no tiene ventas.</p> : <div className={styles.scroll}><table><thead><tr><th>Venta</th><th>Fecha</th><th>Estado</th><th>Total</th><th>Productos</th></tr></thead><tbody>{history.ventas.map(({ venta, detalles }) => <tr key={venta.id_venta}><td>#{venta.numero_venta ?? venta.id_venta}</td><td>{date(venta.fecha_venta)}</td><td>{venta.estado}</td><td>{money(venta.total_venta)}</td><td>{detalles?.length ?? 0}</td></tr>)}</tbody></table></div>)}
-    </Modal>
+
   </section>
 }
