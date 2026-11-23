@@ -2665,3 +2665,26 @@ def calcular_dashboard_financiero(
                 principal_proveedor
         }
     }
+
+def calcular_cuentas_por_cobrar_actuales(id_comercio):
+    """Saldo vigente agregado por comercio en una única RPC de PostgreSQL."""
+    from core.supabase_client import get_client
+
+    resultado = (
+        get_client()
+        .rpc("obtener_cuentas_por_cobrar_actuales", {"p_id_comercio": id_comercio})
+        .execute()
+    )
+    datos = resultado.data
+    if not isinstance(datos, dict):
+        raise ValueError("Respuesta inválida de cuentas por cobrar")
+
+    total = float(datos["total_por_cobrar"])
+    cantidad = int(datos["cantidad_clientes_con_deuda"])
+    if total < 0 or cantidad < 0:
+        raise ValueError("Saldo o cantidad inválidos")
+
+    return {
+        "total_por_cobrar": round(total, 2),
+        "cantidad_clientes_con_deuda": cantidad,
+    }
