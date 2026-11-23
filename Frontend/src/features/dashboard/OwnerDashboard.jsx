@@ -49,12 +49,60 @@ function mensajeError(error) {
   return 'No pudimos cargar las estadísticas. Comprobá la conexión con el servidor.'
 }
 
+function GraficoVentas({ puntos, agrupacion }) {
+  const datos = puntos.map((p) => ({ etiqueta: String(p.periodo), valor: Number(p.facturacion) }))
+    .filter((p) => Number.isFinite(p.valor) && p.valor >= 0)
+  if (!datos.length) return <p className={styles.detalle}>No hay ventas registradas para este período.</p>
+
+  const ancho = 760
+  const alto = 240
+  const izquierda = 72
+  const derecha = 18
+  const arriba = 16
+  const abajo = 45
+  const maximo = Math.max(1, ...datos.map((p) => p.valor))
+  const rangoX = ancho - izquierda - derecha
+  const rangoY = alto - arriba - abajo
+  const x = (i) => izquierda + (datos.length === 1 ? rangoX / 2 : (i / (datos.length - 1)) * rangoX)
+  const y = (valor) => arriba + rangoY * (1 - valor / maximo)
+  const linea = datos.map((p, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${y(p.valor).toFixed(1)}`).join(' ')
+  const marcas = [...new Set([0, Math.floor((datos.length - 1) / 2), datos.length - 1])]
+  return (
+    <div className={styles.graficoContenedor}>
+      <svg className={styles.grafico} viewBox={`0 0 ${ancho} ${alto}`} role="img"
+        aria-label={`Evolución de facturación por ${agrupacion || 'período'}: ${datos.length} puntos`}>
+        {[0, 0.5, 1].map((nivel) => (
+          <g key={nivel}>
+            <line x1={izquierda} x2={ancho - derecha} y1={y(maximo * nivel)} y2={y(maximo * nivel)} className={styles.lineaGuia} />
+            <text x={izquierda - 10} y={y(maximo * nivel) + 4} textAnchor="end" className={styles.etiquetaEje}>
+              {numero.format(Math.round(maximo * nivel))}
+            </text>
+          </g>
+        ))}
+        <path d={linea} className={styles.lineaVentas} />
+        {datos.map((p, i) => (
+          <circle key={`${p.etiqueta}-${i}`} cx={x(i)} cy={y(p.valor)} r="3.5" className={styles.puntoVentas}>
+            <title>{`${p.etiqueta}: ${valorMoneda(p.valor)}`}</title>
+          </circle>
+        ))}
+        {marcas.map((i) => (
+          <text key={i} x={x(i)} y={alto - 14} textAnchor="middle" className={styles.etiquetaEje}>{datos[i].etiqueta}</text>
+        ))}
+      </svg>
+      <p className={styles.detalle}>Facturación en ARS · {datos.length} intervalos con ventas. Los intervalos sin ventas no se representan.</p>
+    </div>
+  )
+}
+
 export default function OwnerDashboard() {
   const [periodo, setPeriodo] = useState('mes')
   const [intento, setIntento] = useState(0)
   const [resumen, setResumen] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  const [evolucion, setEvolucion] = useState(null)
+  const [errorEvolucion, setErrorEvolucion] = useState('')
+  const [cargandoEvolucion, setCargandoEvolucion] = useState(true)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -79,6 +127,30 @@ export default function OwnerDashboard() {
       }
     }
     cargar()
+    return () => controller.abort()
+  }, [periodo, intento])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    async function cargarEvolucion() {
+      setCargandoEvolucion(true)
+      setErrorEvolucion('')
+      setEvolucion(null)
+      try {
+        const { data } = await api.get('/finanzas/ventas/evolucion', {
+          params: { periodo },
+          signal: controller.signal,
+          timeout: 30000,
+        })
+        if (!Array.isArray(data?.evolucion)) throw new Error('Respuesta de evolución inválida')
+        if (!controller.signal.aborted) setEvolucion(data)
+      } catch (err) {
+        if (!controller.signal.aborted) setErrorEvolucion(mensajeError(err))
+      } finally {
+        if (!controller.signal.aborted) setCargandoEvolucion(false)
+      }
+    }
+    cargarEvolucion()
     return () => controller.abort()
   }, [periodo, intento])
 
@@ -135,6 +207,20 @@ export default function OwnerDashboard() {
             <Tarjeta titulo="Ticket promedio" valor={valorMoneda(ventas?.ticket_promedio)} detalle={`${valorNumero(ventas?.unidades_vendidas)} unidades vendidas`} />
             <Tarjeta titulo="Margen bruto" valor={rentabilidad?.rentabilidad_calculable === true && Number.isFinite(rentabilidad?.margen_bruto) ? `${numero.format(rentabilidad.margen_bruto)} %` : 'No disponible'} detalle="Margen sobre ventas; no equivale a utilidad neta" />
           </div>
+
+          <section className={styles.panel} aria-labelledby="titulo-evolucion">
+            <h2 id="titulo-evolucion">Evolución de ventas</h2>
+            {cargandoEvolucion && <p role="status">Cargando evolución de ventas…</p>}
+            {!cargandoEvolucion && errorEvolucion && (
+              <div role="alert">
+                <p>{errorEvolucion}</p>
+                <button type="button" className={styles.actualizar} onClick={() => setIntento((n) => n + 1)}>Reintentar</button>
+              </div>
+            )}
+            {!cargandoEvolucion && evolucion && (
+              <GraficoVentas puntos={evolucion.evolucion} agrupacion={evolucion.agrupacion} />
+            )}
+          </section>
 
           <div className={styles.columnas}>
             <section className={styles.panel} aria-labelledby="titulo-caja">
