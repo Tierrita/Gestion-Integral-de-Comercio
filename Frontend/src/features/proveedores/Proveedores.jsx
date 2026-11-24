@@ -160,8 +160,8 @@ export default function Proveedores({ esPropietario = false }) {
           <td><span className={p.estado === true ? styles.active : styles.inactive}>{p.estado === true ? 'Activo' : 'Inactivo'}</span></td>
           <td>{saldos[p.id_proveedor] ? <span className={saldos[p.id_proveedor].saldo > 0 ? styles.deuda : saldos[p.id_proveedor].saldo < 0 ? styles.favor : styles.neutro}>{money(Math.abs(saldos[p.id_proveedor].saldo))} · {saldos[p.id_proveedor].saldo > 0 ? 'Deuda' : saldos[p.id_proveedor].saldo < 0 ? 'A favor' : 'Al día'}</span> : '—'}</td>
           <td><div className={styles.actions}>
-            {p.estado === true && <button type="button" className={styles.primary} onClick={() => setPayment(p)}>Pagar</button>}
-            <button type="button" className={styles.secondary} onClick={() => setAccount(p)}>Ver detalle</button>
+            {p.estado === true && <ActionButton type="button" variant="primary" onClick={() => setPayment(p)}>Pagar</ActionButton>}
+            <ActionButton type="button" variant="secondary" onClick={() => setAccount(p)}>Ver detalle</ActionButton>
             <button type="button" className={styles.menuTrigger} aria-label={`Más opciones para ${p.nombre_proveedor}`} aria-expanded={menu?.proveedor.id_proveedor === p.id_proveedor} onClick={(event) => {
               if (menu?.proveedor.id_proveedor === p.id_proveedor) { setMenu(null); return }
               const rect = event.currentTarget.getBoundingClientRect()
@@ -195,7 +195,7 @@ export default function Proveedores({ esPropietario = false }) {
         <label>Dirección (opcional)<input maxLength={250} value={form.direccion} onChange={(e) => setForm((f) => ({ ...f, direccion: e.target.value }))} /></label>
         <label>Descripción (opcional)<textarea className={styles.textarea} rows={3} value={form.descripcion} onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))} /></label>
         {formError && <Alert type="error">{formError}</Alert>}
-        <div className={styles.actions}><button type="button" className={styles.secondary} disabled={saving} onClick={() => setEditing(null)}>Cancelar</button><button type="submit" className={styles.primary} disabled={saving}>{saving ? 'Guardando…' : 'Guardar proveedor'}</button></div>
+        <div className={styles.actions}><ActionButton type="button" variant="secondary" disabled={saving} onClick={() => setEditing(null)}>Cancelar</ActionButton><ActionButton type="submit" variant="primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar proveedor'}</ActionButton></div>
       </form>
     </Modal>
     <ConfirmDialog open={Boolean(pending)} onClose={() => { if (!changing) { setPending(null); setStatusError('') } }} onConfirm={() => void changeStatus()} title={pending?.estado === true ? 'Desactivar proveedor' : 'Activar proveedor'} description="Confirmá el cambio de estado del proveedor." details={pending ? [{ label: 'Proveedor', value: pending.nombre_proveedor }] : []} error={statusError} busy={changing} destructive={pending?.estado === true} confirmLabel={pending?.estado === true ? 'Desactivar' : 'Activar'} />
