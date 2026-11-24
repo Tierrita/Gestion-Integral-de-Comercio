@@ -458,6 +458,13 @@ export default function Ventas({ esPropietario = false }) {
                       >
                         Ver detalle
                       </button>
+                      <button
+                        type="button"
+                        className={`${styles.secundario} ${styles.botonTabla}`}
+                        onClick={() => navigate(`/ventas/${venta.id_venta}/comprobante`)}
+                      >
+                        Comprobante X
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -527,6 +534,14 @@ export default function Ventas({ esPropietario = false }) {
                     </strong>
                   </div>
                 </div>
+
+                <button
+                  type="button"
+                  className={styles.secundario}
+                  onClick={() => navigate(`/ventas/${detalle.venta.id_venta}/comprobante`)}
+                >
+                  Ver / imprimir comprobante X
+                </button>
 
                 <h3>Productos de la venta</h3>
 

@@ -79,3 +79,10 @@ def obtener_historial_ventas_cliente_route(id_cliente):
     return obtener_historial_ventas_cliente_controller(
         id_cliente
     )
+
+@cliente_bp.route("/clientes/<int:id_cliente>/movimientos-financieros", methods=["GET"])
+@login_requerido
+@permiso_requerido("clientes.ver_deuda")
+def obtener_movimientos_financieros_cliente_route(id_cliente):
+    from app.controllers.cliente_controller import obtener_movimientos_financieros_cliente_controller
+    return obtener_movimientos_financieros_cliente_controller(id_cliente)

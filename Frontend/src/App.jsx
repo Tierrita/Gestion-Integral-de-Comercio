@@ -9,6 +9,7 @@ import HistorialMovimientos from './features/inventario/HistorialMovimientos.jsx
 import ProductoFormulario from './features/productos/ProductoFormulario.jsx'
 import Ventas from './features/ventas/Ventas.jsx'
 import NuevaVenta from './features/ventas/NuevaVenta.jsx'
+import ComprobanteVenta from './features/ventas/ComprobanteVenta.jsx'
 import Compras from './features/compras/Compras.jsx'
 import NuevaCompra from './features/compras/NuevaCompra.jsx'
 import Clientes from './features/clientes/Clientes.jsx'
@@ -209,7 +210,8 @@ function SessionRoutes() {
     }
   />
   <Route path="/ventas/nueva" element={<NuevaVenta />} />
-  <Route path="/clientes" element={<Clientes />} />
+  <Route path="/ventas/:id/comprobante" element={<ComprobanteVenta />} />
+  <Route path="/clientes" element={<Clientes esPropietario={profile?.usuario?.es_propietario === true} />} />
   <Route path="/categorias" element={<Categorias />} />
   <Route path="/proveedores" element={<Proveedores />} />
   <Route path="/compras" element={<Compras esPropietario={profile?.usuario?.es_propietario === true} />} />

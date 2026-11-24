@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { api } from '../../shared/api/client.js'
 import Alert from '../../shared/components/Alert.jsx'
 import Modal from '../../shared/components/Modal.jsx'
 import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
 import styles from './Clientes.module.css'
+import CuentaCorrienteCliente from './CuentaCorrienteCliente.jsx'
 
 const messageOf = (error) => error.response?.data?.error || (error.response?.status === 403 ? 'No tenés permisos para esta operación.' : 'No se pudo completar la operación. Verificá la conexión con Flask.')
 const money = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number(value || 0))
-const date = (value) => value ? new Date(value).toLocaleString('es-AR') : '—'
 const PAGE_SIZES = [10, 25, 50]
 
-export default function Clientes() {
+export default function Clientes({ esPropietario = false }) {
   const [clientes, setClientes] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -27,10 +28,23 @@ export default function Clientes() {
   const [pending, setPending] = useState(null)
   const [statusError, setStatusError] = useState('')
   const [changing, setChanging] = useState(false)
-  const [historyClient, setHistoryClient] = useState(null)
-  const [history, setHistory] = useState(null)
-  const [historyError, setHistoryError] = useState('')
-  const [historyLoading, setHistoryLoading] = useState(false)
+  const [accountClient, setAccountClient] = useState(null)
+  const [cobroClient, setCobroClient] = useState(null)
+  const [saldos, setSaldos] = useState({})
+  const [saldosError, setSaldosError] = useState('')
+  const [menu, setMenu] = useState(null)
+
+  const loadSaldos = useCallback(async () => {
+    try {
+      const { data } = await api.get('/clientes/saldos')
+      if (!Array.isArray(data?.saldos)) throw new Error('Formato de saldos inválido')
+      setSaldos(Object.fromEntries(data.saldos.map((item) => [item.id_cliente, item])))
+      setSaldosError('')
+    } catch (err) {
+      setSaldos({})
+      setSaldosError(messageOf(err))
+    }
+  }, [])
 
   const load = useCallback(async (signal) => {
     setLoading(true)
@@ -38,13 +52,13 @@ export default function Clientes() {
     try {
       const { data } = await api.get('/clientes', { signal })
       if (!Array.isArray(data)) throw new Error('Formato inválido')
-      if (!signal?.aborted) setClientes(data)
+      if (!signal?.aborted) { setClientes(data); void loadSaldos() }
     } catch (err) {
       if (!signal?.aborted) setError(messageOf(err))
     } finally {
       if (!signal?.aborted) setLoading(false)
     }
-  }, [])
+  }, [loadSaldos])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -52,6 +66,8 @@ export default function Clientes() {
     return () => { clearTimeout(timer); controller.abort() }
   }, [load])
 
+  const totalDeuda = Object.values(saldos).reduce((sum, item) => sum + Math.max(0, item.saldo), 0)
+  const totalFavor = Object.values(saldos).reduce((sum, item) => sum + Math.max(0, -item.saldo), 0)
   const filtered = useMemo(() => clientes.filter((c) => {
     const active = c.estado !== false
     return (filter === 'todos' || (filter === 'activos' ? active : !active)) &&
@@ -106,18 +122,6 @@ export default function Clientes() {
     finally { setChanging(false) }
   }
 
-  async function openHistory(client) {
-    setHistoryClient(client)
-    setHistory(null)
-    setHistoryError('')
-    setHistoryLoading(true)
-    try {
-      const { data } = await api.get(`/clientes/${client.id_cliente}/ventas`)
-      if (!Array.isArray(data?.ventas)) throw new Error('Formato de historial inválido')
-      setHistory(data)
-    } catch (err) { setHistoryError(messageOf(err)) }
-    finally { setHistoryLoading(false) }
-  }
 
   return <section className={styles.page}>
     <header className={styles.header}>
@@ -126,11 +130,12 @@ export default function Clientes() {
     </header>
     <div className={styles.metrics}>
       <article><span>Total de clientes</span><strong>{clientes.length}</strong></article>
-      <article><span>Activos</span><strong>{clientes.filter((c) => c.estado !== false).length}</strong></article>
-      <article><span>Inactivos</span><strong>{clientes.filter((c) => c.estado === false).length}</strong></article>
+      <article><span>Total por cobrar</span><strong>{saldosError ? '—' : money(totalDeuda)}</strong></article>
+      <article><span>Saldos a favor</span><strong>{saldosError ? '—' : money(totalFavor)}</strong></article>
     </div>
     {notice && <Alert type="success">{notice}</Alert>}
     {error && <Alert type="error">{error}</Alert>}
+    {saldosError && <Alert type="warning">No se pudieron cargar los saldos: {saldosError}</Alert>}
     <div className={styles.panel}>
       <div className={styles.toolbar}>
         <label>Buscar cliente<input type="search" placeholder="Nombre, número o teléfono" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }} /></label>
@@ -142,18 +147,31 @@ export default function Clientes() {
       {loading ? <p role="status">Cargando clientes…</p> : error && clientes.length === 0 ? <p>No se pudo cargar el listado.</p> : filtered.length === 0 ? <p>No hay clientes para mostrar.</p> : <div className={styles.scroll}><table><thead><tr>
         <th><button type="button" onClick={() => changeSort('numero_cliente')}>N.º{sortMark('numero_cliente')}</button></th>
         <th><button type="button" onClick={() => changeSort('nombre_completo')}>Cliente{sortMark('nombre_completo')}</button></th>
-        <th>Teléfono</th><th>Estado</th><th>Acciones</th>
+        <th>Teléfono</th><th>Estado</th><th>Saldo</th><th>Acciones</th>
       </tr></thead><tbody>{rows.map((c) => <tr key={c.id_cliente}>
         <td>#{c.numero_cliente}</td><td><strong>{c.nombre_completo}</strong></td><td>{c.telefono || '—'}</td>
         <td><span className={c.estado === false ? styles.inactive : styles.active}>{c.estado === false ? 'Inactivo' : 'Activo'}</span></td>
+        <td>{saldos[c.id_cliente] ? <span className={saldos[c.id_cliente].saldo > 0 ? styles.deuda : saldos[c.id_cliente].saldo < 0 ? styles.favor : styles.neutro}>{money(Math.abs(saldos[c.id_cliente].saldo))} · {saldos[c.id_cliente].saldo > 0 ? 'Debe' : saldos[c.id_cliente].saldo < 0 ? 'A favor' : 'Al día'}</span> : '—'}</td>
         <td><div className={styles.actions}>
-          <button className={styles.secondary} type="button" onClick={() => openForm(c)}>Editar</button>
-          <button className={styles.secondary} type="button" onClick={() => void openHistory(c)}>Ver ventas</button>
-          {Number(c.numero_cliente) !== 1 && <button className={styles.secondary} type="button" onClick={() => { setPending(c); setStatusError('') }}>{c.estado === false ? 'Activar' : 'Desactivar'}</button>}
-        </div></td>
+          {Number(c.numero_cliente) !== 1 && c.estado !== false && <button className={styles.primary} type="button" onClick={() => setCobroClient(c)}>Cobrar</button>}
+          <button className={styles.secondary} type="button" onClick={() => setAccountClient(c)}>Ver detalle</button>
+          <button className={styles.menuTrigger} type="button" aria-label={`Más opciones para ${c.nombre_completo}`} aria-expanded={menu?.cliente.id_cliente === c.id_cliente} onClick={(event) => {
+            if (menu?.cliente.id_cliente === c.id_cliente) { setMenu(null); return }
+            const rect = event.currentTarget.getBoundingClientRect()
+            const width = 190
+            const height = 110
+            setMenu({ cliente: c, top: rect.bottom + height > window.innerHeight ? Math.max(8, rect.top - height) : rect.bottom + 4, left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)) })
+          }}>···</button></div></td>
       </tr>)}</tbody></table></div>}
       {!loading && filtered.length > 0 && <div className={styles.pagination}><span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} de {filtered.length}</span><div className={styles.actions}><button className={styles.secondary} type="button" disabled={currentPage === 1} onClick={() => setPage((n) => n - 1)}>Anterior</button><span>Página {currentPage} de {pages}</span><button className={styles.secondary} type="button" disabled={currentPage === pages} onClick={() => setPage((n) => n + 1)}>Siguiente</button></div></div>}
     </div>
+    {menu && createPortal(<>
+      <button type="button" className={styles.menuBackdrop} aria-label="Cerrar opciones" onClick={() => setMenu(null)} />
+      <div className={styles.floatingMenu} role="group" aria-label={`Opciones de ${menu.cliente.nombre_completo}`} style={{ top: menu.top, left: menu.left }}>
+        <button type="button" onClick={() => { openForm(menu.cliente); setMenu(null) }}>Editar cliente</button>
+        {Number(menu.cliente.numero_cliente) !== 1 && <button type="button" onClick={() => { setPending(menu.cliente); setStatusError(''); setMenu(null) }}>{menu.cliente.estado === false ? 'Activar cliente' : 'Desactivar cliente'}</button>}
+      </div>
+    </>, document.body)}
     <Modal open={editing !== null} onClose={() => { if (!saving) setEditing(null) }} title={editing === 'new' ? 'Nuevo cliente' : 'Editar cliente'} description="Completá los datos del cliente." busy={saving} size="small">
       <form className={styles.form} onSubmit={(event) => void submit(event)}>
         <label>Nombre completo<input required minLength={2} maxLength={150} disabled={editing !== 'new' && Number(editing?.numero_cliente) === 1} value={form.nombre_completo} onChange={(e) => setForm((f) => ({ ...f, nombre_completo: e.target.value }))} /></label>
@@ -164,10 +182,8 @@ export default function Clientes() {
       </form>
     </Modal>
     <ConfirmDialog open={Boolean(pending)} onClose={() => { if (!changing) { setPending(null); setStatusError('') } }} onConfirm={() => void changeStatus()} title={pending?.estado === false ? 'Activar cliente' : 'Desactivar cliente'} description="Confirmá el cambio de estado del cliente." details={pending ? [{ label: 'Cliente', value: pending.nombre_completo }] : []} error={statusError} busy={changing} destructive={pending?.estado !== false} confirmLabel={pending?.estado === false ? 'Activar' : 'Desactivar'} />
-    <Modal open={historyClient !== null} onClose={() => { setHistoryClient(null); setHistory(null) }} title={`Ventas de ${historyClient?.nombre_completo || ''}`} description="Historial de operaciones del cliente." size="large">
-      {historyLoading && <p role="status">Cargando historial…</p>}
-      {historyError && <Alert type="error">{historyError}</Alert>}
-      {history && (history.ventas.length === 0 ? <p>Este cliente todavía no tiene ventas.</p> : <div className={styles.scroll}><table><thead><tr><th>Venta</th><th>Fecha</th><th>Estado</th><th>Total</th><th>Productos</th></tr></thead><tbody>{history.ventas.map(({ venta, detalles }) => <tr key={venta.id_venta}><td>#{venta.numero_venta ?? venta.id_venta}</td><td>{date(venta.fecha_venta)}</td><td>{venta.estado}</td><td>{money(venta.total_venta)}</td><td>{detalles?.length ?? 0}</td></tr>)}</tbody></table></div>)}
-    </Modal>
+    <CuentaCorrienteCliente cliente={accountClient} esPropietario={esPropietario} onClose={() => setAccountClient(null)} onCobroRegistrado={() => void loadSaldos()} />
+    <CuentaCorrienteCliente cliente={cobroClient} modo="cobro" onClose={() => setCobroClient(null)} onCobroRegistrado={() => void loadSaldos()} />
+
   </section>
 }

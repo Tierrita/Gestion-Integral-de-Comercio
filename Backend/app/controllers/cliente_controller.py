@@ -156,3 +156,12 @@ def obtener_historial_ventas_cliente_controller(id_cliente):
         return jsonify({
             "error": "Error al obtener el historial de ventas"
         }), 500
+
+def obtener_movimientos_financieros_cliente_controller(id_cliente):
+    from app.services.cliente_service import consultar_movimientos_financieros_cliente
+    try:
+        return jsonify(consultar_movimientos_financieros_cliente(id_cliente, g.id_comercio)), 200
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 404
+    except APIError:
+        return jsonify({"error": "No se pudo consultar el historial financiero"}), 500
