@@ -21,7 +21,7 @@ def dinero(valor):
 
 def main():
     parser = argparse.ArgumentParser(description="Prueba concurrente de cobros y pagos V2")
-    parser.add_argument("--url", default="http://127.0.0.1:5001/api")
+    parser.add_argument("--url", default="http://127.0.0.1:5001")
     parser.add_argument("--cliente", type=int, required=True)
     parser.add_argument("--cuenta", type=int, required=True)
     parser.add_argument("--proveedor", type=int, required=True)
