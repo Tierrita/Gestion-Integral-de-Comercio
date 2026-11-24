@@ -27,6 +27,8 @@ export default function ComprobanteVenta() {
       setCargando(true)
       setError('')
       setAvisos([])
+      setSaldoCliente(null)
+      setFechaConsultaSaldo(null)
       try {
         // La venta se consulta por el JWT: Flask valida el comercio y el permiso ventas.ver.
         const { data } = await api.get(`/ventas/${id}`, { signal: controller.signal })
@@ -41,8 +43,8 @@ export default function ComprobanteVenta() {
           api.get(`/clientes/${data.venta.id_cliente}/saldo`, { signal: controller.signal }),
         ])
         if (controller.signal.aborted) return
-        if (saldo.status === 'fulfilled' && typeof saldo.value.data?.saldo === 'number') {
-          setSaldoCliente(saldo.value.data)
+        if (saldo.status === 'fulfilled' && saldo.value.data?.saldo != null && Number.isFinite(Number(saldo.value.data.saldo))) {
+          setSaldoCliente(Number(saldo.value.data.saldo))
           setFechaConsultaSaldo(new Date())
         }
         if (perfil.status === 'fulfilled') setComercio(perfil.value.data?.comercio ?? null)
@@ -54,6 +56,7 @@ export default function ComprobanteVenta() {
         const advertencias = []
         if (ficha.status !== 'fulfilled') advertencias.push('No se pudo consultar la ficha del cliente.')
         if (catalogo.status !== 'fulfilled') advertencias.push('No se pudo consultar el catálogo de productos.')
+        if (saldo.status !== 'fulfilled' || saldo.value.data?.saldo == null || !Number.isFinite(Number(saldo.value.data.saldo))) advertencias.push('No se pudo obtener el saldo actual del cliente.')
         setAvisos(advertencias)
       } catch (err) {
         if (!controller.signal.aborted) setError(err.response?.data?.error || err.message || 'No se pudo consultar la venta.')
@@ -125,11 +128,18 @@ export default function ComprobanteVenta() {
         </tr>)}</tbody>
       </table>
       <div className={styles.cierre}><div className={styles.agradecimiento}><strong>¡Gracias por su compra!</strong><span>Comprobante emitido por AIOnix</span></div><div className={styles.total}><span>TOTAL</span><strong>{formatoMoneda(venta.total)}</strong></div></div>
-      {saldoCliente && <section className={styles.estadoCuenta}>
-        <h2>Estado de cuenta del cliente</h2>
-        <div><span>Saldo actual al {fechaConsultaSaldo?.toLocaleString('es-AR')}</span><strong>{formatoMoneda(Math.abs(saldoCliente.saldo))} · {saldoCliente.saldo > 0 ? 'Deuda pendiente' : saldoCliente.saldo < 0 ? 'Saldo a favor' : 'Al día'}</strong></div>
-        <p>Saldo consultado al generar este documento. Puede incluir operaciones posteriores a esta venta y no representa el saldo histórico al momento de emitirla.</p>
-      </section>}
+      <section className={styles.estadoCuenta}>
+        <h2>ESTADO ACTUAL DE CUENTA</h2>
+        <div className={styles.resumenSaldo}>
+          <span>Importe de esta compra</span>
+          <strong>{formatoMoneda(venta.total)}</strong>
+        </div>
+        <div className={styles.resumenSaldo}>
+          <span>{saldoCliente === null ? 'Saldo total del cliente' : saldoCliente > 0 ? 'TOTAL QUE DEBE EL CLIENTE' : saldoCliente < 0 ? 'SALDO A FAVOR DEL CLIENTE' : 'ESTADO DE CUENTA'}</span>
+          <strong>{saldoCliente === null ? 'No disponible' : saldoCliente === 0 ? 'AL DÍA · ' + formatoMoneda(0) : formatoMoneda(Math.abs(saldoCliente))}</strong>
+        </div>
+        <p>{fechaConsultaSaldo ? `Saldo actualizado al ${fechaConsultaSaldo.toLocaleString('es-AR')}. Incluye esta venta si fue a cuenta corriente y sigue pendiente, así como otras operaciones y pagos registrados. El importe de la compra se informa por separado y no se suma otra vez al saldo.` : 'No se pudo consultar la deuda actual. El importe de la compra no representa necesariamente la deuda del cliente.'}</p>
+      </section>
       {venta.observaciones && <p className={styles.observaciones}><strong>Observaciones:</strong> {venta.observaciones}</p>}
       <footer className={styles.pie}>Documento comercial interno · No constituye factura fiscal.</footer>
     </article>}
