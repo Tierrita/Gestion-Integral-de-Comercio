@@ -47,10 +47,3 @@
 .favor{color:#29c58f;font-weight:750;white-space:nowrap}
 .neutro{color:var(--color-text-muted);font-weight:650;white-space:nowrap}
 .scroll .actions .primary{min-height:32px;padding:.35rem .65rem;font-size:.78rem;white-space:nowrap}
-
-.menuTrigger{display:grid;place-items:center;min-width:36px;min-height:32px;border:1px solid var(--color-border);border-radius:.6rem;background:var(--color-surface-raised);color:var(--color-text);font-size:1.25rem;cursor:pointer}
-.menuTrigger:hover,.menuTrigger:focus-visible{border-color:var(--color-primary)}
-.menuBackdrop{position:fixed;inset:0;z-index:9998;border:0;background:transparent;cursor:default}
-.floatingMenu{position:fixed;z-index:9999;display:grid;gap:.2rem;min-width:190px;padding:.4rem;border:1px solid var(--color-border);border-radius:.65rem;background:var(--color-surface);box-shadow:0 12px 32px #0007}
-.floatingMenu button{border:0;border-radius:.4rem;background:transparent;color:var(--color-text);text-align:left;padding:.7rem;font:inherit;cursor:pointer}
-.floatingMenu button:hover,.floatingMenu button:focus-visible{background:var(--color-surface-raised)}
