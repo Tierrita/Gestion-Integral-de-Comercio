@@ -154,8 +154,8 @@ export default function Clientes({ esPropietario = false }) {
         <td><span className={c.estado === false ? styles.inactive : styles.active}>{c.estado === false ? 'Inactivo' : 'Activo'}</span></td>
         <td>{saldos[c.id_cliente] ? <span className={saldos[c.id_cliente].saldo > 0 ? styles.deuda : saldos[c.id_cliente].saldo < 0 ? styles.favor : styles.neutro}>{money(Math.abs(saldos[c.id_cliente].saldo))} · {saldos[c.id_cliente].saldo > 0 ? 'Debe' : saldos[c.id_cliente].saldo < 0 ? 'A favor' : 'Al día'}</span> : '—'}</td>
         <td><div className={styles.actions}>
-          {Number(c.numero_cliente) !== 1 && c.estado !== false && <button className={styles.primary} type="button" onClick={() => setCobroClient(c)}>Cobrar</button>}
-          <button className={styles.secondary} type="button" onClick={() => setAccountClient(c)}>Ver detalle</button>
+          {Number(c.numero_cliente) !== 1 && c.estado !== false && <ActionButton variant="primary" type="button" onClick={() => setCobroClient(c)}>Cobrar</ActionButton>}
+          <ActionButton variant="secondary" type="button" onClick={() => setAccountClient(c)}>Ver detalle</ActionButton>
           <button className={styles.menuTrigger} type="button" aria-label={`Más opciones para ${c.nombre_completo}`} aria-expanded={menu?.cliente.id_cliente === c.id_cliente} onClick={(event) => {
             if (menu?.cliente.id_cliente === c.id_cliente) { setMenu(null); return }
             const rect = event.currentTarget.getBoundingClientRect()
@@ -179,7 +179,7 @@ export default function Clientes({ esPropietario = false }) {
         <label>Teléfono (opcional)<input type="tel" maxLength={50} value={form.telefono} onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))} /></label>
         {editing !== 'new' && Number(editing?.numero_cliente) === 1 && <Alert type="warning">El nombre de CLIENTE GENERAL está protegido.</Alert>}
         {formError && <Alert type="error">{formError}</Alert>}
-        <div className={styles.actions}><button className={styles.secondary} type="button" disabled={saving} onClick={() => setEditing(null)}>Cancelar</button><button className={styles.primary} type="submit" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cliente'}</button></div>
+        <div className={styles.actions}><ActionButton variant="secondary" type="button" disabled={saving} onClick={() => setEditing(null)}>Cancelar</ActionButton><ActionButton variant="primary" type="submit" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cliente'}</ActionButton></div>
       </form>
     </Modal>
     <ConfirmDialog open={Boolean(pending)} onClose={() => { if (!changing) { setPending(null); setStatusError('') } }} onConfirm={() => void changeStatus()} title={pending?.estado === false ? 'Activar cliente' : 'Desactivar cliente'} description="Confirmá el cambio de estado del cliente." details={pending ? [{ label: 'Cliente', value: pending.nombre_completo }] : []} error={statusError} busy={changing} destructive={pending?.estado !== false} confirmLabel={pending?.estado === false ? 'Activar' : 'Desactivar'} />
