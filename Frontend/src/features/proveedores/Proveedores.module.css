@@ -70,3 +70,21 @@
 .scroll .actions .primary,.scroll .actions .secondary{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:.4rem .65rem;font-size:.76rem;white-space:nowrap;word-break:normal;overflow-wrap:normal;flex:0 0 auto}
 .scroll td{height:auto;min-height:48px;padding:.75rem .8rem}
 .active,.inactive{white-space:nowrap}
+
+/* Proveedores: misma densidad y menú de acciones que Clientes V2. */
+.scroll table{min-width:840px;width:100%;table-layout:auto}
+.scroll th:nth-child(1),.scroll td:nth-child(1){min-width:50px}
+.scroll th:nth-child(2),.scroll td:nth-child(2){min-width:150px;max-width:240px}
+.scroll th:nth-child(3),.scroll td:nth-child(3){min-width:120px;white-space:nowrap}
+.scroll th:nth-child(4),.scroll td:nth-child(4){min-width:80px;max-width:none;overflow-wrap:normal;white-space:nowrap}
+.scroll th:nth-child(5),.scroll td:nth-child(5){min-width:155px;white-space:nowrap}
+.scroll th:nth-child(6),.scroll td:nth-child(6){min-width:195px;max-width:none;white-space:nowrap}
+.scroll td{padding:.5rem .8rem}
+.scroll .actions{min-width:0;gap:.45rem}
+.scroll .actions .primary,.scroll .actions .secondary{min-height:32px;padding:.35rem .65rem;font-size:.78rem;white-space:nowrap}
+.menuTrigger{display:grid;place-items:center;min-width:36px;min-height:32px;border:1px solid var(--color-border);border-radius:.6rem;background:var(--color-surface-raised);color:var(--color-text);font-size:1.25rem;cursor:pointer}
+.menuTrigger:hover,.menuTrigger:focus-visible{border-color:var(--color-primary)}
+.menuBackdrop{position:fixed;inset:0;z-index:9998;border:0;background:transparent;cursor:default}
+.floatingMenu{position:fixed;z-index:9999;display:grid;gap:.2rem;min-width:200px;padding:.4rem;border:1px solid var(--color-border);border-radius:.65rem;background:var(--color-surface);box-shadow:0 12px 32px #0007}
+.floatingMenu button{border:0;border-radius:.4rem;background:transparent;color:var(--color-text);text-align:left;padding:.7rem;font:inherit;cursor:pointer}
+.floatingMenu button:hover,.floatingMenu button:focus-visible{background:var(--color-surface-raised)}
