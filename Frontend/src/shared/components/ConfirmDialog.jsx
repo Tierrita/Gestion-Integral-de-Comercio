@@ -1,5 +1,6 @@
 import Modal from './Modal.jsx'
 import Alert from './Alert.jsx'
+import ActionButton from './ActionButton.jsx'
 import styles from './ConfirmDialog.module.css'
 
 export default function ConfirmDialog({
@@ -22,11 +23,11 @@ export default function ConfirmDialog({
       {warning && <Alert type="warning" title="Antes de continuar">{warning}</Alert>}
       {error && <Alert type="error">{error}</Alert>}
       <div className={styles.acciones}>
-        <button type="button" className={styles.cancelar} onClick={onClose} disabled={busy}>{cancelLabel}</button>
-        <button type="button" className={destructive ? styles.peligro : styles.confirmar}
+        <ActionButton variant="secondary" onClick={onClose} disabled={busy}>{cancelLabel}</ActionButton>
+        <ActionButton variant={destructive ? 'danger' : 'primary'}
           onClick={onConfirm} disabled={busy} aria-busy={busy}>
           {busy ? 'Procesando…' : confirmLabel}
-        </button>
+        </ActionButton>
       </div>
     </Modal>
   )
