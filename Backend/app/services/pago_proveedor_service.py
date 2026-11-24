@@ -6,6 +6,7 @@ el aislamiento multicomercio.
 """
 
 from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
 
 from app.models.pago_proveedor_model import (
     insertar_pago_proveedor,
@@ -73,18 +74,16 @@ def registrar_pago_proveedor(
 
     monto = datos["monto"]
 
-    if (
-        isinstance(monto, bool)
-        or not isinstance(monto, (int, float))
-    ):
-        raise ValueError(
-            "El monto debe ser numérico"
-        )
-
-    if monto <= 0:
-        raise ValueError(
-            "El monto debe ser mayor a cero"
-        )
+    if isinstance(monto, bool) or not isinstance(monto, (int, float, str, Decimal)):
+        raise ValueError("El monto debe ser numérico")
+    try:
+        monto = Decimal(str(monto))
+    except InvalidOperation as exc:
+        raise ValueError("El monto debe ser numérico") from exc
+    if not monto.is_finite() or monto <= 0:
+        raise ValueError("El monto debe ser finito y mayor a cero")
+    if monto.as_tuple().exponent < -2:
+        raise ValueError("El monto admite como máximo dos decimales")
 
     observaciones = datos.get("observaciones")
 
@@ -99,7 +98,7 @@ def registrar_pago_proveedor(
     datos_pago = {
         "id_proveedor": id_proveedor,
         "id_usuario": id_usuario,
-        "monto": monto,
+        "monto": str(monto),
         "estado": "COMPLETADO",
         "observaciones": observaciones
     }
@@ -254,15 +253,13 @@ def consultar_saldo_proveedor(
     ) or []
 
     total_compras = sum(
-        float(compra["total_compra"])
-        for compra in compras
-        if compra["estado"].upper() != "ANULADA"
+        (Decimal(str(compra["total_compra"])) for compra in compras
+         if str(compra["estado"]).upper() == "COMPLETADA"), Decimal("0")
     )
 
     total_pagos = sum(
-        float(pago["monto"])
-        for pago in pagos
-        if pago["estado"].upper() == "COMPLETADO"
+        (Decimal(str(pago["monto"])) for pago in pagos
+         if str(pago["estado"]).upper() == "COMPLETADO"), Decimal("0")
     )
 
     saldo = total_compras - total_pagos
@@ -280,8 +277,8 @@ def consultar_saldo_proveedor(
             "numero_proveedor": proveedor["numero_proveedor"],
             "nombre_proveedor": proveedor["nombre_proveedor"]
         },
-        "total_compras": total_compras,
-        "total_pagos": total_pagos,
-        "saldo": saldo,
+        "total_compras": float(total_compras),
+        "total_pagos": float(total_pagos),
+        "saldo": float(saldo),
         "situacion": situacion
     }
