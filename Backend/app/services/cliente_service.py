@@ -18,6 +18,78 @@ from app.models.cliente_model import (
 )
 
 
+# Contrato Clientes V2: todos los campos nuevos son opcionales.
+# Los nombres de columnas coinciden con Backend/sql/clientes_v2.sql.
+import re
+
+CAMPOS_CLIENTE_V2 = {
+    "nombre_completo": 150,
+    "telefono": 50,
+    "tipo_cliente": 20,
+    "nombre_comercial": 150,
+    "tipo_documento": 20,
+    "numero_documento": 30,
+    "condicion_iva": 50,
+    "email": 254,
+    "whatsapp": 50,
+    "direccion": 200,
+    "localidad": 100,
+    "provincia": 100,
+    "codigo_postal": 20,
+    "referencia_entrega": 2000,
+    "observaciones": 2000,
+}
+TIPOS_CLIENTE = {"PARTICULAR", "COMERCIO", "EMPRESA", "INSTITUCION"}
+TIPOS_DOCUMENTO = {"DNI", "CUIT", "CUIL", "PASAPORTE", "OTRO"}
+
+
+def validar_datos_cliente(datos, *, creacion=False, cliente_general=False):
+    """Normaliza exclusivamente campos editables; nunca acepta IDs o estado."""
+    if not isinstance(datos, dict) or not datos:
+        raise ValueError("No se enviaron datos del cliente")
+
+    desconocidos = set(datos) - set(CAMPOS_CLIENTE_V2)
+    if desconocidos:
+        raise ValueError("Campos no permitidos: " + ", ".join(sorted(desconocidos)))
+
+    if creacion and "nombre_completo" not in datos:
+        raise ValueError("El nombre completo es obligatorio")
+
+    if cliente_general and "nombre_completo" in datos:
+        raise ValueError("No se puede modificar el nombre de CLIENTE GENERAL")
+
+    resultado = {}
+    for campo, valor in datos.items():
+        if valor is not None and not isinstance(valor, str):
+            raise ValueError(f"El campo {campo} debe ser texto")
+
+        limpio = valor.strip() if isinstance(valor, str) else None
+        if limpio == "":
+            limpio = None
+
+        if campo == "nombre_completo" and (not limpio or len(limpio) < 2):
+            raise ValueError("El nombre completo debe tener al menos 2 caracteres")
+        if limpio is not None and len(limpio) > CAMPOS_CLIENTE_V2[campo]:
+            raise ValueError(f"El campo {campo} supera el largo permitido")
+        if campo == "tipo_cliente":
+            if limpio is None or limpio.upper() not in TIPOS_CLIENTE:
+                raise ValueError("Tipo de cliente inválido")
+            limpio = limpio.upper()
+        if campo == "tipo_documento" and limpio is not None:
+            if limpio.upper() not in TIPOS_DOCUMENTO:
+                raise ValueError("Tipo de documento inválido")
+            limpio = limpio.upper()
+        if campo == "email" and limpio is not None:
+            # Validación práctica de formato; no intenta verificar existencia.
+            if not re.fullmatch(r"[^\\s@]+@[^\\s@]+\\.[^\\s@]+", limpio):
+                raise ValueError("El email no tiene un formato válido")
+            limpio = limpio.lower()
+
+        resultado[campo] = limpio
+
+    return resultado
+
+
 def listar_clientes(id_comercio):
     """Lista los clientes del comercio autenticado."""
 
@@ -39,151 +111,37 @@ def consultar_cliente_por_id(id_cliente, id_comercio):
 
 
 def crear_cliente(datos, id_comercio):
-    """
-    Registra un cliente.
-
-    id_comercio, numero_cliente y estado
-    son controlados exclusivamente por el backend.
-    """
-
-    if not datos:
-        raise ValueError("No se enviaron datos del cliente")
-
-    nombre_completo = datos.get("nombre_completo")
-
-    if not isinstance(nombre_completo, str):
-        raise ValueError(
-            "El nombre completo es obligatorio y debe ser texto"
-        )
-
-    nombre_completo = nombre_completo.strip()
-
-    if len(nombre_completo) < 2:
-        raise ValueError(
-            "El nombre completo debe tener al menos 2 caracteres"
-        )
-
-    telefono = datos.get("telefono")
-
-    if telefono is not None:
-        if not isinstance(telefono, str):
-            raise ValueError("El teléfono debe ser texto")
-
-        telefono = telefono.strip()
-
-        if not telefono:
-            telefono = None
-
-    numero_cliente = obtener_siguiente_numero_cliente(
-        id_comercio
-    )
-
+    """Crea un cliente sin permitir alterar identificadores del sistema."""
+    campos = validar_datos_cliente(datos, creacion=True)
+    numero_cliente = obtener_siguiente_numero_cliente(id_comercio)
     if numero_cliente is None:
-        raise ValueError(
-            "No se pudo generar el número del cliente"
-        )
+        raise ValueError("No se pudo generar el número del cliente")
 
     nuevo_cliente = {
+        **campos,
         "id_comercio": id_comercio,
         "numero_cliente": numero_cliente,
-        "nombre_completo": nombre_completo,
-        "telefono": telefono,
         "estado": True,
     }
-
     cliente = insertar_cliente(nuevo_cliente)
-
     if not cliente:
         raise ValueError("No se pudo registrar el cliente")
-
     return cliente
 
 
 def editar_cliente(id_cliente, datos, id_comercio):
-    """Modifica únicamente los campos editables del cliente."""
-
-    cliente = obtener_cliente_por_id(
-        id_cliente,
-        id_comercio
-    )
-
+    """Actualiza solo los campos editables de un cliente del comercio."""
+    cliente = obtener_cliente_por_id(id_cliente, id_comercio)
     if not cliente:
         raise ValueError("Cliente no encontrado")
 
-    if not datos:
-        raise ValueError(
-            "No se enviaron datos para actualizar"
-        )
-
-    campos_permitidos = {
-        "nombre_completo",
-        "telefono",
-    }
-
-    datos_actualizacion = {
-        campo: valor
-        for campo, valor in datos.items()
-        if campo in campos_permitidos
-    }
-
-    if not datos_actualizacion:
-        raise ValueError(
-            "No se enviaron campos válidos para actualizar"
-        )
-
-    if "nombre_completo" in datos_actualizacion:
-
-        # El CLIENTE GENERAL es un registro especial del sistema.
-        if cliente.get("numero_cliente") == 1:
-            raise ValueError(
-                "No se puede modificar el nombre de CLIENTE GENERAL"
-            )
-
-        nombre = datos_actualizacion["nombre_completo"]
-
-        if not isinstance(nombre, str):
-            raise ValueError(
-                "El nombre completo debe ser texto"
-            )
-
-        nombre = nombre.strip()
-
-        if len(nombre) < 2:
-            raise ValueError(
-                "El nombre completo debe tener al menos 2 caracteres"
-            )
-
-        datos_actualizacion["nombre_completo"] = nombre
-
-    if "telefono" in datos_actualizacion:
-
-        telefono = datos_actualizacion["telefono"]
-
-        if telefono is not None:
-
-            if not isinstance(telefono, str):
-                raise ValueError(
-                    "El teléfono debe ser texto"
-                )
-
-            telefono = telefono.strip()
-
-            if not telefono:
-                telefono = None
-
-        datos_actualizacion["telefono"] = telefono
-
-    cliente_actualizado = actualizar_cliente(
-        id_cliente,
-        id_comercio,
-        datos_actualizacion
+    campos = validar_datos_cliente(
+        datos,
+        cliente_general=cliente.get("numero_cliente") == 1,
     )
-
+    cliente_actualizado = actualizar_cliente(id_cliente, id_comercio, campos)
     if not cliente_actualizado:
-        raise ValueError(
-            "No se pudo actualizar el cliente"
-        )
-
+        raise ValueError("No se pudo actualizar el cliente")
     return cliente_actualizado
 
 
