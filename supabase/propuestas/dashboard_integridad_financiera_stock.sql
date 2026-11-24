@@ -1,6 +1,6 @@
--- PROPUESTA / NO APLICADA: revisión de RPC dashboard para auditoría.
--- Generada a partir de la instantánea versionada, cotejada con pg_get_functiondef.
--- NO ejecutar en producción hasta completar pruebas de regresión y respaldo.
+-- HISTÓRICO: corrección aplicada a Supabase el 2026-11-24.
+-- Migración aplicada: dashboard_integridad_financiera_stock_20261124.
+-- Archivo de referencia versionado; no ejecutar nuevamente como cambio pendiente.
 -- Deuda actual: ventas COMPLETADA a CUENTA_CORRIENTE menos cobros COMPLETADO,
 -- para todos los clientes del comercio excepto CLIENTE GENERAL (numero_cliente=1).
 -- Se mantiene criterio de sumar solo saldos positivos para Total por cobrar.
