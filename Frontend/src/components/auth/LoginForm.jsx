@@ -4,6 +4,7 @@ import { api } from '../../shared/api/client.js'
 export default function LoginForm({ notice, onLogin }) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -42,7 +43,12 @@ export default function LoginForm({ notice, onLogin }) {
     <label htmlFor="aionix-email">Correo electrónico</label>
     <input id="aionix-email" name="email" type="email" placeholder="Correo electrónico" autoComplete="username" required />
     <label htmlFor="aionix-password">Contraseña</label>
-    <input id="aionix-password" name="password" type="password" placeholder="Contraseña" autoComplete="current-password" required />
+    <div className="aionix-password-field">
+      <input id="aionix-password" name="password" type={showPassword ? 'text' : 'password'} placeholder="Contraseña" autoComplete="current-password" required />
+      <button type="button" className="aionix-password-toggle" aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} aria-pressed={showPassword} onClick={() => setShowPassword((value) => !value)}>
+        {showPassword ? 'Ocultar' : 'Mostrar'}
+      </button>
+    </div>
     <button type="submit" className="aionix-primary-button" disabled={submitting}>
       {submitting ? 'Ingresando…' : 'Iniciar sesión'}
     </button>
