@@ -98,12 +98,12 @@ export default function ComprobanteVenta() {
         <div className={styles.identidad}>
           <span className={styles.marcaSistema}>AIONIX</span>
           <strong className={styles.marca}>{comercio?.nombre_comercio || 'Comercio'}</strong>
-          <span className={styles.subtitulo}>Comprobante de venta</span>
+          <span className={styles.subtitulo}>Gestión comercial</span>
         </div>
         <div className={styles.numero}>
-          <span>VENTA N.º</span>
+          <span>ORDEN DE VENTA</span>
           <strong>{numero || 'SIN NUMERACIÓN'}</strong>
-          <span>{formatoFechaHora(venta.fecha_venta)}</span>
+          <span>Fecha de emisión: {formatoFechaHora(venta.fecha_venta)}</span>
         </div>
       </div>
       {datosComercio.length > 0 && <div className={styles.datosComercio}>
@@ -111,7 +111,7 @@ export default function ComprobanteVenta() {
       </div>}
       {anulada && <div className={styles.anulada}>VENTA ANULADA · SIN VALIDEZ COMO COMPROBANTE DE OPERACIÓN VIGENTE</div>}
       <div className={styles.cliente}>
-        <span>Cliente</span><strong>{nombreCliente}</strong>
+        <span>Apellido y nombre / Razón social</span><strong>{nombreCliente}</strong>
         {datosCliente.map(([etiqueta, valor]) => <div className={styles.datoCliente} key={etiqueta}><span>{etiqueta}</span><strong>{valor}</strong></div>)}
         <span>Forma de pago</span><strong>{normalizar(venta.metodo_pago).replaceAll('_', ' ')}</strong>
       </div>
@@ -124,14 +124,14 @@ export default function ComprobanteVenta() {
           <td>{formatoMoneda(item.subtotal)}</td>
         </tr>)}</tbody>
       </table>
-      <div className={styles.total}><span>Total de la venta</span><strong>{formatoMoneda(venta.total)}</strong></div>
+      <div className={styles.cierre}><div className={styles.agradecimiento}><strong>¡Gracias por su compra!</strong><span>Comprobante emitido por AIOnix</span></div><div className={styles.total}><span>TOTAL</span><strong>{formatoMoneda(venta.total)}</strong></div></div>
       {saldoCliente && <section className={styles.estadoCuenta}>
         <h2>Estado de cuenta del cliente</h2>
         <div><span>Saldo actual al {fechaConsultaSaldo?.toLocaleString('es-AR')}</span><strong>{formatoMoneda(Math.abs(saldoCliente.saldo))} · {saldoCliente.saldo > 0 ? 'Deuda pendiente' : saldoCliente.saldo < 0 ? 'Saldo a favor' : 'Al día'}</strong></div>
         <p>Saldo consultado al generar este documento. Puede incluir operaciones posteriores a esta venta y no representa el saldo histórico al momento de emitirla.</p>
       </section>}
       {venta.observaciones && <p className={styles.observaciones}><strong>Observaciones:</strong> {venta.observaciones}</p>}
-      <footer className={styles.pie}>Gracias por su compra. · Documento comercial interno, no constituye factura fiscal.</footer>
+      <footer className={styles.pie}>Documento comercial interno · No constituye factura fiscal.</footer>
     </article>}
   </section>
 }
