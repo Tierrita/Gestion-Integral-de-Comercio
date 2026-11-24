@@ -40,6 +40,15 @@ export default function Proveedores({ esPropietario = false }) {
   const [payment, setPayment] = useState(null)
   const [menu, setMenu] = useState(null)
 
+  useEffect(() => {
+    if (!menu) return undefined
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setMenu(null)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [menu])
+
   const load = useCallback(async (signal) => {
     setLoading(true)
     setError('')
