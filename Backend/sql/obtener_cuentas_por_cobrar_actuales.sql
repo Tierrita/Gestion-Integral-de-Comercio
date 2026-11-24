@@ -18,7 +18,8 @@ as $$
     from public.ventas v
     join clientes_comercio cl on cl.id_cliente = v.id_cliente
     where v.id_comercio = p_id_comercio
-      and upper(v.estado) <> 'ANULADA'
+      and v.estado = 'COMPLETADA'
+      and v.metodo_pago = 'CUENTA_CORRIENTE'
     group by v.id_cliente
   ),
   cobros_cliente as (
