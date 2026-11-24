@@ -84,3 +84,14 @@ Se consultaron registros existentes de los comercios 1 y 3 (solo lectura):
 - RPC stock comercio 1 noviembre: cantidad 22.562,434 (mezcla unidades y kg, pendiente mejora UI), valor costo 250.443.492,94; valor venta 345.006.659,79; ganancia potencial 94.563.166,85.
 - Advisor seguridad: 19 tablas con RLS habilitado sin políticas (INFO), consistente con diseño backend service_role; revisar como auditoría de seguridad separada antes de exponer acceso directo. Referencia https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy
 - PENDIENTE: pruebas endpoint Flask con JWT y visualización React, no verificadas desde esta sesión. No declarar cierre E2E aún.
+
+## Integración real con frontend: RPC separada corregida
+
+La tarjeta Cuentas por cobrar (actual) de Frontend/src/features/dashboard/OwnerDashboard.jsx consulta GET /finanzas/cuentas-por-cobrar/actual, no directamente el campo clientes de /finanzas/dashboard. Backend/app/routes/finanza_routes.py exige login_requerido y solo_propietario para ambas rutas. El RPC obtener_cuentas_por_cobrar_actuales incluía erróneamente todas las ventas no anuladas, incluso efectivo.
+
+- Backup previo: supabase/backups/cuentas_por_cobrar_actuales_pre_fix_20261124.sql (commit 583a62d).
+- SQL corregido: supabase/propuestas/cuentas_por_cobrar_actuales_corregida.sql (commit ede45a9).
+- Migración aplicada: cuentas_por_cobrar_actuales_solo_cuenta_corriente_20261124.
+- Comprobación real de las dos RPC y octubre/noviembre: comercio 1: 12.684.199,00 y 5 deudores en las tres respuestas; comercio 3: 166.666,67 y 1 deudor en las tres respuestas.
+- Permisos comprobados: anon=false, authenticated=false, service_role=true.
+- No se ejecutó servidor Flask ni navegador React: quedan pendientes pruebas HTTP con JWT real y pruebas visuales.
