@@ -81,7 +81,7 @@ def validar_datos_cliente(datos, *, creacion=False, cliente_general=False):
             limpio = limpio.upper()
         if campo == "email" and limpio is not None:
             # Validación práctica de formato; no intenta verificar existencia.
-            if not re.fullmatch(r"[^\\s@]+@[^\\s@]+\\.[^\\s@]+", limpio):
+            if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", limpio):
                 raise ValueError("El email no tiene un formato válido")
             limpio = limpio.lower()
 
