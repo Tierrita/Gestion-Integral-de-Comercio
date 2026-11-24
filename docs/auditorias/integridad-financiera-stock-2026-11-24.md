@@ -95,3 +95,13 @@ La tarjeta Cuentas por cobrar (actual) de Frontend/src/features/dashboard/OwnerD
 - Comprobación real de las dos RPC y octubre/noviembre: comercio 1: 12.684.199,00 y 5 deudores en las tres respuestas; comercio 3: 166.666,67 y 1 deudor en las tres respuestas.
 - Permisos comprobados: anon=false, authenticated=false, service_role=true.
 - No se ejecutó servidor Flask ni navegador React: quedan pendientes pruebas HTTP con JWT real y pruebas visuales.
+
+## Regresión HTTP preparada para Flask
+
+Se revisaron los archivos Backend/app/routes/finanza_routes.py, Backend/app/controllers/finanza_controller.py, Backend/app/services/finanza_service.py, Backend/core/auth.py y Frontend/src/features/dashboard/OwnerDashboard.jsx.
+
+- Ambas rutas /finanzas/dashboard y /finanzas/cuentas-por-cobrar/actual están decoradas con login_requerido y solo_propietario.
+- La tarjeta visible de cuentas por cobrar usa la segunda ruta; ambas RPC ya fueron alineadas y contrastadas con datos reales.
+- Archivo nuevo: Backend/tests/test_dashboard_http_contract.py; cuatro casos unitarios de contrato del controller, sin credenciales ni escrituras.
+- Ejecutar desde Backend: python -m unittest discover -s tests -p 'test_dashboard_http_contract.py' -v
+- Importante: las cuatro pruebas aún NO fueron ejecutadas en un entorno Flask real. Las pruebas de controladores no sustituyen las pruebas end-to-end de JWT/Blueprint y React. No afirmar aprobación hasta disponer de salida de ejecución.
