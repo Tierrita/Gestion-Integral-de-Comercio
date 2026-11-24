@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api } from '../../shared/api/client.js'
 import Alert from '../../shared/components/Alert.jsx'
@@ -35,6 +36,7 @@ export default function Proveedores({ esPropietario = false }) {
   const [details, setDetails] = useState(null)
   const [account, setAccount] = useState(null)
   const [payment, setPayment] = useState(null)
+  const [menu, setMenu] = useState(null)
 
   const load = useCallback(async (signal) => {
     setLoading(true)
@@ -151,17 +153,21 @@ export default function Proveedores({ esPropietario = false }) {
         <table><thead><tr>
           <th><button type="button" onClick={() => changeSort('numero_proveedor')}>N.º{sortMark('numero_proveedor')}</button></th>
           <th><button type="button" onClick={() => changeSort('nombre_proveedor')}>Proveedor{sortMark('nombre_proveedor')}</button></th>
-          <th>Teléfono</th><th>Email</th><th>Estado</th><th>Saldo</th><th>Acciones</th>
+          <th>Teléfono</th><th>Estado</th><th>Saldo</th><th>Acciones</th>
         </tr></thead><tbody>{rows.map((p) => <tr key={p.id_proveedor}>
-          <td>#{p.numero_proveedor}</td><td><strong>{p.nombre_proveedor}</strong></td><td>{p.telefono || '—'}</td><td>{p.email || '—'}</td>
+          <td>#{p.numero_proveedor}</td><td><strong>{p.nombre_proveedor}</strong></td><td>{p.telefono || '—'}</td>
           <td><span className={p.estado === true ? styles.active : styles.inactive}>{p.estado === true ? 'Activo' : 'Inactivo'}</span></td>
           <td>{saldos[p.id_proveedor] ? <span className={saldos[p.id_proveedor].saldo > 0 ? styles.deuda : saldos[p.id_proveedor].saldo < 0 ? styles.favor : styles.neutro}>{money(Math.abs(saldos[p.id_proveedor].saldo))} · {saldos[p.id_proveedor].saldo > 0 ? 'Deuda' : saldos[p.id_proveedor].saldo < 0 ? 'A favor' : 'Al día'}</span> : '—'}</td>
           <td><div className={styles.actions}>
-            {p.estado === true && <button type="button" className={styles.primary} onClick={() => setPayment(p)}>Registrar pago</button>}
-            <button type="button" className={styles.secondary} onClick={() => setAccount(p)}>Cuenta corriente</button>
-            <button type="button" className={styles.secondary} onClick={() => setDetails(p)}>Ver detalle</button>
-            <button type="button" className={styles.secondary} onClick={() => openForm(p)}>Editar</button>
-            <button type="button" className={styles.secondary} onClick={() => { setPending(p); setStatusError('') }}>{p.estado === true ? 'Desactivar' : 'Activar'}</button>
+            {p.estado === true && <button type="button" className={styles.primary} onClick={() => setPayment(p)}>Pagar</button>}
+            <button type="button" className={styles.secondary} onClick={() => setAccount(p)}>Ver detalle</button>
+            <button type="button" className={styles.menuTrigger} aria-label={`Más opciones para ${p.nombre_proveedor}`} aria-expanded={menu?.proveedor.id_proveedor === p.id_proveedor} onClick={(event) => {
+              if (menu?.proveedor.id_proveedor === p.id_proveedor) { setMenu(null); return }
+              const rect = event.currentTarget.getBoundingClientRect()
+              const width = 200
+              const height = 118
+              setMenu({ proveedor: p, top: rect.bottom + height > window.innerHeight ? Math.max(8, rect.top - height) : rect.bottom + 4, left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)) })
+            }}>···</button>
           </div></td>
         </tr>)}</tbody></table>
       </div>}
@@ -170,6 +176,14 @@ export default function Proveedores({ esPropietario = false }) {
         <div className={styles.actions}><button type="button" className={styles.secondary} disabled={currentPage === 1} onClick={() => setPage((n) => n - 1)}>Anterior</button><span>Página {currentPage} de {pages}</span><button type="button" className={styles.secondary} disabled={currentPage === pages} onClick={() => setPage((n) => n + 1)}>Siguiente</button></div>
       </div>}
     </div>
+    {menu && createPortal(<>
+      <button type="button" className={styles.menuBackdrop} aria-label="Cerrar opciones" onClick={() => setMenu(null)} />
+      <div className={styles.floatingMenu} role="group" aria-label={`Opciones de ${menu.proveedor.nombre_proveedor}`} style={{ top: menu.top, left: menu.left }}>
+        <button type="button" onClick={() => { setDetails(menu.proveedor); setMenu(null) }}>Información del proveedor</button>
+        <button type="button" onClick={() => { openForm(menu.proveedor); setMenu(null) }}>Editar proveedor</button>
+        <button type="button" onClick={() => { setPending(menu.proveedor); setStatusError(''); setMenu(null) }}>{menu.proveedor.estado === true ? 'Desactivar proveedor' : 'Activar proveedor'}</button>
+      </div>
+    </>, document.body)}
     <CuentaProveedor proveedor={account} esPropietario={esPropietario} onClose={() => setAccount(null)} onChange={() => void load()} />
     <CuentaProveedor proveedor={payment} modo="pago" esPropietario={esPropietario} onClose={() => setPayment(null)} onChange={() => void load()} />
     <Modal open={editing !== null} onClose={() => { if (!saving) setEditing(null) }} busy={saving} title={editing === 'new' ? 'Nuevo proveedor' : 'Editar proveedor'} description="Completá los datos del proveedor." size="medium">
