@@ -15,6 +15,7 @@ export default function ComprobanteVenta() {
   const [comercio, setComercio] = useState(null)
   const [cliente, setCliente] = useState(null)
   const [productos, setProductos] = useState({})
+  const [avisos, setAvisos] = useState([])
   const [saldoCliente, setSaldoCliente] = useState(null)
   const [fechaConsultaSaldo, setFechaConsultaSaldo] = useState(null)
   const [error, setError] = useState('')
@@ -25,6 +26,7 @@ export default function ComprobanteVenta() {
     async function cargar() {
       setCargando(true)
       setError('')
+      setAvisos([])
       try {
         // La venta se consulta por el JWT: Flask valida el comercio y el permiso ventas.ver.
         const { data } = await api.get(`/ventas/${id}`, { signal: controller.signal })
@@ -44,10 +46,15 @@ export default function ComprobanteVenta() {
           setFechaConsultaSaldo(new Date())
         }
         if (perfil.status === 'fulfilled') setComercio(perfil.value.data?.comercio ?? null)
-        if (ficha.status === 'fulfilled') setCliente(ficha.value.data ?? null)
-        if (catalogo.status === 'fulfilled' && Array.isArray(catalogo.value.data)) {
-          setProductos(Object.fromEntries(catalogo.value.data.map((p) => [p.id_producto, p.nombre_producto])))
+        if (ficha.status === 'fulfilled') setCliente(ficha.value.data?.cliente ?? ficha.value.data ?? null)
+        if (catalogo.status === 'fulfilled') {
+          const lista = Array.isArray(catalogo.value.data) ? catalogo.value.data : catalogo.value.data?.productos
+          if (Array.isArray(lista)) setProductos(Object.fromEntries(lista.map((p) => [p.id_producto, p.nombre_producto])))
         }
+        const advertencias = []
+        if (ficha.status !== 'fulfilled') advertencias.push('No se pudo consultar la ficha del cliente.')
+        if (catalogo.status !== 'fulfilled') advertencias.push('No se pudo consultar el catálogo de productos.')
+        setAvisos(advertencias)
       } catch (err) {
         if (!controller.signal.aborted) setError(err.response?.data?.error || err.message || 'No se pudo consultar la venta.')
       } finally {
@@ -61,7 +68,7 @@ export default function ComprobanteVenta() {
   const venta = datos?.venta
   const anulada = normalizar(venta?.estado) === 'ANULADA'
   const numero = venta?.numero_venta != null ? String(venta.numero_venta).padStart(6, '0') : null
-  const nombreCliente = cliente?.nombre_comercial || cliente?.nombre_completo || 'Cliente sin datos disponibles'
+  const nombreCliente = cliente?.nombre_comercial || cliente?.nombre_completo || 'Cliente no identificado'
   const datosCliente = [
     cliente?.nombre_comercial && cliente?.nombre_completo && ['Razón social / titular', cliente.nombre_completo],
     cliente?.tipo_documento && cliente?.numero_documento && [cliente.tipo_documento, cliente.numero_documento],
@@ -85,12 +92,13 @@ export default function ComprobanteVenta() {
     </header>
     {cargando && <p role="status">Cargando comprobante…</p>}
     {error && <p role="alert" className={styles.error}>{error}</p>}
+    {avisos.length > 0 && <p role="status" className={styles.aviso}>{avisos.join(' ')} Revisá los permisos o la conexión antes de imprimir.</p>}
     {venta && <article className={styles.hoja}>
       <div className={styles.encabezado}>
         <div className={styles.identidad}>
-          <span className={styles.marcaSistema}>AIONIX · GESTIÓN COMERCIAL</span>
+          <span className={styles.marcaSistema}>AIONIX</span>
           <strong className={styles.marca}>{comercio?.nombre_comercio || 'Comercio'}</strong>
-          <span className={styles.subtitulo}>Comprobante de venta · Documento interno</span>
+          <span className={styles.subtitulo}>Comprobante de venta</span>
         </div>
         <div className={styles.numero}>
           <span>VENTA N.º</span>
@@ -101,7 +109,6 @@ export default function ComprobanteVenta() {
       {datosComercio.length > 0 && <div className={styles.datosComercio}>
         {datosComercio.map(([etiqueta, valor]) => <span key={etiqueta}><b>{etiqueta}:</b> {valor}</span>)}
       </div>}
-      <div className={styles.advertencia}>COMPROBANTE INTERNO · NO VÁLIDO COMO FACTURA FISCAL</div>
       {anulada && <div className={styles.anulada}>VENTA ANULADA · SIN VALIDEZ COMO COMPROBANTE DE OPERACIÓN VIGENTE</div>}
       <div className={styles.cliente}>
         <span>Cliente</span><strong>{nombreCliente}</strong>
@@ -124,7 +131,7 @@ export default function ComprobanteVenta() {
         <p>Saldo consultado al generar este documento. Puede incluir operaciones posteriores a esta venta y no representa el saldo histórico al momento de emitirla.</p>
       </section>}
       {venta.observaciones && <p className={styles.observaciones}><strong>Observaciones:</strong> {venta.observaciones}</p>}
-      <footer className={styles.pie}>Gracias por su compra · Emitido por AIOnix a partir de una venta registrada. No reemplaza una factura autorizada por ARCA.</footer>
+      <footer className={styles.pie}>Gracias por su compra. · Documento comercial interno, no constituye factura fiscal.</footer>
     </article>}
   </section>
 }
