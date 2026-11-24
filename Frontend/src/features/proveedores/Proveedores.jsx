@@ -4,6 +4,7 @@ import Alert from '../../shared/components/Alert.jsx'
 import Modal from '../../shared/components/Modal.jsx'
 import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
 import styles from './Proveedores.module.css'
+import CuentaProveedor from './CuentaProveedor.jsx'
 
 const money = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number(value || 0))
 const PAGE_SIZES = [10, 25, 50]
@@ -12,7 +13,7 @@ const errorMessage = (error) => error.response?.data?.error || (error.response?.
   ? 'No tenés permisos para esta operación.'
   : 'No se pudo completar la operación. Verificá la conexión con Flask.')
 
-export default function Proveedores() {
+export default function Proveedores({ esPropietario = false }) {
   const [proveedores, setProveedores] = useState([])
   const [saldos, setSaldos] = useState({})
   const [saldosError, setSaldosError] = useState('')
@@ -32,6 +33,8 @@ export default function Proveedores() {
   const [statusError, setStatusError] = useState('')
   const [changing, setChanging] = useState(false)
   const [details, setDetails] = useState(null)
+  const [account, setAccount] = useState(null)
+  const [payment, setPayment] = useState(null)
 
   const load = useCallback(async (signal) => {
     setLoading(true)
@@ -154,6 +157,8 @@ export default function Proveedores() {
           <td><span className={p.estado === true ? styles.active : styles.inactive}>{p.estado === true ? 'Activo' : 'Inactivo'}</span></td>
           <td>{saldos[p.id_proveedor] ? <span className={saldos[p.id_proveedor].saldo > 0 ? styles.deuda : saldos[p.id_proveedor].saldo < 0 ? styles.favor : styles.neutro}>{money(Math.abs(saldos[p.id_proveedor].saldo))} · {saldos[p.id_proveedor].saldo > 0 ? 'Deuda' : saldos[p.id_proveedor].saldo < 0 ? 'A favor' : 'Al día'}</span> : '—'}</td>
           <td><div className={styles.actions}>
+            {p.estado === true && <button type="button" className={styles.primary} onClick={() => setPayment(p)}>Registrar pago</button>}
+            <button type="button" className={styles.secondary} onClick={() => setAccount(p)}>Cuenta corriente</button>
             <button type="button" className={styles.secondary} onClick={() => setDetails(p)}>Ver detalle</button>
             <button type="button" className={styles.secondary} onClick={() => openForm(p)}>Editar</button>
             <button type="button" className={styles.secondary} onClick={() => { setPending(p); setStatusError('') }}>{p.estado === true ? 'Desactivar' : 'Activar'}</button>
@@ -165,6 +170,8 @@ export default function Proveedores() {
         <div className={styles.actions}><button type="button" className={styles.secondary} disabled={currentPage === 1} onClick={() => setPage((n) => n - 1)}>Anterior</button><span>Página {currentPage} de {pages}</span><button type="button" className={styles.secondary} disabled={currentPage === pages} onClick={() => setPage((n) => n + 1)}>Siguiente</button></div>
       </div>}
     </div>
+    <CuentaProveedor proveedor={account} esPropietario={esPropietario} onClose={() => setAccount(null)} onChange={() => void load()} />
+    <CuentaProveedor proveedor={payment} modo="pago" esPropietario={esPropietario} onClose={() => setPayment(null)} onChange={() => void load()} />
     <Modal open={editing !== null} onClose={() => { if (!saving) setEditing(null) }} busy={saving} title={editing === 'new' ? 'Nuevo proveedor' : 'Editar proveedor'} description="Completá los datos del proveedor." size="medium">
       <form className={styles.form} onSubmit={(event) => void submit(event)}>
         <label>Nombre del proveedor<input required maxLength={150} value={form.nombre_proveedor} onChange={(e) => setForm((f) => ({ ...f, nombre_proveedor: e.target.value }))} /></label>
