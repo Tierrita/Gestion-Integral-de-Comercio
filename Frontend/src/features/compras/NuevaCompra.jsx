@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import BackButton from '../../shared/components/BackButton.jsx'
 import { api } from '../../shared/api/client.js'
 import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
 import Alert from '../../shared/components/Alert.jsx'
@@ -139,7 +140,7 @@ export default function NuevaCompra() {
           <h1>Crear compra</h1>
           <p className={styles.descripcion}>Registrá mercadería recibida y actualizá su costo.</p>
         </div>
-        <button type="button" className={styles.secundario} onClick={() => navigate('/compras')}>Volver a compras</button>
+        <BackButton to="/compras" label="Volver a compras" />
       </header>
 
       <section className={styles.panel}>
