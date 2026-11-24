@@ -1,3 +1,4 @@
+import ActionButton from '../../shared/components/ActionButton.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { api } from '../../shared/api/client.js'
@@ -126,7 +127,7 @@ export default function Clientes({ esPropietario = false }) {
   return <section className={styles.page}>
     <header className={styles.header}>
       <div><p className={styles.eyebrow}>GESTIÓN COMERCIAL</p><h1>Clientes</h1><p className={styles.muted}>Administrá tus clientes y consultá sus operaciones.</p></div>
-      <button className={styles.primary} type="button" onClick={() => openForm()}>+ Nuevo cliente</button>
+      <ActionButton variant="primary" type="button" onClick={() => openForm()}>+ Nuevo cliente</ActionButton>
     </header>
     <div className={styles.metrics}>
       <article><span>Total de clientes</span><strong>{clientes.length}</strong></article>
@@ -141,7 +142,7 @@ export default function Clientes({ esPropietario = false }) {
         <label>Buscar cliente<input type="search" placeholder="Nombre, número o teléfono" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }} /></label>
         <label>Estado<select value={filter} onChange={(e) => { setFilter(e.target.value); setPage(1) }}><option value="todos">Todos</option><option value="activos">Activos</option><option value="inactivos">Inactivos</option></select></label>
         <label>Mostrar<select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1) }}>{PAGE_SIZES.map((n) => <option key={n} value={n}>{n} registros</option>)}</select></label>
-        <button className={styles.secondary} type="button" disabled={loading} onClick={() => void load()}>Actualizar</button>
+        <ActionButton variant="secondary" type="button" disabled={loading} onClick={() => void load()}>Actualizar</ActionButton>
       </div>
       <p className={styles.muted}>{filtered.length} clientes encontrados</p>
       {loading ? <p role="status">Cargando clientes…</p> : error && clientes.length === 0 ? <p>No se pudo cargar el listado.</p> : filtered.length === 0 ? <p>No hay clientes para mostrar.</p> : <div className={styles.scroll}><table><thead><tr>
