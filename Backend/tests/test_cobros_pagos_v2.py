@@ -65,7 +65,7 @@ class TestCobrosPagosV2(unittest.TestCase):
     @patch(f"{MODULO}.obtener_proveedor_por_id")
     def test_pago_rechaza_importes_invalidos(self, proveedor, insertar):
         proveedor.return_value = {"id_proveedor": 7, "estado": True}
-        for monto in [-1, 0, "NaN", "Infinity", "12.345", True]:
+        for monto in [-1, 0, "NaN", "Infinity", "12.345", "10000000000.00", True]:
             with self.subTest(monto=monto), self.assertRaises(ValueError):
                 registrar_pago_proveedor({"id_proveedor": 7, "monto": monto}, 2, 1)
         insertar.assert_not_called()
