@@ -1,60 +1,50 @@
-.pagina{display:grid;gap:1.4rem;max-width:1150px;margin:0 auto;color:var(--color-text)}
-.acciones{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
-.acciones h1{margin:.5rem 0 0}
+.pagina{display:grid;gap:1.2rem;max-width:1150px;margin:0 auto;color:var(--color-text)}
+.acciones{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.acciones h1{margin:.4rem 0 0}
 .error{color:#b91c1c}
-.hoja{box-sizing:border-box;background:#fff;color:#111;width:100%;max-width:210mm;min-height:250mm;margin:0 auto;padding:16mm 14mm;border:1px solid #ddd;box-shadow:0 12px 35px #0002;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5}
-.encabezado{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #111}
-.identidad{display:grid;gap:4px;min-width:0}
-.marcaSistema{font-size:10px;letter-spacing:.18em;font-weight:800}
-.marca{font-size:24px;line-height:1.2;overflow-wrap:anywhere}
-.subtitulo{font-size:12px;color:#333}
-.numero{display:grid;gap:4px;text-align:right;min-width:130px}
-.numero span:first-child{font-size:10px;font-weight:800;letter-spacing:.1em}
-.numero strong{font-size:24px;line-height:1.2}
-.datosComercio{display:flex;flex-wrap:wrap;column-gap:20px;row-gap:3px;padding:12px 0;border-bottom:1px solid #aaa;font-size:11px}
-.advertencia{text-align:center;border:1px solid #aaa;padding:7px;margin:14px 0;font-size:10px;letter-spacing:.07em;font-weight:700}
-.anulada{border:2px solid #111;color:#111;font-weight:800;text-align:center;padding:10px;margin:12px 0;text-transform:uppercase}
-.cliente{display:grid;grid-template-columns:minmax(105px,auto) 1fr;gap:5px 16px;padding:14px 0;border-bottom:1px solid #aaa;margin-bottom:18px;overflow-wrap:anywhere}
-.cliente>span{font-size:11px;color:#444}
-.cliente>strong{font-weight:700}
+.aviso{padding:10px 14px;border:1px solid #888;border-radius:6px;font-size:.85rem}
+.hoja{box-sizing:border-box;background:#fff;color:#171717;width:100%;max-width:210mm;min-height:270mm;margin:0 auto;padding:13mm 12mm;border:1px solid #d5d5d5;box-shadow:0 8px 24px #0002;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.35}
+.encabezado{display:grid;grid-template-columns:1.2fr 1fr;border:1px solid #555;min-height:102px}
+.identidad{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:5px;padding:12px;min-width:0}
+.marcaSistema{font-size:12px;font-weight:900;letter-spacing:.18em;border:2px solid #222;padding:4px 9px}
+.marca{font-size:16px;font-weight:800;overflow-wrap:anywhere}
+.subtitulo{font-size:10px;color:#444}
+.numero{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;border-left:1px solid #555;padding:12px}
+.numero span:first-child{font-size:14px;font-weight:800;letter-spacing:.04em}
+.numero strong{font-size:20px;letter-spacing:.02em}
+.numero span:last-child{font-size:10px}
+.datosComercio{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 14px;border:1px solid #555;border-top:0;padding:9px 12px;font-size:10px}
+.cliente{display:grid;grid-template-columns:170px minmax(0,1fr);gap:5px 12px;border:1px solid #555;border-top:0;padding:12px;min-height:78px;overflow-wrap:anywhere}
+.cliente span{font-weight:700;font-size:10px}
+.cliente strong{font-size:10px;font-weight:600}
 .datoCliente{display:contents}
-.tabla{width:100%;border-collapse:collapse;font-size:11px}
-.tabla th{background:#f2f2f2;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.03em}
-.tabla th,.tabla td{border-bottom:1px solid #bbb;padding:10px 7px;overflow-wrap:anywhere}
-.tabla td:nth-child(n+2),.tabla th:nth-child(n+2){text-align:right}
+.tabla{width:100%;border-collapse:collapse;margin-top:12px;font-size:10px}
+.tabla th,.tabla td{border:1px solid #666;padding:7px 6px}
+.tabla th{background:#f3f3f3;font-size:10px;font-weight:800;text-align:center}
+.tabla td:nth-child(n+2){text-align:right}
+.tabla td:first-child{width:45%}
 .tabla tr{break-inside:avoid}
-.total{display:flex;justify-content:flex-end;gap:30px;align-items:center;padding:18px 6px;border-bottom:2px solid #111;font-size:13px}
-.total strong{font-size:23px}
-.estadoCuenta{margin:18px 0;border:1px solid #aaa;padding:12px}
-.estadoCuenta h2{font-size:12px;margin:0 0 8px;text-transform:uppercase}
-.estadoCuenta>div{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.estadoCuenta p{font-size:10px;margin:10px 0 0;color:#444}
-.observaciones{margin:18px 0;overflow-wrap:anywhere}
-.pie{margin-top:35px;padding-top:14px;border-top:1px solid #aaa;text-align:center;font-size:10px;color:#333}
-@media(max-width:650px){.hoja{padding:18px;min-height:0}.encabezado{gap:12px}.marca{font-size:19px}.numero strong{font-size:19px}.tabla{font-size:10px}.tabla th,.tabla td{padding:7px 4px}.total{gap:12px;flex-wrap:wrap}}
+.cierre{display:grid;grid-template-columns:1fr minmax(185px,36%);border:1px solid #666;border-top:0;min-height:85px}
+.agradecimiento{display:flex;flex-direction:column;justify-content:flex-start;gap:5px;padding:12px;font-size:11px}
+.agradecimiento span{font-size:9px;color:#555}
+.total{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:8px;border-left:1px solid #666;padding:12px}
+.total span{font-size:11px;font-weight:700}
+.total strong{font-size:18px;white-space:nowrap}
+.estadoCuenta{margin:14px 0;border:1px solid #888;padding:10px;font-size:10px}
+.estadoCuenta h2{font-size:10px;margin:0 0 8px;text-transform:uppercase}
+.estadoCuenta>div{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.estadoCuenta p{font-size:9px;color:#555;margin:8px 0 0}
+.observaciones{padding:10px 0;margin:0;font-size:10px;overflow-wrap:anywhere}
+.pie{margin-top:30px;border-top:1px solid #aaa;padding-top:8px;text-align:center;font-size:9px;color:#555}
+.anulada{border:2px solid #111;text-align:center;padding:8px;margin:10px 0;font-weight:800}
+@media(max-width:650px){.hoja{padding:12px;min-height:0}.encabezado{min-height:85px}.marca{font-size:13px}.numero span:first-child{font-size:11px}.numero strong{font-size:16px}.cliente{grid-template-columns:115px 1fr}.datosComercio{grid-template-columns:1fr}.tabla th,.tabla td{padding:5px 3px;font-size:9px}.cierre{grid-template-columns:1fr 1fr}.total strong{font-size:14px}}
 @page{size:A4;margin:12mm}
 @media print{
   :global(body){background:#fff!important}
   :global(body *){visibility:hidden!important}
   .hoja,.hoja *{visibility:visible!important}
   .hoja{position:absolute;left:0;top:0;width:100%;max-width:none;min-height:0;margin:0;padding:0;box-shadow:none;border:0}
-  .acciones{display:none!important}
+  .acciones,.aviso{display:none!important}
   .tabla thead{display:table-header-group}
-  .tabla tr,.estadoCuenta,.encabezado,.cliente,.total{break-inside:avoid}
+  .tabla tr,.encabezado,.cliente,.cierre,.estadoCuenta{break-inside:avoid}
 }
-
-/* Refinamiento editorial AIOnix: el comprobante prioriza datos y totales. */
-.aviso{padding:10px 14px;border:1px solid var(--color-border);border-radius:8px;color:var(--color-text);background:var(--color-surface);font-size:.85rem}
-.hoja{font-family:Arial,Helvetica,sans-serif;padding:14mm 15mm}
-.encabezado{border-bottom:1px solid #111;padding-bottom:22px}
-.marcaSistema{font-size:13px;letter-spacing:.23em;font-weight:900}
-.marca{font-size:27px;margin-top:8px;letter-spacing:-.03em}
-.subtitulo{font-size:12px}
-.numero strong{font-size:22px}
-.cliente{margin-top:22px;padding:12px 0 18px}
-.tabla th{background:#fff;border-bottom:1.5px solid #111}
-.tabla td{border-bottom:1px solid #e1e1e1}
-.total{margin-top:14px;border-top:1px solid #111;border-bottom:0;padding:18px 6px 10px}
-.total strong{font-size:26px;letter-spacing:-.03em}
-.pie{margin-top:45px;color:#666;font-size:9px;border-top:1px solid #ddd}
-@media print{.aviso{display:none!important}}
