@@ -47,3 +47,19 @@ Se evaluó el cuerpo SQL de la propuesta como subconsulta SELECT contra datos ex
 **Limitación:** esta comparación evalúa el SELECT propuesto, pero no valida la creación de función, sus permisos, rendimiento, seguridad o pruebas transaccionales end-to-end. Se necesita un entorno aislado para cerrar la auditoría. No desplegar todavía.
 
 **Pendiente de autorización:** la creación de rama Supabase solicitó confirmación de costos; no se creó ninguna rama de base de datos.
+
+## Verificaciones de consistencia adicionales
+
+Se consultaron registros existentes de los comercios 1 y 3 (solo lectura):
+
+- Stock negativo: 0 en ambos comercios.
+- Stock nulo: 0 en ambos comercios.
+- Productos UNIDAD con stock fraccionario: 0 en ambos comercios.
+- Ventas que referencian cliente de otro comercio: 0.
+- Cobros que referencian cliente de otro comercio: 0.
+- Compras que referencian proveedor de otro comercio: 0.
+- Saldos recalculados con el criterio aprobado: comercio 1: 5 deudores, 2 saldos a favor, total por cobrar 12.684.199,00; comercio 3: 1 deudor, 0 saldos a favor, total por cobrar 166.666,67.
+
+**Interpretación:** no se encontraron inconsistencias en estas comprobaciones de datos; esto no demuestra por sí solo que todos los endpoints estén libres de fallos de autorización.
+
+**Estado:** propuesta SQL y tests versionados; aún no desplegada. Sigue pendiente validación completa de permisos, rendimiento y regresión de UI. La instrucción anterior de no modificar producción sigue respetada.
