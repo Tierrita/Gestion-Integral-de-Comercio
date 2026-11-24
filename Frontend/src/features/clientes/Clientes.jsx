@@ -36,6 +36,15 @@ export default function Clientes({ esPropietario = false }) {
   const [saldosError, setSaldosError] = useState('')
   const [menu, setMenu] = useState(null)
 
+  useEffect(() => {
+    if (!menu) return undefined
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setMenu(null)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [menu])
+
   const loadSaldos = useCallback(async () => {
     try {
       const { data } = await api.get('/clientes/saldos')
