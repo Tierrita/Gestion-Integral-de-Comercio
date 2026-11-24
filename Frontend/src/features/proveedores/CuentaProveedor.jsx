@@ -76,7 +76,7 @@ export default function CuentaProveedor({ proveedor, modo = 'detalle', esPropiet
     try {
       await api.post('/pagos-proveedor', {
         id_proveedor: proveedor.id_proveedor,
-        monto: Number(monto.trim().replace(',', '.')),
+        monto: monto.trim().replace(',', '.'),
         observaciones: observaciones.trim() || null,
       })
       setMonto('')
