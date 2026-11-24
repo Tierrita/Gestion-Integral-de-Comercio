@@ -154,8 +154,8 @@ export default function Clientes({ esPropietario = false }) {
         <td><span className={c.estado === false ? styles.inactive : styles.active}>{c.estado === false ? 'Inactivo' : 'Activo'}</span></td>
         <td>{saldos[c.id_cliente] ? <span className={saldos[c.id_cliente].saldo > 0 ? styles.deuda : saldos[c.id_cliente].saldo < 0 ? styles.favor : styles.neutro}>{money(Math.abs(saldos[c.id_cliente].saldo))} · {saldos[c.id_cliente].saldo > 0 ? 'Debe' : saldos[c.id_cliente].saldo < 0 ? 'A favor' : 'Al día'}</span> : '—'}</td>
         <td><div className={styles.actions}>
-          {Number(c.numero_cliente) !== 1 && c.estado !== false && <ActionButton variant="primary" type="button" onClick={() => setCobroClient(c)}>Cobrar</ActionButton>}
-          <ActionButton variant="secondary" type="button" onClick={() => setAccountClient(c)}>Ver detalle</ActionButton>
+          {Number(c.numero_cliente) !== 1 && c.estado !== false && <ActionButton size="compact" variant="primary" type="button" onClick={() => setCobroClient(c)}>Cobrar</ActionButton>}
+          <ActionButton size="compact" variant="secondary" type="button" onClick={() => setAccountClient(c)}>Ver detalle</ActionButton>
           <button className={styles.menuTrigger} type="button" aria-label={`Más opciones para ${c.nombre_completo}`} aria-expanded={menu?.cliente.id_cliente === c.id_cliente} onClick={(event) => {
             if (menu?.cliente.id_cliente === c.id_cliente) { setMenu(null); return }
             const rect = event.currentTarget.getBoundingClientRect()
@@ -164,7 +164,7 @@ export default function Clientes({ esPropietario = false }) {
             setMenu({ cliente: c, top: rect.bottom + height > window.innerHeight ? Math.max(8, rect.top - height) : rect.bottom + 4, left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)) })
           }}>···</button></div></td>
       </tr>)}</tbody></table></div>}
-      {!loading && filtered.length > 0 && <div className={styles.pagination}><span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} de {filtered.length}</span><div className={styles.actions}><button className={styles.secondary} type="button" disabled={currentPage === 1} onClick={() => setPage((n) => n - 1)}>Anterior</button><span>Página {currentPage} de {pages}</span><button className={styles.secondary} type="button" disabled={currentPage === pages} onClick={() => setPage((n) => n + 1)}>Siguiente</button></div></div>}
+      {!loading && filtered.length > 0 && <div className={styles.pagination}><span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} de {filtered.length}</span><div className={styles.actions}><ActionButton variant="secondary" type="button" disabled={currentPage === 1} onClick={() => setPage((n) => n - 1)}>Anterior</ActionButton><span>Página {currentPage} de {pages}</span><ActionButton variant="secondary" type="button" disabled={currentPage === pages} onClick={() => setPage((n) => n + 1)}>Siguiente</ActionButton></div></div>}
     </div>
     {menu && createPortal(<>
       <button type="button" className={styles.menuBackdrop} aria-label="Cerrar opciones" onClick={() => setMenu(null)} />
