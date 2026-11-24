@@ -1,7 +1,9 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import BrandPanel from '../components/auth/BrandPanel.jsx'
 import AuthCard from '../components/auth/AuthCard.jsx'
-import SectionView, { sectionSlugs } from '../components/auth/SectionView.jsx'
+import SectionView from '../components/auth/SectionView.jsx'
+
+const sectionSlugs = ['quienes-somos', 'nuestro-objetivo', 'que-gestionamos', 'contacto']
 import '../styles/auth.css'
 
 export default function AuthPage({ notice, onLogin }) {
