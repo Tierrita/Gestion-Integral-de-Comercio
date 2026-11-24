@@ -110,7 +110,7 @@ function GraficoVentas({ puntos, agrupacion, rango }) {
         <div><span className={styles.etiqueta}>Intervalos con ventas</span><strong>{activos} de {datos.length}</strong></div>
         <div><span className={styles.etiqueta}>Pico de facturación</span><strong>{valorMoneda(mayor)}</strong></div>
       </div>
-      <div className={styles.detalleInteractivo} role="status" aria-live="polite">{seleccion === null ? 'Seleccioná un punto para ver el detalle' : `${abreviar(datos[seleccion].etiqueta)} · ${valorMoneda(datos[seleccion].valor)}`}</div>
+      <div className={styles.detalleInteractivo} role="status" aria-live="polite">{seleccion === null || !datos[seleccion] ? 'Seleccioná un punto para ver el detalle' : `${abreviar(datos[seleccion].etiqueta)} · ${valorMoneda(datos[seleccion].valor)}`}</div>
       <svg className={styles.grafico} viewBox={`0 0 ${ancho} ${alto}`} role="img"
         aria-label={`Evolución de facturación por ${agrupacion || 'período'}: ${datos.length} intervalos, ${activos} con ventas`}>
         <defs>
@@ -436,7 +436,7 @@ export default function OwnerDashboard() {
                     <p className={styles.detalle}>{alertasStock.length === 0 ? 'Sin productos activos bajo el mínimo.' : `${alertasStock.length} productos activos alcanzaron su stock mínimo.`}</p>
                     {alertasStock.slice(0, 3).map((producto) => (
                       <div className={styles.alertaProducto} key={producto.id_producto}>
-                        <span>{producto.nombre_producto || `Producto #${producto.id_producto}`}</span>
+                        <span>{producto.nombre_producto || 'Producto sin nombre'}</span>
                         <strong>{producto.stock} / mín. {producto.stock_minimo}</strong>
                       </div>
                     ))}
@@ -465,7 +465,7 @@ export default function OwnerDashboard() {
             </section>
             <section className={styles.panel} aria-labelledby="titulo-stock">
               <h2 id="titulo-stock">Inventario valorizado</h2>
-              <div className={styles.fila}><span>Unidades en stock</span><strong>{valorNumero(stock?.unidades_en_stock)}</strong></div>
+              <div className={styles.fila}><span>Existencias totales (unidades y kg mezclados)</span><strong>No comparable</strong></div>
               <div className={styles.fila}><span>Valor a costo</span><strong>{valorMoneda(stock?.valor_stock_costo)}</strong></div>
               <div className={styles.fila}><span>Valor a precio de venta</span><strong>{valorMoneda(stock?.valor_stock_venta)}</strong></div>
               <div className={styles.fila}><span>Ganancia potencial estimada</span><strong>{valorMoneda(stock?.ganancia_potencial)}</strong></div>
