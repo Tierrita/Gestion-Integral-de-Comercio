@@ -110,7 +110,7 @@ function GraficoVentas({ puntos, agrupacion, rango }) {
         <div><span className={styles.etiqueta}>Intervalos con ventas</span><strong>{activos} de {datos.length}</strong></div>
         <div><span className={styles.etiqueta}>Pico de facturación</span><strong>{valorMoneda(mayor)}</strong></div>
       </div>
-      <div className={styles.detalleInteractivo} role="status" aria-live="polite">{seleccion === null ? 'Seleccioná un punto para ver el detalle' : `${abreviar(datos[seleccion].etiqueta)} · ${valorMoneda(datos[seleccion].valor)}`}</div>
+      <div className={styles.detalleInteractivo} role="status" aria-live="polite">{seleccion === null || !datos[seleccion] ? 'Seleccioná un punto para ver el detalle' : `${abreviar(datos[seleccion].etiqueta)} · ${valorMoneda(datos[seleccion].valor)}`}</div>
       <svg className={styles.grafico} viewBox={`0 0 ${ancho} ${alto}`} role="img"
         aria-label={`Evolución de facturación por ${agrupacion || 'período'}: ${datos.length} intervalos, ${activos} con ventas`}>
         <defs>
@@ -382,7 +382,7 @@ export default function OwnerDashboard() {
             <Tarjeta titulo="Ganancia bruta" valor={rentabilidad?.rentabilidad_calculable === true ? valorMoneda(rentabilidad.ganancia_bruta) : 'No disponible'} detalle={rentabilidad?.rentabilidad_calculable === true ? 'Ventas menos costo de mercadería vendida' : 'Faltan costos históricos para calcularla'} />
             <Tarjeta titulo="Flujo neto de caja" valor={valorMoneda(caja?.saldo_neto)} detalle="Entradas menos salidas del período; no es el saldo disponible" />
             <Tarjeta titulo="Cuentas por cobrar (actual)" valor={cargandoDeuda ? "Consultando…" : deudaActual ? valorMoneda(deudaActual.total_por_cobrar) : "No disponible"} detalle={errorDeuda || (deudaActual ? `${valorNumero(deudaActual.cantidad_clientes_con_deuda)} clientes con deuda · independiente del período` : "Saldo vigente del comercio")} />
-            <Tarjeta titulo="Ticket promedio" valor={valorMoneda(ventas?.ticket_promedio)} detalle={`${valorNumero(ventas?.unidades_vendidas)} unidades vendidas`} />
+            <Tarjeta titulo="Ticket promedio" valor={valorMoneda(ventas?.ticket_promedio)} detalle="Importe promedio por venta · cantidades en kg y unidades no se suman" />
             <Tarjeta titulo="Margen bruto" valor={rentabilidad?.rentabilidad_calculable === true && Number.isFinite(rentabilidad?.margen_bruto) ? `${numero.format(rentabilidad.margen_bruto)} %` : 'No disponible'} detalle="Margen sobre ventas; no equivale a utilidad neta" />
           </div>
 
@@ -436,7 +436,7 @@ export default function OwnerDashboard() {
                     <p className={styles.detalle}>{alertasStock.length === 0 ? 'Sin productos activos bajo el mínimo.' : `${alertasStock.length} productos activos alcanzaron su stock mínimo.`}</p>
                     {alertasStock.slice(0, 3).map((producto) => (
                       <div className={styles.alertaProducto} key={producto.id_producto}>
-                        <span>{producto.nombre_producto || `Producto #${producto.id_producto}`}</span>
+                        <span>{producto.nombre_producto || 'Producto sin nombre'}</span>
                         <strong>{producto.stock} / mín. {producto.stock_minimo}</strong>
                       </div>
                     ))}
@@ -465,7 +465,7 @@ export default function OwnerDashboard() {
             </section>
             <section className={styles.panel} aria-labelledby="titulo-stock">
               <h2 id="titulo-stock">Inventario valorizado</h2>
-              <div className={styles.fila}><span>Unidades en stock</span><strong>{valorNumero(stock?.unidades_en_stock)}</strong></div>
+              <p className={styles.detalle}>Valorización monetaria del stock. Las cantidades en kg y unidades se consultan por producto en Mercadería.</p>
               <div className={styles.fila}><span>Valor a costo</span><strong>{valorMoneda(stock?.valor_stock_costo)}</strong></div>
               <div className={styles.fila}><span>Valor a precio de venta</span><strong>{valorMoneda(stock?.valor_stock_venta)}</strong></div>
               <div className={styles.fila}><span>Ganancia potencial estimada</span><strong>{valorMoneda(stock?.ganancia_potencial)}</strong></div>
@@ -481,15 +481,7 @@ export default function OwnerDashboard() {
             </div>
           </section>
 
-          <section className={styles.panel} aria-labelledby="titulo-accesos">
-            <h2 id="titulo-accesos">Accesos rápidos</h2>
-            <nav className={styles.accesos} aria-label="Accesos rápidos">
-              <Link to="/ventas">Ventas <span aria-hidden="true">↗</span></Link>
-              <Link to="/compras">Compras <span aria-hidden="true">↗</span></Link>
-              <Link to="/productos">Mercadería <span aria-hidden="true">↗</span></Link>
-              <Link to="/clientes">Clientes <span aria-hidden="true">↗</span></Link>
-            </nav>
-          </section>
+
         </>
       )}
     </section>
