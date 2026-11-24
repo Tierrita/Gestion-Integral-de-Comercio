@@ -1,3 +1,4 @@
+import actionMenuStyles from '../../shared/components/ActionMenu.module.css'
 import ActionButton from '../../shared/components/ActionButton.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -156,7 +157,7 @@ export default function Clientes({ esPropietario = false }) {
         <td><div className={styles.actions}>
           {Number(c.numero_cliente) !== 1 && c.estado !== false && <ActionButton size="compact" variant="primary" type="button" onClick={() => setCobroClient(c)}>Cobrar</ActionButton>}
           <ActionButton size="compact" variant="secondary" type="button" onClick={() => setAccountClient(c)}>Ver detalle</ActionButton>
-          <button className={styles.menuTrigger} type="button" aria-label={`Más opciones para ${c.nombre_completo}`} aria-expanded={menu?.cliente.id_cliente === c.id_cliente} onClick={(event) => {
+          <button className={actionMenuStyles.trigger} type="button" aria-label={`Más opciones para ${c.nombre_completo}`} aria-expanded={menu?.cliente.id_cliente === c.id_cliente} onClick={(event) => {
             if (menu?.cliente.id_cliente === c.id_cliente) { setMenu(null); return }
             const rect = event.currentTarget.getBoundingClientRect()
             const width = 190
@@ -167,8 +168,8 @@ export default function Clientes({ esPropietario = false }) {
       {!loading && filtered.length > 0 && <div className={styles.pagination}><span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} de {filtered.length}</span><div className={styles.actions}><ActionButton variant="secondary" type="button" disabled={currentPage === 1} onClick={() => setPage((n) => n - 1)}>Anterior</ActionButton><span>Página {currentPage} de {pages}</span><ActionButton variant="secondary" type="button" disabled={currentPage === pages} onClick={() => setPage((n) => n + 1)}>Siguiente</ActionButton></div></div>}
     </div>
     {menu && createPortal(<>
-      <button type="button" className={styles.menuBackdrop} aria-label="Cerrar opciones" onClick={() => setMenu(null)} />
-      <div className={styles.floatingMenu} role="group" aria-label={`Opciones de ${menu.cliente.nombre_completo}`} style={{ top: menu.top, left: menu.left }}>
+      <button type="button" className={actionMenuStyles.backdrop} aria-label="Cerrar opciones" onClick={() => setMenu(null)} />
+      <div className={actionMenuStyles.menu} role="group" aria-label={`Opciones de ${menu.cliente.nombre_completo}`} style={{ top: menu.top, left: menu.left }}>
         <button type="button" onClick={() => { openForm(menu.cliente); setMenu(null) }}>Editar cliente</button>
         {Number(menu.cliente.numero_cliente) !== 1 && <button type="button" onClick={() => { setPending(menu.cliente); setStatusError(''); setMenu(null) }}>{menu.cliente.estado === false ? 'Activar cliente' : 'Desactivar cliente'}</button>}
       </div>
