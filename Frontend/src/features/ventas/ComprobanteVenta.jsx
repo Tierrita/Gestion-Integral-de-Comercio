@@ -61,8 +61,22 @@ export default function ComprobanteVenta() {
   const venta = datos?.venta
   const anulada = normalizar(venta?.estado) === 'ANULADA'
   const numero = venta?.numero_venta != null ? String(venta.numero_venta).padStart(6, '0') : null
-  const nombreCliente = cliente?.nombre_completo || 'Cliente sin datos disponibles'
-  const datosCliente = [cliente?.telefono && ['Teléfono', cliente.telefono], cliente?.domicilio && ['Domicilio', cliente.domicilio], cliente?.direccion && !cliente?.domicilio && ['Dirección', cliente.direccion], cliente?.cuit && ['CUIT', cliente.cuit], cliente?.dni && ['DNI', cliente.dni]].filter(Boolean)
+  const nombreCliente = cliente?.nombre_comercial || cliente?.nombre_completo || 'Cliente sin datos disponibles'
+  const datosCliente = [
+    cliente?.nombre_comercial && cliente?.nombre_completo && ['Razón social / titular', cliente.nombre_completo],
+    cliente?.tipo_documento && cliente?.numero_documento && [cliente.tipo_documento, cliente.numero_documento],
+    cliente?.condicion_iva && ['Condición IVA', cliente.condicion_iva],
+    cliente?.telefono && ['Teléfono', cliente.telefono],
+    cliente?.email && ['Email', cliente.email],
+    [cliente?.direccion, cliente?.localidad, cliente?.provincia, cliente?.codigo_postal].filter(Boolean).length > 0 &&
+      ['Domicilio', [cliente?.direccion, cliente?.localidad, cliente?.provincia, cliente?.codigo_postal].filter(Boolean).join(', ')],
+  ].filter(Boolean)
+  const datosComercio = [
+    comercio?.razon_social && ['Razón social', comercio.razon_social],
+    comercio?.cuit && ['CUIT', comercio.cuit],
+    comercio?.direccion && ['Dirección', [comercio.direccion, comercio.localidad, comercio.provincia].filter(Boolean).join(', ')],
+    comercio?.telefono && ['Teléfono', comercio.telefono],
+  ].filter(Boolean)
 
   return <section className={styles.pagina}>
     <header className={styles.acciones}>
@@ -73,11 +87,21 @@ export default function ComprobanteVenta() {
     {error && <p role="alert" className={styles.error}>{error}</p>}
     {venta && <article className={styles.hoja}>
       <div className={styles.encabezado}>
-        <div><strong className={styles.marca}>{comercio?.nombre_comercio || 'Comercio'}</strong><p>Comprobante interno de operación</p></div>
-        <div className={styles.tipo}><strong>X</strong><span>NO FISCAL</span></div>
-        <div className={styles.numero}><strong>COMPROBANTE N.º {numero || 'SIN NUMERACIÓN'}</strong><span>Fecha: {formatoFechaHora(venta.fecha_venta)}</span></div>
+        <div className={styles.identidad}>
+          <span className={styles.marcaSistema}>AIONIX · GESTIÓN COMERCIAL</span>
+          <strong className={styles.marca}>{comercio?.nombre_comercio || 'Comercio'}</strong>
+          <span className={styles.subtitulo}>Comprobante de venta · Documento interno</span>
+        </div>
+        <div className={styles.numero}>
+          <span>VENTA N.º</span>
+          <strong>{numero || 'SIN NUMERACIÓN'}</strong>
+          <span>{formatoFechaHora(venta.fecha_venta)}</span>
+        </div>
       </div>
-      <div className={styles.advertencia}>DOCUMENTO INTERNO · NO VÁLIDO COMO FACTURA FISCAL</div>
+      {datosComercio.length > 0 && <div className={styles.datosComercio}>
+        {datosComercio.map(([etiqueta, valor]) => <span key={etiqueta}><b>{etiqueta}:</b> {valor}</span>)}
+      </div>}
+      <div className={styles.advertencia}>COMPROBANTE INTERNO · NO VÁLIDO COMO FACTURA FISCAL</div>
       {anulada && <div className={styles.anulada}>VENTA ANULADA · SIN VALIDEZ COMO COMPROBANTE DE OPERACIÓN VIGENTE</div>}
       <div className={styles.cliente}>
         <span>Cliente</span><strong>{nombreCliente}</strong>
@@ -87,7 +111,7 @@ export default function ComprobanteVenta() {
       <table className={styles.tabla}>
         <thead><tr><th>Producto</th><th>Cantidad</th><th>Precio unitario</th><th>Subtotal</th></tr></thead>
         <tbody>{datos.detalles.map((item) => <tr key={item.id_detalle_venta ?? item.id_producto}>
-          <td>{item.nombre_producto || productos[item.id_producto] || `Producto #${item.id_producto}`}</td>
+          <td>{item.nombre_producto || productos[item.id_producto] || 'Producto sin descripción disponible'}</td>
           <td>{cantidad(item.cantidad)}</td>
           <td>{formatoMoneda(item.precio_unitario)}</td>
           <td>{formatoMoneda(item.subtotal)}</td>
@@ -100,7 +124,7 @@ export default function ComprobanteVenta() {
         <p>Saldo consultado al generar este documento. Puede incluir operaciones posteriores a esta venta y no representa el saldo histórico al momento de emitirla.</p>
       </section>}
       {venta.observaciones && <p className={styles.observaciones}><strong>Observaciones:</strong> {venta.observaciones}</p>}
-      <footer className={styles.pie}>Gracias por su compra · Comprobante emitido a partir de la venta registrada en el sistema. No reemplaza una factura autorizada por ARCA.</footer>
+      <footer className={styles.pie}>Gracias por su compra · Emitido por AIOnix a partir de una venta registrada. No reemplaza una factura autorizada por ARCA.</footer>
     </article>}
   </section>
 }
