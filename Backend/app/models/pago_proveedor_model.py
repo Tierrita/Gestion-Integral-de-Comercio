@@ -149,3 +149,12 @@ def obtener_compras_proveedor(
     )
 
     return response.data
+
+def obtener_compras_comercio(id_comercio):
+    response = (
+        get_client().table("compras")
+        .select("id_proveedor,total_compra,estado")
+        .eq("id_comercio", id_comercio)
+        .execute()
+    )
+    return response.data
