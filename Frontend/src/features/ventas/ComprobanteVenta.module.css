@@ -1,45 +1,44 @@
 .pagina{display:grid;gap:1.4rem;max-width:1150px;margin:0 auto;color:var(--color-text)}
 .acciones{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
-.acciones h1{margin:.5rem 0 0}.acciones a{color:var(--color-primary)}
-.acciones button{border:0;border-radius:.65rem;background:var(--color-primary);color:#071c2a;font:inherit;font-weight:750;padding:.8rem 1.1rem;cursor:pointer}
-.acciones button:disabled{opacity:.5;cursor:not-allowed}
-.error{color:#e65d65}
-.hoja{background:white;color:#171717;width:100%;max-width:900px;min-height:700px;margin:0 auto;padding:32px;border-radius:4px;box-shadow:0 16px 50px #0002;font-family:Georgia,'Times New Roman',serif}
-.encabezado{display:grid;grid-template-columns:1fr 90px 1.2fr;align-items:stretch;border:1px solid #333;gap:0}
-.encabezado>div{padding:16px;min-width:0}
-.encabezado>div+div{border-left:1px solid #333}
-.marca{font-size:1.5rem;overflow-wrap:anywhere}
-.encabezado p{font-size:.8rem}
-.tipo{display:flex;flex-direction:column;align-items:center;justify-content:center}
-.tipo strong{font-size:3rem;line-height:1}.tipo span{font-size:.7rem;font-family:Arial,sans-serif;font-weight:bold}
-.numero{display:flex;flex-direction:column;justify-content:center;gap:1rem;text-align:center}
-.numero strong{font-size:1.1rem}.numero span{font-size:.9rem}
-.advertencia{text-align:center;border:1px solid #333;border-top:0;padding:8px;font-family:Arial,sans-serif;font-size:.72rem;letter-spacing:.05em}
-.anulada{border:3px solid #b91c1c;color:#b91c1c;font:bold 1rem Arial,sans-serif;text-align:center;padding:12px;margin-top:12px}
-.cliente{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;padding:18px 12px;border:1px solid #333;margin:12px 0}
-.cliente span{font-weight:bold}
-.tabla{width:100%;border-collapse:collapse;font-size:.9rem}
-.tabla th,.tabla td{border:1px solid #444;padding:10px;text-align:left}
-.tabla th{background:#ddd}.tabla td:nth-child(n+2){text-align:right}
-.total{display:flex;justify-content:flex-end;gap:32px;align-items:center;border:1px solid #333;border-top:0;padding:15px;font-size:1.1rem}
-.total strong{font-size:1.4rem}
-.observaciones{margin:24px 0;overflow-wrap:anywhere}
-.pie{margin-top:45px;border-top:1px solid #aaa;padding-top:16px;text-align:center;font-size:.8rem}
-@media(max-width:700px){.hoja{padding:14px}.encabezado{grid-template-columns:1fr 65px}.numero{grid-column:1/-1;border-left:0!important;border-top:1px solid #333}.encabezado>div{padding:10px}.tipo strong{font-size:2.4rem}.tabla{font-size:.73rem}.tabla th,.tabla td{padding:5px}.total{gap:10px;flex-wrap:wrap}}
+.acciones h1{margin:.5rem 0 0}
+.error{color:#b91c1c}
+.hoja{box-sizing:border-box;background:#fff;color:#111;width:100%;max-width:210mm;min-height:250mm;margin:0 auto;padding:16mm 14mm;border:1px solid #ddd;box-shadow:0 12px 35px #0002;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5}
+.encabezado{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #111}
+.identidad{display:grid;gap:4px;min-width:0}
+.marcaSistema{font-size:10px;letter-spacing:.18em;font-weight:800}
+.marca{font-size:24px;line-height:1.2;overflow-wrap:anywhere}
+.subtitulo{font-size:12px;color:#333}
+.numero{display:grid;gap:4px;text-align:right;min-width:130px}
+.numero span:first-child{font-size:10px;font-weight:800;letter-spacing:.1em}
+.numero strong{font-size:24px;line-height:1.2}
+.datosComercio{display:flex;flex-wrap:wrap;column-gap:20px;row-gap:3px;padding:12px 0;border-bottom:1px solid #aaa;font-size:11px}
+.advertencia{text-align:center;border:1px solid #aaa;padding:7px;margin:14px 0;font-size:10px;letter-spacing:.07em;font-weight:700}
+.anulada{border:2px solid #111;color:#111;font-weight:800;text-align:center;padding:10px;margin:12px 0;text-transform:uppercase}
+.cliente{display:grid;grid-template-columns:minmax(105px,auto) 1fr;gap:5px 16px;padding:14px 0;border-bottom:1px solid #aaa;margin-bottom:18px;overflow-wrap:anywhere}
+.cliente>span{font-size:11px;color:#444}
+.cliente>strong{font-weight:700}
+.datoCliente{display:contents}
+.tabla{width:100%;border-collapse:collapse;font-size:11px}
+.tabla th{background:#f2f2f2;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.03em}
+.tabla th,.tabla td{border-bottom:1px solid #bbb;padding:10px 7px;overflow-wrap:anywhere}
+.tabla td:nth-child(n+2),.tabla th:nth-child(n+2){text-align:right}
+.tabla tr{break-inside:avoid}
+.total{display:flex;justify-content:flex-end;gap:30px;align-items:center;padding:18px 6px;border-bottom:2px solid #111;font-size:13px}
+.total strong{font-size:23px}
+.estadoCuenta{margin:18px 0;border:1px solid #aaa;padding:12px}
+.estadoCuenta h2{font-size:12px;margin:0 0 8px;text-transform:uppercase}
+.estadoCuenta>div{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.estadoCuenta p{font-size:10px;margin:10px 0 0;color:#444}
+.observaciones{margin:18px 0;overflow-wrap:anywhere}
+.pie{margin-top:35px;padding-top:14px;border-top:1px solid #aaa;text-align:center;font-size:10px;color:#333}
+@media(max-width:650px){.hoja{padding:18px;min-height:0}.encabezado{gap:12px}.marca{font-size:19px}.numero strong{font-size:19px}.tabla{font-size:10px}.tabla th,.tabla td{padding:7px 4px}.total{gap:12px;flex-wrap:wrap}}
 @page{size:A4;margin:12mm}
 @media print{
   :global(body){background:#fff!important}
   :global(body *){visibility:hidden!important}
   .hoja,.hoja *{visibility:visible!important}
-  .hoja{position:absolute;left:0;top:0;width:100%;max-width:none;min-height:0;margin:0;padding:0;box-shadow:none;border-radius:0}
+  .hoja{position:absolute;left:0;top:0;width:100%;max-width:none;min-height:0;margin:0;padding:0;box-shadow:none;border:0}
   .acciones{display:none!important}
-  .tabla tr{break-inside:avoid}
+  .tabla thead{display:table-header-group}
+  .tabla tr,.estadoCuenta,.encabezado,.cliente,.total{break-inside:avoid}
 }
-
-.datoCliente{display:contents}
-.estadoCuenta{margin:18px 0;border:1px solid #333;padding:14px;font-family:Arial,sans-serif}
-.estadoCuenta h2{font-size:1rem;margin:0 0 12px;text-transform:uppercase;letter-spacing:.04em}
-.estadoCuenta>div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
-.estadoCuenta strong{font-size:1.1rem}
-.estadoCuenta p{font-size:.72rem;line-height:1.4;margin:12px 0 0;color:#333}
-@media print{.estadoCuenta{break-inside:avoid}}
