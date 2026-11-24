@@ -8,6 +8,8 @@ import Modal from '../../shared/components/Modal.jsx'
 import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
 import styles from './Clientes.module.css'
 import CuentaCorrienteCliente from './CuentaCorrienteCliente.jsx'
+import ClienteForm from './ClienteForm.jsx'
+import { EMPTY_CLIENT, clientToForm, clientPayload } from './clienteFormUtils.js'
 
 const messageOf = (error) => error.response?.data?.error || (error.response?.status === 403 ? 'No tenés permisos para esta operación.' : 'No se pudo completar la operación. Verificá la conexión con Flask.')
 const money = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number(value || 0))
@@ -24,7 +26,7 @@ export default function Clientes({ esPropietario = false }) {
   const [page, setPage] = useState(1)
   const [sort, setSort] = useState({ key: 'numero_cliente', asc: true })
   const [editing, setEditing] = useState(null)
-  const [form, setForm] = useState({ nombre_completo: '', telefono: '' })
+  const [form, setForm] = useState({ ...EMPTY_CLIENT })
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
   const [pending, setPending] = useState(null)
@@ -82,7 +84,7 @@ export default function Clientes({ esPropietario = false }) {
   const filtered = useMemo(() => clientes.filter((c) => {
     const active = c.estado !== false
     return (filter === 'todos' || (filter === 'activos' ? active : !active)) &&
-      [c.nombre_completo, c.numero_cliente, c.telefono].some((v) => String(v ?? '').toLowerCase().includes(query.trim().toLowerCase()))
+      [c.nombre_completo, c.nombre_comercial, c.numero_documento, c.email, c.numero_cliente, c.telefono].some((v) => String(v ?? '').toLowerCase().includes(query.trim().toLowerCase()))
   }).sort((a, b) => {
     const av = a[sort.key] ?? ''
     const bv = b[sort.key] ?? ''
@@ -97,21 +99,18 @@ export default function Clientes({ esPropietario = false }) {
 
   function openForm(client = null) {
     setEditing(client || 'new')
-    setForm({ nombre_completo: client?.nombre_completo || '', telefono: client?.telefono || '' })
+    setForm(clientToForm(client))
     setFormError('')
   }
 
   async function submit(event) {
     event.preventDefault()
     if (saving) return
-    const nombre = form.nombre_completo.trim()
-    if (nombre.length < 2) { setFormError('El nombre debe tener al menos 2 caracteres.'); return }
+    if (form.nombre_completo.trim().length < 2) { setFormError('El nombre debe tener al menos 2 caracteres.'); return }
     setSaving(true)
     setFormError('')
     try {
-      const payload = editing !== 'new' && Number(editing.numero_cliente) === 1
-        ? { telefono: form.telefono.trim() || null }
-        : { nombre_completo: nombre, telefono: form.telefono.trim() || null }
+      const payload = clientPayload(form, editing !== 'new' && Number(editing.numero_cliente) === 1)
       const { data } = editing === 'new' ? await api.post('/clientes', payload) : await api.patch(`/clientes/${editing.id_cliente}`, payload)
       setEditing(null)
       setNotice(data.message || 'Cliente guardado correctamente.')
@@ -183,13 +182,12 @@ export default function Clientes({ esPropietario = false }) {
         {Number(menu.cliente.numero_cliente) !== 1 && <button type="button" onClick={() => { setPending(menu.cliente); setStatusError(''); setMenu(null) }}>{menu.cliente.estado === false ? 'Activar cliente' : 'Desactivar cliente'}</button>}
       </div>
     </>, document.body)}
-    <Modal open={editing !== null} onClose={() => { if (!saving) setEditing(null) }} title={editing === 'new' ? 'Nuevo cliente' : 'Editar cliente'} description="Completá los datos del cliente." busy={saving} size="small">
+    <Modal open={editing !== null} onClose={() => { if (!saving) setEditing(null) }} title={editing === 'new' ? 'Nuevo cliente' : 'Editar cliente'} description="Completá los datos necesarios. Los campos sin asterisco son opcionales." busy={saving} size="large">
       <form className={styles.form} onSubmit={(event) => void submit(event)}>
-        <label>Nombre completo<input required minLength={2} maxLength={150} disabled={editing !== 'new' && Number(editing?.numero_cliente) === 1} value={form.nombre_completo} onChange={(e) => setForm((f) => ({ ...f, nombre_completo: e.target.value }))} /></label>
-        <label>Teléfono (opcional)<input type="tel" maxLength={50} value={form.telefono} onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))} /></label>
+        <ClienteForm form={form} setForm={setForm} isGeneral={editing !== 'new' && Number(editing?.numero_cliente) === 1} />
         {editing !== 'new' && Number(editing?.numero_cliente) === 1 && <Alert type="warning">El nombre de CLIENTE GENERAL está protegido.</Alert>}
         {formError && <Alert type="error">{formError}</Alert>}
-        <div className={styles.actions}><ActionButton variant="secondary" type="button" disabled={saving} onClick={() => setEditing(null)}>Cancelar</ActionButton><ActionButton variant="primary" type="submit" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cliente'}</ActionButton></div>
+        <div className={styles.formActions}><ActionButton variant="secondary" type="button" disabled={saving} onClick={() => setEditing(null)}>Cancelar</ActionButton><ActionButton variant="primary" type="submit" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cliente'}</ActionButton></div>
       </form>
     </Modal>
     <ConfirmDialog open={Boolean(pending)} onClose={() => { if (!changing) { setPending(null); setStatusError('') } }} onConfirm={() => void changeStatus()} title={pending?.estado === false ? 'Activar cliente' : 'Desactivar cliente'} description="Confirmá el cambio de estado del cliente." details={pending ? [{ label: 'Cliente', value: pending.nombre_completo }] : []} error={statusError} busy={changing} destructive={pending?.estado !== false} confirmLabel={pending?.estado === false ? 'Activar' : 'Desactivar'} />

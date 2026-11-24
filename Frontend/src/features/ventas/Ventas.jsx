@@ -464,7 +464,7 @@ export default function Ventas({ esPropietario = false }) {
                         className={`${styles.secundario} ${styles.botonTabla}`}
                         onClick={() => navigate(`/ventas/${venta.id_venta}/comprobante`)}
                       >
-                        Comprobante X
+                        Ver comprobante
                       </button>
                     </td>
                   </tr>
