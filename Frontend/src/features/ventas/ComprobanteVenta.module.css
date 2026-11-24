@@ -42,3 +42,19 @@
   .tabla thead{display:table-header-group}
   .tabla tr,.estadoCuenta,.encabezado,.cliente,.total{break-inside:avoid}
 }
+
+/* Refinamiento editorial AIOnix: el comprobante prioriza datos y totales. */
+.aviso{padding:10px 14px;border:1px solid var(--color-border);border-radius:8px;color:var(--color-text);background:var(--color-surface);font-size:.85rem}
+.hoja{font-family:Arial,Helvetica,sans-serif;padding:14mm 15mm}
+.encabezado{border-bottom:1px solid #111;padding-bottom:22px}
+.marcaSistema{font-size:13px;letter-spacing:.23em;font-weight:900}
+.marca{font-size:27px;margin-top:8px;letter-spacing:-.03em}
+.subtitulo{font-size:12px}
+.numero strong{font-size:22px}
+.cliente{margin-top:22px;padding:12px 0 18px}
+.tabla th{background:#fff;border-bottom:1.5px solid #111}
+.tabla td{border-bottom:1px solid #e1e1e1}
+.total{margin-top:14px;border-top:1px solid #111;border-bottom:0;padding:18px 6px 10px}
+.total strong{font-size:26px;letter-spacing:-.03em}
+.pie{margin-top:45px;color:#666;font-size:9px;border-top:1px solid #ddd}
+@media print{.aviso{display:none!important}}
