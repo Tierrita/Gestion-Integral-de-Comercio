@@ -1,3 +1,4 @@
+import actionMenuStyles from '../../shared/components/ActionMenu.module.css'
 import ActionButton from '../../shared/components/ActionButton.jsx'
 import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -162,7 +163,7 @@ export default function Proveedores({ esPropietario = false }) {
           <td><div className={styles.actions}>
             {p.estado === true && <ActionButton size="compact" type="button" variant="primary" onClick={() => setPayment(p)}>Pagar</ActionButton>}
             <ActionButton size="compact" type="button" variant="secondary" onClick={() => setAccount(p)}>Ver detalle</ActionButton>
-            <button type="button" className={styles.menuTrigger} aria-label={`Más opciones para ${p.nombre_proveedor}`} aria-expanded={menu?.proveedor.id_proveedor === p.id_proveedor} onClick={(event) => {
+            <button type="button" className={actionMenuStyles.trigger} aria-label={`Más opciones para ${p.nombre_proveedor}`} aria-expanded={menu?.proveedor.id_proveedor === p.id_proveedor} onClick={(event) => {
               if (menu?.proveedor.id_proveedor === p.id_proveedor) { setMenu(null); return }
               const rect = event.currentTarget.getBoundingClientRect()
               const width = 200
@@ -178,8 +179,8 @@ export default function Proveedores({ esPropietario = false }) {
       </div>}
     </div>
     {menu && createPortal(<>
-      <button type="button" className={styles.menuBackdrop} aria-label="Cerrar opciones" onClick={() => setMenu(null)} />
-      <div className={styles.floatingMenu} role="group" aria-label={`Opciones de ${menu.proveedor.nombre_proveedor}`} style={{ top: menu.top, left: menu.left }}>
+      <button type="button" className={actionMenuStyles.backdrop} aria-label="Cerrar opciones" onClick={() => setMenu(null)} />
+      <div className={actionMenuStyles.menu} role="group" aria-label={`Opciones de ${menu.proveedor.nombre_proveedor}`} style={{ top: menu.top, left: menu.left }}>
         <button type="button" onClick={() => { setDetails(menu.proveedor); setMenu(null) }}>Información del proveedor</button>
         <button type="button" onClick={() => { openForm(menu.proveedor); setMenu(null) }}>Editar proveedor</button>
         <button type="button" onClick={() => { setPending(menu.proveedor); setStatusError(''); setMenu(null) }}>{menu.proveedor.estado === true ? 'Desactivar proveedor' : 'Activar proveedor'}</button>
