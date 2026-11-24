@@ -17,7 +17,7 @@ from core.auth import generar_token
 class FinanzasJwtHttpTests(unittest.TestCase):
     def setUp(self):
         self.app = Flask(__name__)
-        self.app.config.update(TESTING=True, JWT_SECRET_KEY="clave-de-pruebas-solo-test")
+        self.app.config.update(TESTING=True, JWT_SECRET_KEY="clave-de-pruebas-segura-de-mas-de-32-bytes-solo-test")
         self.app.register_blueprint(finanza_bp)
         self.client = self.app.test_client()
 
