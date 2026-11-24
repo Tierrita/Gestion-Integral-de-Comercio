@@ -84,6 +84,8 @@ def registrar_pago_proveedor(
         raise ValueError("El monto debe ser finito y mayor a cero")
     if monto.as_tuple().exponent < -2:
         raise ValueError("El monto admite como máximo dos decimales")
+    if monto > Decimal("9999999999.99"):
+        raise ValueError("El monto excede el límite permitido")
 
     observaciones = datos.get("observaciones")
 
