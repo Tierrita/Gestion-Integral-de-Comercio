@@ -20,13 +20,28 @@ ALTER TABLE public.clientes
 
 -- La clasificación no impide usar la API V1: los clientes anteriores
 -- quedan clasificados como PARTICULAR y pueden reclasificarse después.
-ALTER TABLE public.clientes
-  ADD CONSTRAINT clientes_v2_tipo_cliente_chk
-  CHECK (tipo_cliente IN ('PARTICULAR','COMERCIO','EMPRESA','INSTITUCION'));
+DO $
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.clientes'::regclass
+      AND conname = 'clientes_v2_tipo_cliente_chk'
+  ) THEN
+    ALTER TABLE public.clientes
+      ADD CONSTRAINT clientes_v2_tipo_cliente_chk
+      CHECK (tipo_cliente IN ('PARTICULAR','COMERCIO','EMPRESA','INSTITUCION'));
+  END IF;
 
-ALTER TABLE public.clientes
-  ADD CONSTRAINT clientes_v2_tipo_documento_chk
-  CHECK (tipo_documento IS NULL OR tipo_documento IN ('DNI','CUIT','CUIL','PASAPORTE','OTRO'));
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.clientes'::regclass
+      AND conname = 'clientes_v2_tipo_documento_chk'
+  ) THEN
+    ALTER TABLE public.clientes
+      ADD CONSTRAINT clientes_v2_tipo_documento_chk
+      CHECK (tipo_documento IS NULL OR tipo_documento IN ('DNI','CUIT','CUIL','PASAPORTE','OTRO'));
+  END IF;
+END $;
 
 -- No se agregan UNIQUE sobre documentos: pueden existir clientes sin documento
 -- y se debe revisar el criterio de duplicados por comercio antes de imponerlo.
