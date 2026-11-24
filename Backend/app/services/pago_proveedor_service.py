@@ -27,7 +27,7 @@ def registrar_pago_proveedor(
     id_usuario,
     id_comercio
 ):
-    if not datos:
+    if not isinstance(datos, dict) or not datos:
         raise ValueError(
             "No se enviaron datos del pago"
         )
@@ -282,3 +282,34 @@ def consultar_saldo_proveedor(
         "saldo": float(saldo),
         "situacion": situacion
     }
+
+def listar_saldos_proveedores(id_comercio):
+    """Devuelve un saldo por proveedor sin afectar las cuentas financieras."""
+    from collections import defaultdict
+    from app.models.proveedor_model import obtener_proveedores
+    from app.models.pago_proveedor_model import obtener_compras_comercio
+
+    compras_por_proveedor = defaultdict(lambda: Decimal("0"))
+    pagos_por_proveedor = defaultdict(lambda: Decimal("0"))
+    for compra in obtener_compras_comercio(id_comercio):
+        if str(compra.get("estado", "")).upper() == "COMPLETADA":
+            compras_por_proveedor[compra["id_proveedor"]] += Decimal(str(compra["total_compra"]))
+    for pago in obtener_pagos_proveedor(id_comercio):
+        if str(pago.get("estado", "")).upper() == "COMPLETADO":
+            pagos_por_proveedor[pago["id_proveedor"]] += Decimal(str(pago["monto"]))
+
+    saldos = []
+    for proveedor in obtener_proveedores(id_comercio):
+        identificador = proveedor["id_proveedor"]
+        compras = compras_por_proveedor[identificador]
+        pagos = pagos_por_proveedor[identificador]
+        saldo = compras - pagos
+        saldos.append({
+            "id_proveedor": identificador,
+            "numero_proveedor": proveedor["numero_proveedor"],
+            "total_compras": float(compras),
+            "total_pagos": float(pagos),
+            "saldo": float(saldo),
+            "situacion": "DEUDA" if saldo > 0 else "SALDO_A_FAVOR" if saldo < 0 else "AL_DIA",
+        })
+    return saldos
