@@ -48,3 +48,15 @@
   .tabla thead{display:table-header-group}
   .tabla tr,.encabezado,.cliente,.cierre,.estadoCuenta{break-inside:avoid}
 }
+
+/* Diferenciar valor de la venta y deuda total vigente del cliente. */
+.estadoCuenta{border:1px solid #555;margin-top:14px;padding:0}
+.estadoCuenta h2{margin:0;padding:8px 11px;border-bottom:1px solid #777;background:#f1f1f1;font-size:11px;letter-spacing:.04em}
+.resumenSaldo{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:9px 11px;border-bottom:1px solid #ddd}
+.resumenSaldo span{font-size:11px}
+.resumenSaldo strong{font-size:12px;text-align:right}
+.resumenSaldo:nth-of-type(2){border-bottom:1px solid #777;background:#f7f7f7}
+.resumenSaldo:nth-of-type(2) span{font-weight:800}
+.resumenSaldo:nth-of-type(2) strong{font-size:18px}
+.estadoCuenta p{margin:0;padding:8px 11px;color:#555;font-size:9px}
+@media print{.estadoCuenta{break-inside:avoid}}
