@@ -1,3 +1,5 @@
+import actionMenuStyles from '../../shared/components/ActionMenu.module.css'
+import ActionButton from '../../shared/components/ActionButton.jsx'
 import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api } from '../../shared/api/client.js'
@@ -37,6 +39,15 @@ export default function Proveedores({ esPropietario = false }) {
   const [account, setAccount] = useState(null)
   const [payment, setPayment] = useState(null)
   const [menu, setMenu] = useState(null)
+
+  useEffect(() => {
+    if (!menu) return undefined
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setMenu(null)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [menu])
 
   const load = useCallback(async (signal) => {
     setLoading(true)
@@ -131,7 +142,7 @@ export default function Proveedores({ esPropietario = false }) {
   return <section className={styles.page}>
     <header className={styles.header}>
       <div><p className={styles.eyebrow}>GESTIÓN COMERCIAL</p><h1>Proveedores</h1><p className={styles.muted}>Administrá los proveedores de tu comercio.</p></div>
-      <button type="button" className={styles.primary} onClick={() => openForm()}>+ Nuevo proveedor</button>
+      <ActionButton type="button" variant="primary" onClick={() => openForm()}>+ Nuevo proveedor</ActionButton>
     </header>
     <div className={styles.metrics}>
       <article><span>Total de proveedores</span><strong>{proveedores.length}</strong></article>
@@ -146,7 +157,7 @@ export default function Proveedores({ esPropietario = false }) {
         <label>Buscar proveedor<input type="search" placeholder="Nombre, número, teléfono, email..." value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }} /></label>
         <label>Estado<select value={filter} onChange={(e) => { setFilter(e.target.value); setPage(1) }}><option value="todos">Todos</option><option value="activos">Activos</option><option value="inactivos">Inactivos</option></select></label>
         <label>Mostrar<select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1) }}>{PAGE_SIZES.map((n) => <option key={n} value={n}>{n} registros</option>)}</select></label>
-        <button type="button" className={styles.secondary} disabled={loading} onClick={() => void load()}>Actualizar</button>
+        <ActionButton type="button" variant="secondary" disabled={loading} onClick={() => void load()}>Actualizar</ActionButton>
       </div>
       <p className={styles.muted}>{filtered.length} proveedores encontrados</p>
       {loading ? <p role="status">Cargando proveedores…</p> : error && proveedores.length === 0 ? <p>No se pudo cargar el listado.</p> : filtered.length === 0 ? <p>No hay proveedores para mostrar.</p> : <div className={styles.scroll}>
@@ -159,9 +170,9 @@ export default function Proveedores({ esPropietario = false }) {
           <td><span className={p.estado === true ? styles.active : styles.inactive}>{p.estado === true ? 'Activo' : 'Inactivo'}</span></td>
           <td>{saldos[p.id_proveedor] ? <span className={saldos[p.id_proveedor].saldo > 0 ? styles.deuda : saldos[p.id_proveedor].saldo < 0 ? styles.favor : styles.neutro}>{money(Math.abs(saldos[p.id_proveedor].saldo))} · {saldos[p.id_proveedor].saldo > 0 ? 'Deuda' : saldos[p.id_proveedor].saldo < 0 ? 'A favor' : 'Al día'}</span> : '—'}</td>
           <td><div className={styles.actions}>
-            {p.estado === true && <button type="button" className={styles.primary} onClick={() => setPayment(p)}>Pagar</button>}
-            <button type="button" className={styles.secondary} onClick={() => setAccount(p)}>Ver detalle</button>
-            <button type="button" className={styles.menuTrigger} aria-label={`Más opciones para ${p.nombre_proveedor}`} aria-expanded={menu?.proveedor.id_proveedor === p.id_proveedor} onClick={(event) => {
+            {p.estado === true && <ActionButton size="compact" type="button" variant="primary" onClick={() => setPayment(p)}>Pagar</ActionButton>}
+            <ActionButton size="compact" type="button" variant="secondary" onClick={() => setAccount(p)}>Ver detalle</ActionButton>
+            <button type="button" className={actionMenuStyles.trigger} aria-label={`Más opciones para ${p.nombre_proveedor}`} aria-expanded={menu?.proveedor.id_proveedor === p.id_proveedor} onClick={(event) => {
               if (menu?.proveedor.id_proveedor === p.id_proveedor) { setMenu(null); return }
               const rect = event.currentTarget.getBoundingClientRect()
               const width = 200
@@ -173,12 +184,12 @@ export default function Proveedores({ esPropietario = false }) {
       </div>}
       {!loading && filtered.length > 0 && <div className={styles.pagination}>
         <span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} de {filtered.length}</span>
-        <div className={styles.actions}><button type="button" className={styles.secondary} disabled={currentPage === 1} onClick={() => setPage((n) => n - 1)}>Anterior</button><span>Página {currentPage} de {pages}</span><button type="button" className={styles.secondary} disabled={currentPage === pages} onClick={() => setPage((n) => n + 1)}>Siguiente</button></div>
+        <div className={styles.actions}><ActionButton variant="secondary" type="button" disabled={currentPage === 1} onClick={() => setPage((n) => n - 1)}>Anterior</ActionButton><span>Página {currentPage} de {pages}</span><ActionButton variant="secondary" type="button" disabled={currentPage === pages} onClick={() => setPage((n) => n + 1)}>Siguiente</ActionButton></div>
       </div>}
     </div>
     {menu && createPortal(<>
-      <button type="button" className={styles.menuBackdrop} aria-label="Cerrar opciones" onClick={() => setMenu(null)} />
-      <div className={styles.floatingMenu} role="group" aria-label={`Opciones de ${menu.proveedor.nombre_proveedor}`} style={{ top: menu.top, left: menu.left }}>
+      <button type="button" className={actionMenuStyles.backdrop} aria-label="Cerrar opciones" onClick={() => setMenu(null)} />
+      <div className={actionMenuStyles.menu} role="group" aria-label={`Opciones de ${menu.proveedor.nombre_proveedor}`} style={{ top: menu.top, left: menu.left }}>
         <button type="button" onClick={() => { setDetails(menu.proveedor); setMenu(null) }}>Información del proveedor</button>
         <button type="button" onClick={() => { openForm(menu.proveedor); setMenu(null) }}>Editar proveedor</button>
         <button type="button" onClick={() => { setPending(menu.proveedor); setStatusError(''); setMenu(null) }}>{menu.proveedor.estado === true ? 'Desactivar proveedor' : 'Activar proveedor'}</button>
@@ -194,7 +205,7 @@ export default function Proveedores({ esPropietario = false }) {
         <label>Dirección (opcional)<input maxLength={250} value={form.direccion} onChange={(e) => setForm((f) => ({ ...f, direccion: e.target.value }))} /></label>
         <label>Descripción (opcional)<textarea className={styles.textarea} rows={3} value={form.descripcion} onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))} /></label>
         {formError && <Alert type="error">{formError}</Alert>}
-        <div className={styles.actions}><button type="button" className={styles.secondary} disabled={saving} onClick={() => setEditing(null)}>Cancelar</button><button type="submit" className={styles.primary} disabled={saving}>{saving ? 'Guardando…' : 'Guardar proveedor'}</button></div>
+        <div className={styles.actions}><ActionButton type="button" variant="secondary" disabled={saving} onClick={() => setEditing(null)}>Cancelar</ActionButton><ActionButton type="submit" variant="primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar proveedor'}</ActionButton></div>
       </form>
     </Modal>
     <ConfirmDialog open={Boolean(pending)} onClose={() => { if (!changing) { setPending(null); setStatusError('') } }} onConfirm={() => void changeStatus()} title={pending?.estado === true ? 'Desactivar proveedor' : 'Activar proveedor'} description="Confirmá el cambio de estado del proveedor." details={pending ? [{ label: 'Proveedor', value: pending.nombre_proveedor }] : []} error={statusError} busy={changing} destructive={pending?.estado === true} confirmLabel={pending?.estado === true ? 'Desactivar' : 'Activar'} />

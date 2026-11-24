@@ -1,3 +1,5 @@
+import actionMenuStyles from '../../shared/components/ActionMenu.module.css'
+import ActionButton from '../../shared/components/ActionButton.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { api } from '../../shared/api/client.js'
@@ -33,6 +35,15 @@ export default function Clientes({ esPropietario = false }) {
   const [saldos, setSaldos] = useState({})
   const [saldosError, setSaldosError] = useState('')
   const [menu, setMenu] = useState(null)
+
+  useEffect(() => {
+    if (!menu) return undefined
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setMenu(null)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [menu])
 
   const loadSaldos = useCallback(async () => {
     try {
@@ -126,7 +137,7 @@ export default function Clientes({ esPropietario = false }) {
   return <section className={styles.page}>
     <header className={styles.header}>
       <div><p className={styles.eyebrow}>GESTIÓN COMERCIAL</p><h1>Clientes</h1><p className={styles.muted}>Administrá tus clientes y consultá sus operaciones.</p></div>
-      <button className={styles.primary} type="button" onClick={() => openForm()}>+ Nuevo cliente</button>
+      <ActionButton variant="primary" type="button" onClick={() => openForm()}>+ Nuevo cliente</ActionButton>
     </header>
     <div className={styles.metrics}>
       <article><span>Total de clientes</span><strong>{clientes.length}</strong></article>
@@ -141,7 +152,7 @@ export default function Clientes({ esPropietario = false }) {
         <label>Buscar cliente<input type="search" placeholder="Nombre, número o teléfono" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }} /></label>
         <label>Estado<select value={filter} onChange={(e) => { setFilter(e.target.value); setPage(1) }}><option value="todos">Todos</option><option value="activos">Activos</option><option value="inactivos">Inactivos</option></select></label>
         <label>Mostrar<select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1) }}>{PAGE_SIZES.map((n) => <option key={n} value={n}>{n} registros</option>)}</select></label>
-        <button className={styles.secondary} type="button" disabled={loading} onClick={() => void load()}>Actualizar</button>
+        <ActionButton variant="secondary" type="button" disabled={loading} onClick={() => void load()}>Actualizar</ActionButton>
       </div>
       <p className={styles.muted}>{filtered.length} clientes encontrados</p>
       {loading ? <p role="status">Cargando clientes…</p> : error && clientes.length === 0 ? <p>No se pudo cargar el listado.</p> : filtered.length === 0 ? <p>No hay clientes para mostrar.</p> : <div className={styles.scroll}><table><thead><tr>
@@ -153,9 +164,9 @@ export default function Clientes({ esPropietario = false }) {
         <td><span className={c.estado === false ? styles.inactive : styles.active}>{c.estado === false ? 'Inactivo' : 'Activo'}</span></td>
         <td>{saldos[c.id_cliente] ? <span className={saldos[c.id_cliente].saldo > 0 ? styles.deuda : saldos[c.id_cliente].saldo < 0 ? styles.favor : styles.neutro}>{money(Math.abs(saldos[c.id_cliente].saldo))} · {saldos[c.id_cliente].saldo > 0 ? 'Debe' : saldos[c.id_cliente].saldo < 0 ? 'A favor' : 'Al día'}</span> : '—'}</td>
         <td><div className={styles.actions}>
-          {Number(c.numero_cliente) !== 1 && c.estado !== false && <button className={styles.primary} type="button" onClick={() => setCobroClient(c)}>Cobrar</button>}
-          <button className={styles.secondary} type="button" onClick={() => setAccountClient(c)}>Ver detalle</button>
-          <button className={styles.menuTrigger} type="button" aria-label={`Más opciones para ${c.nombre_completo}`} aria-expanded={menu?.cliente.id_cliente === c.id_cliente} onClick={(event) => {
+          {Number(c.numero_cliente) !== 1 && c.estado !== false && <ActionButton size="compact" variant="primary" type="button" onClick={() => setCobroClient(c)}>Cobrar</ActionButton>}
+          <ActionButton size="compact" variant="secondary" type="button" onClick={() => setAccountClient(c)}>Ver detalle</ActionButton>
+          <button className={actionMenuStyles.trigger} type="button" aria-label={`Más opciones para ${c.nombre_completo}`} aria-expanded={menu?.cliente.id_cliente === c.id_cliente} onClick={(event) => {
             if (menu?.cliente.id_cliente === c.id_cliente) { setMenu(null); return }
             const rect = event.currentTarget.getBoundingClientRect()
             const width = 190
@@ -163,11 +174,11 @@ export default function Clientes({ esPropietario = false }) {
             setMenu({ cliente: c, top: rect.bottom + height > window.innerHeight ? Math.max(8, rect.top - height) : rect.bottom + 4, left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)) })
           }}>···</button></div></td>
       </tr>)}</tbody></table></div>}
-      {!loading && filtered.length > 0 && <div className={styles.pagination}><span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} de {filtered.length}</span><div className={styles.actions}><button className={styles.secondary} type="button" disabled={currentPage === 1} onClick={() => setPage((n) => n - 1)}>Anterior</button><span>Página {currentPage} de {pages}</span><button className={styles.secondary} type="button" disabled={currentPage === pages} onClick={() => setPage((n) => n + 1)}>Siguiente</button></div></div>}
+      {!loading && filtered.length > 0 && <div className={styles.pagination}><span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} de {filtered.length}</span><div className={styles.actions}><ActionButton variant="secondary" type="button" disabled={currentPage === 1} onClick={() => setPage((n) => n - 1)}>Anterior</ActionButton><span>Página {currentPage} de {pages}</span><ActionButton variant="secondary" type="button" disabled={currentPage === pages} onClick={() => setPage((n) => n + 1)}>Siguiente</ActionButton></div></div>}
     </div>
     {menu && createPortal(<>
-      <button type="button" className={styles.menuBackdrop} aria-label="Cerrar opciones" onClick={() => setMenu(null)} />
-      <div className={styles.floatingMenu} role="group" aria-label={`Opciones de ${menu.cliente.nombre_completo}`} style={{ top: menu.top, left: menu.left }}>
+      <button type="button" className={actionMenuStyles.backdrop} aria-label="Cerrar opciones" onClick={() => setMenu(null)} />
+      <div className={actionMenuStyles.menu} role="group" aria-label={`Opciones de ${menu.cliente.nombre_completo}`} style={{ top: menu.top, left: menu.left }}>
         <button type="button" onClick={() => { openForm(menu.cliente); setMenu(null) }}>Editar cliente</button>
         {Number(menu.cliente.numero_cliente) !== 1 && <button type="button" onClick={() => { setPending(menu.cliente); setStatusError(''); setMenu(null) }}>{menu.cliente.estado === false ? 'Activar cliente' : 'Desactivar cliente'}</button>}
       </div>
@@ -178,7 +189,7 @@ export default function Clientes({ esPropietario = false }) {
         <label>Teléfono (opcional)<input type="tel" maxLength={50} value={form.telefono} onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))} /></label>
         {editing !== 'new' && Number(editing?.numero_cliente) === 1 && <Alert type="warning">El nombre de CLIENTE GENERAL está protegido.</Alert>}
         {formError && <Alert type="error">{formError}</Alert>}
-        <div className={styles.actions}><button className={styles.secondary} type="button" disabled={saving} onClick={() => setEditing(null)}>Cancelar</button><button className={styles.primary} type="submit" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cliente'}</button></div>
+        <div className={styles.actions}><ActionButton variant="secondary" type="button" disabled={saving} onClick={() => setEditing(null)}>Cancelar</ActionButton><ActionButton variant="primary" type="submit" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cliente'}</ActionButton></div>
       </form>
     </Modal>
     <ConfirmDialog open={Boolean(pending)} onClose={() => { if (!changing) { setPending(null); setStatusError('') } }} onConfirm={() => void changeStatus()} title={pending?.estado === false ? 'Activar cliente' : 'Desactivar cliente'} description="Confirmá el cambio de estado del cliente." details={pending ? [{ label: 'Cliente', value: pending.nombre_completo }] : []} error={statusError} busy={changing} destructive={pending?.estado !== false} confirmLabel={pending?.estado === false ? 'Activar' : 'Desactivar'} />

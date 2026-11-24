@@ -1,3 +1,4 @@
+import ActionButton from '../../shared/components/ActionButton.jsx'
 import { formatoMoneda } from '../../shared/utils/formatters.js'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -265,13 +266,13 @@ export default function Ventas({ esPropietario = false }) {
           </p>
         </div>
 
-        <button
+        <ActionButton
           type="button"
-          className={styles.principal}
+          variant="primary"
           onClick={() => navigate('/ventas/nueva')}
         >
           + Nueva venta
-        </button>
+        </ActionButton>
       </header>
 
       <div className={styles.indicadores}>
@@ -364,14 +365,14 @@ export default function Ventas({ esPropietario = false }) {
               </select>
             </label>
 
-            <button
+            <ActionButton
               type="button"
-              className={styles.secundario}
+              variant="secondary"
               onClick={cargarVentas}
               disabled={cargando}
             >
               Actualizar
-            </button>
+            </ActionButton>
           </div>
         </div>
 

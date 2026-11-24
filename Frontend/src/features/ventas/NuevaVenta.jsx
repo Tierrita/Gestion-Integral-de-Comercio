@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
+import BackButton from '../../shared/components/BackButton.jsx'
 import Alert from '../../shared/components/Alert.jsx'
 import styles from './NuevaVenta.module.css'
 import { formatoMoneda, formatoFechaHora } from '../../shared/utils/formatters.js'
@@ -298,13 +299,7 @@ useEffect(() => {
           </p>
         </div>
 
-        <button
-          type="button"
-          className={styles.secundario}
-          onClick={() => navigate('/ventas')}
-        >
-          Volver a ventas
-        </button>
+        <BackButton to="/ventas" label="Volver a ventas" />
       </header>
 
       <section className={styles.panel}>

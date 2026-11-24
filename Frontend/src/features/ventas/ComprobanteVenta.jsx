@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import BackButton from '../../shared/components/BackButton.jsx'
+import ActionButton from '../../shared/components/ActionButton.jsx'
 import { api } from '../../shared/api/client.js'
 import { formatoFechaHora, formatoMoneda } from '../../shared/utils/formatters.js'
 import styles from './ComprobanteVenta.module.css'
@@ -64,8 +66,8 @@ export default function ComprobanteVenta() {
 
   return <section className={styles.pagina}>
     <header className={styles.acciones}>
-      <div><Link to="/ventas">← Volver a ventas</Link><h1>Comprobante de venta</h1></div>
-      <button type="button" onClick={() => window.print()} disabled={!venta || !comercio}>Imprimir / Guardar PDF</button>
+      <div><BackButton to="/ventas" label="Volver a ventas" /><h1>Comprobante de venta</h1></div>
+      <ActionButton variant="primary" onClick={() => window.print()} disabled={!venta || cargando}>Imprimir / Guardar PDF</ActionButton>
     </header>
     {cargando && <p role="status">Cargando comprobante…</p>}
     {error && <p role="alert" className={styles.error}>{error}</p>}
