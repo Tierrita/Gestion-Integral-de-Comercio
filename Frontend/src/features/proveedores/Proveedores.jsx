@@ -160,8 +160,8 @@ export default function Proveedores({ esPropietario = false }) {
           <td><span className={p.estado === true ? styles.active : styles.inactive}>{p.estado === true ? 'Activo' : 'Inactivo'}</span></td>
           <td>{saldos[p.id_proveedor] ? <span className={saldos[p.id_proveedor].saldo > 0 ? styles.deuda : saldos[p.id_proveedor].saldo < 0 ? styles.favor : styles.neutro}>{money(Math.abs(saldos[p.id_proveedor].saldo))} · {saldos[p.id_proveedor].saldo > 0 ? 'Deuda' : saldos[p.id_proveedor].saldo < 0 ? 'A favor' : 'Al día'}</span> : '—'}</td>
           <td><div className={styles.actions}>
-            {p.estado === true && <ActionButton type="button" variant="primary" onClick={() => setPayment(p)}>Pagar</ActionButton>}
-            <ActionButton type="button" variant="secondary" onClick={() => setAccount(p)}>Ver detalle</ActionButton>
+            {p.estado === true && <ActionButton size="compact" type="button" variant="primary" onClick={() => setPayment(p)}>Pagar</ActionButton>}
+            <ActionButton size="compact" type="button" variant="secondary" onClick={() => setAccount(p)}>Ver detalle</ActionButton>
             <button type="button" className={styles.menuTrigger} aria-label={`Más opciones para ${p.nombre_proveedor}`} aria-expanded={menu?.proveedor.id_proveedor === p.id_proveedor} onClick={(event) => {
               if (menu?.proveedor.id_proveedor === p.id_proveedor) { setMenu(null); return }
               const rect = event.currentTarget.getBoundingClientRect()
@@ -174,7 +174,7 @@ export default function Proveedores({ esPropietario = false }) {
       </div>}
       {!loading && filtered.length > 0 && <div className={styles.pagination}>
         <span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} de {filtered.length}</span>
-        <div className={styles.actions}><button type="button" className={styles.secondary} disabled={currentPage === 1} onClick={() => setPage((n) => n - 1)}>Anterior</button><span>Página {currentPage} de {pages}</span><button type="button" className={styles.secondary} disabled={currentPage === pages} onClick={() => setPage((n) => n + 1)}>Siguiente</button></div>
+        <div className={styles.actions}><ActionButton variant="secondary" type="button" disabled={currentPage === 1} onClick={() => setPage((n) => n - 1)}>Anterior</ActionButton><span>Página {currentPage} de {pages}</span><ActionButton variant="secondary" type="button" disabled={currentPage === pages} onClick={() => setPage((n) => n + 1)}>Siguiente</ActionButton></div>
       </div>}
     </div>
     {menu && createPortal(<>
