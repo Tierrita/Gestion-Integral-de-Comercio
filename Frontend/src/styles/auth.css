@@ -233,3 +233,45 @@
   .aionix-auth-page .aionix-login-form input,
   .aionix-auth-page button.aionix-primary-button { transition: none; }
 }
+
+
+/* AIOnix V3: detalles finales de identidad y accesibilidad del formulario */
+.aionix-auth-page .aionix-brand-header { margin-bottom: 44px; }
+.aionix-auth-page .aionix-brand-header .aionix-brand-logo { margin-bottom: 4px; }
+.aionix-auth-page .aionix-brand-tagline {
+  margin: 0 0 0 5px;
+  color: #b8d8ee;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: .25px;
+}
+.aionix-auth-page .aionix-info-icon svg { display: block; }
+.aionix-auth-page .aionix-password-field { position: relative; }
+#root > main.aionix-auth-page .aionix-password-field input {
+  width: 100%;
+  padding-right: 92px;
+  margin-bottom: 6px;
+}
+#root > main.aionix-auth-page .aionix-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(calc(-50% - 3px));
+  min-height: 34px;
+  padding: 4px 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #164c78;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+#root > main.aionix-auth-page .aionix-password-toggle:hover { background: #eaf2fa; }
+#root > main.aionix-auth-page .aionix-password-toggle:focus-visible {
+  outline: 2px solid #087e9e;
+  outline-offset: 2px;
+}
+@media (max-width: 800px) {
+  .aionix-auth-page .aionix-brand-header { margin-bottom: 26px; }
+}
