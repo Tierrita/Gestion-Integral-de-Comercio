@@ -58,13 +58,19 @@ def obtener_pago_proveedor_por_id(
 ):
     supabase = get_client()
 
-    pagos = obtener_pagos_proveedor(id_comercio)
-
-    for pago in pagos:
-        if pago["id_pago"] == id_pago:
-            return pago
-
-    return None
+    response = (
+        supabase.table("pagos_proveedor")
+        .select("*, proveedores!inner(id_comercio)")
+        .eq("id_pago", id_pago)
+        .eq("proveedores.id_comercio", id_comercio)
+        .limit(1)
+        .execute()
+    )
+    if not response.data:
+        return None
+    pago = response.data[0]
+    pago.pop("proveedores", None)
+    return pago
 
 
 def obtener_pagos_por_proveedor(
@@ -117,6 +123,7 @@ def actualizar_pago_proveedor(
         .table("pagos_proveedor")
         .update(datos)
         .eq("id_pago", id_pago)
+        .eq("estado", "COMPLETADO")
         .execute()
     )
 
