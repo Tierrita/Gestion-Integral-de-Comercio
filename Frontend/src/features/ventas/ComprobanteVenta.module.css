@@ -60,3 +60,12 @@
 .resumenSaldo:nth-of-type(2) strong{font-size:18px}
 .estadoCuenta p{margin:0;padding:8px 11px;color:#555;font-size:9px}
 @media print{.estadoCuenta{break-inside:avoid}}
+
+/* Cierre visual V2: el importe de venta se muestra una sola vez. */
+.estadoCuenta{margin-top:14px}
+.estadoCuenta h2{background:#fff;font-size:11px;letter-spacing:.05em;padding:9px 12px}
+.estadoCuenta .resumenSaldo{border-bottom:0;background:#f3f3f3;padding:14px 12px;gap:16px}
+.estadoCuenta .resumenSaldo span{font-size:11px;font-weight:800}
+.estadoCuenta .resumenSaldo strong{font-size:21px;font-weight:900;white-space:nowrap}
+.estadoCuenta p{border-top:1px solid #aaa;padding:7px 12px;font-size:9px;color:#555}
+@media(max-width:500px){.estadoCuenta .resumenSaldo strong{font-size:16px;white-space:normal}}
