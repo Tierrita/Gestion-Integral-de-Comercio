@@ -1,3 +1,4 @@
+import ActionButton from '../../shared/components/ActionButton.jsx'
 import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api } from '../../shared/api/client.js'
@@ -131,7 +132,7 @@ export default function Proveedores({ esPropietario = false }) {
   return <section className={styles.page}>
     <header className={styles.header}>
       <div><p className={styles.eyebrow}>GESTIÓN COMERCIAL</p><h1>Proveedores</h1><p className={styles.muted}>Administrá los proveedores de tu comercio.</p></div>
-      <button type="button" className={styles.primary} onClick={() => openForm()}>+ Nuevo proveedor</button>
+      <ActionButton type="button" variant="primary" onClick={() => openForm()}>+ Nuevo proveedor</ActionButton>
     </header>
     <div className={styles.metrics}>
       <article><span>Total de proveedores</span><strong>{proveedores.length}</strong></article>
@@ -146,7 +147,7 @@ export default function Proveedores({ esPropietario = false }) {
         <label>Buscar proveedor<input type="search" placeholder="Nombre, número, teléfono, email..." value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }} /></label>
         <label>Estado<select value={filter} onChange={(e) => { setFilter(e.target.value); setPage(1) }}><option value="todos">Todos</option><option value="activos">Activos</option><option value="inactivos">Inactivos</option></select></label>
         <label>Mostrar<select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1) }}>{PAGE_SIZES.map((n) => <option key={n} value={n}>{n} registros</option>)}</select></label>
-        <button type="button" className={styles.secondary} disabled={loading} onClick={() => void load()}>Actualizar</button>
+        <ActionButton type="button" variant="secondary" disabled={loading} onClick={() => void load()}>Actualizar</ActionButton>
       </div>
       <p className={styles.muted}>{filtered.length} proveedores encontrados</p>
       {loading ? <p role="status">Cargando proveedores…</p> : error && proveedores.length === 0 ? <p>No se pudo cargar el listado.</p> : filtered.length === 0 ? <p>No hay proveedores para mostrar.</p> : <div className={styles.scroll}>
