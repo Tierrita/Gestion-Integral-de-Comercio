@@ -123,6 +123,7 @@ def actualizar_pago_proveedor(
         .table("pagos_proveedor")
         .update(datos)
         .eq("id_pago", id_pago)
+        .eq("id_proveedor", pago["id_proveedor"])
         .eq("estado", "COMPLETADO")
         .execute()
     )

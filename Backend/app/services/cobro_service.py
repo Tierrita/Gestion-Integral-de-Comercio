@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from collections import defaultdict
 
 """
@@ -46,12 +46,20 @@ def registrar_cobro(datos, id_comercio, id_usuario):
             "El id_cuenta debe ser un número entero mayor que cero"
         )
 
-    if (
-        not isinstance(monto, (int, float))
-        or isinstance(monto, bool)
-        or monto <= 0
-    ):
-        raise ValueError("El monto debe ser mayor que cero")
+    # Validación exacta: evita NaN, infinitos, fracciones de centavo
+    # y valores que excedan NUMERIC(12,2) en las cuentas.
+    if isinstance(monto, bool) or not isinstance(monto, (int, float, str, Decimal)):
+        raise ValueError("El monto debe ser numérico")
+    try:
+        importe = Decimal(str(monto))
+    except InvalidOperation as exc:
+        raise ValueError("El monto debe ser numérico") from exc
+    if not importe.is_finite() or importe <= 0:
+        raise ValueError("El monto debe ser finito y mayor que cero")
+    if importe.as_tuple().exponent < -2:
+        raise ValueError("El monto admite como máximo dos decimales")
+    if importe > Decimal("9999999999.99"):
+        raise ValueError("El monto excede el límite permitido")
 
     cliente = obtener_cliente_por_id(
         id_cliente,
@@ -88,7 +96,7 @@ def registrar_cobro(datos, id_comercio, id_usuario):
         id_cuenta=id_cuenta,
         id_usuario=id_usuario,
         id_comercio=id_comercio,
-        monto=monto,
+        monto=str(importe),
         observaciones=observaciones
     )
 

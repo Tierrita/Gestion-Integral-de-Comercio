@@ -72,7 +72,7 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
       await api.post('/cobros', {
         id_cliente: cliente.id_cliente,
         id_cuenta: Number(cuenta),
-        monto: importe,
+        monto: limpio,
         observaciones: observaciones.trim() || null,
       })
       setMonto('')
