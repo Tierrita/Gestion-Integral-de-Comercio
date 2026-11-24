@@ -104,3 +104,14 @@ def consultar_saldo_proveedor_route(
     return consultar_saldo_proveedor_controller(
         id_proveedor
     )
+
+@pago_proveedor_bp.route("/proveedores/saldos", methods=["GET"])
+@login_requerido
+@permiso_requerido("proveedores.ver")
+def listar_saldos_proveedores_route():
+    from flask import jsonify, g
+    from app.services.pago_proveedor_service import listar_saldos_proveedores
+    try:
+        return jsonify({"saldos": listar_saldos_proveedores(g.id_comercio)}), 200
+    except Exception:
+        return jsonify({"error": "Error interno del servidor"}), 500
