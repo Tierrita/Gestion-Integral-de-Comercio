@@ -5,6 +5,7 @@ import Modal from '../../shared/components/Modal.jsx'
 import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
 import styles from './Proveedores.module.css'
 
+const money = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number(value || 0))
 const PAGE_SIZES = [10, 25, 50]
 const EMPTY = { nombre_proveedor: '', telefono: '', email: '', direccion: '', descripcion: '' }
 const errorMessage = (error) => error.response?.data?.error || (error.response?.status === 403
@@ -13,6 +14,8 @@ const errorMessage = (error) => error.response?.data?.error || (error.response?.
 
 export default function Proveedores() {
   const [proveedores, setProveedores] = useState([])
+  const [saldos, setSaldos] = useState({})
+  const [saldosError, setSaldosError] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -34,9 +37,21 @@ export default function Proveedores() {
     setLoading(true)
     setError('')
     try {
-      const { data } = await api.get('/proveedores', { signal })
-      if (!Array.isArray(data)) throw new Error('Respuesta inválida')
-      if (!signal?.aborted) setProveedores(data)
+      const [proveedoresResponse, saldosResponse] = await Promise.allSettled([
+        api.get('/proveedores', { signal }),
+        api.get('/proveedores/saldos', { signal }),
+      ])
+      if (proveedoresResponse.status !== 'fulfilled' || !Array.isArray(proveedoresResponse.value.data)) throw new Error('No se pudieron cargar los proveedores')
+      if (!signal?.aborted) setProveedores(proveedoresResponse.value.data)
+      if (saldosResponse.status === 'fulfilled' && Array.isArray(saldosResponse.value.data?.saldos)) {
+        if (!signal?.aborted) {
+          setSaldos(Object.fromEntries(saldosResponse.value.data.saldos.map((item) => [item.id_proveedor, item])))
+          setSaldosError('')
+        }
+      } else if (!signal?.aborted) {
+        setSaldos({})
+        setSaldosError('No se pudieron cargar las deudas de proveedores.')
+      }
     } catch (err) {
       if (!signal?.aborted) setError(errorMessage(err))
     } finally {
@@ -120,6 +135,7 @@ export default function Proveedores() {
     </div>
     {notice && <Alert type="success">{notice}</Alert>}
     {error && <Alert type="error">{error}</Alert>}
+    {saldosError && <Alert type="warning">{saldosError}</Alert>}
     <div className={styles.panel}>
       <div className={styles.toolbar}>
         <label>Buscar proveedor<input type="search" placeholder="Nombre, número, teléfono, email..." value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }} /></label>
@@ -132,10 +148,11 @@ export default function Proveedores() {
         <table><thead><tr>
           <th><button type="button" onClick={() => changeSort('numero_proveedor')}>N.º{sortMark('numero_proveedor')}</button></th>
           <th><button type="button" onClick={() => changeSort('nombre_proveedor')}>Proveedor{sortMark('nombre_proveedor')}</button></th>
-          <th>Teléfono</th><th>Email</th><th>Estado</th><th>Acciones</th>
+          <th>Teléfono</th><th>Email</th><th>Estado</th><th>Saldo</th><th>Acciones</th>
         </tr></thead><tbody>{rows.map((p) => <tr key={p.id_proveedor}>
           <td>#{p.numero_proveedor}</td><td><strong>{p.nombre_proveedor}</strong></td><td>{p.telefono || '—'}</td><td>{p.email || '—'}</td>
           <td><span className={p.estado === true ? styles.active : styles.inactive}>{p.estado === true ? 'Activo' : 'Inactivo'}</span></td>
+          <td>{saldos[p.id_proveedor] ? <span className={saldos[p.id_proveedor].saldo > 0 ? styles.deuda : saldos[p.id_proveedor].saldo < 0 ? styles.favor : styles.neutro}>{money(Math.abs(saldos[p.id_proveedor].saldo))} · {saldos[p.id_proveedor].saldo > 0 ? 'Deuda' : saldos[p.id_proveedor].saldo < 0 ? 'A favor' : 'Al día'}</span> : '—'}</td>
           <td><div className={styles.actions}>
             <button type="button" className={styles.secondary} onClick={() => setDetails(p)}>Ver detalle</button>
             <button type="button" className={styles.secondary} onClick={() => openForm(p)}>Editar</button>
