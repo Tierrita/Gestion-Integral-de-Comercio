@@ -63,3 +63,13 @@ Se consultaron registros existentes de los comercios 1 y 3 (solo lectura):
 **Interpretación:** no se encontraron inconsistencias en estas comprobaciones de datos; esto no demuestra por sí solo que todos los endpoints estén libres de fallos de autorización.
 
 **Estado:** propuesta SQL y tests versionados; aún no desplegada. Sigue pendiente validación completa de permisos, rendimiento y regresión de UI. La instrucción anterior de no modificar producción sigue respetada.
+
+## Validación de permisos y planificación SQL (solo lectura)
+
+- RPC actual: SECURITY INVOKER (prosecdef=false), STABLE.
+- Permiso EXECUTE: anon=false, authenticated=false, service_role=true.
+- La propuesta conserva REVOKE para PUBLIC/anon/authenticated y GRANT para service_role.
+- EXPLAIN FORMAT JSON de la consulta propuesta para comercio 1, noviembre: plan generado correctamente, sin ejecutar DDL ni mutaciones. Se observan Seq Scan sobre ventas/detalle_venta con el volumen pequeño actual; no implica por sí mismo un problema de rendimiento.
+- Se identificaron índices sobre clientes(id_comercio,numero_cliente), cobros(id_comercio,id_cliente), ventas(id_comercio,numero_venta) y otros. La estrategia de índices de fechas y movimientos puede revisarse al crecer el volumen.
+
+**Advertencia:** EXPLAIN sin ANALYZE no mide tiempos reales. El contrato SQL no se ha instalado; resta prueba de integración backend/frontend y prueba de la función compilada.
