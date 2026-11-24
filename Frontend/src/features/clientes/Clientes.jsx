@@ -8,7 +8,8 @@ import Modal from '../../shared/components/Modal.jsx'
 import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
 import styles from './Clientes.module.css'
 import CuentaCorrienteCliente from './CuentaCorrienteCliente.jsx'
-import ClienteForm, { EMPTY_CLIENT, clientToForm, clientPayload } from './ClienteForm.jsx'
+import ClienteForm from './ClienteForm.jsx'
+import { EMPTY_CLIENT, clientToForm, clientPayload } from './clienteFormUtils.js'
 
 const messageOf = (error) => error.response?.data?.error || (error.response?.status === 403 ? 'No tenés permisos para esta operación.' : 'No se pudo completar la operación. Verificá la conexión con Flask.')
 const money = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number(value || 0))
