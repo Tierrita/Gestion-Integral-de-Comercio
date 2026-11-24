@@ -33,3 +33,17 @@ El ranking top_producto usa sum(trunc(d.cantidad)) y costo sum(trunc(d.cantidad)
 3. Preparar pruebas automáticas para 1.750 KG, venta CC, venta efectivo, cobro parcial, anulación y ranking.
 4. Proponer corrección versionada de la RPC en rama, revisando GRANT/REVOKE y dependencias antes de aplicar.
 5. Validar en entorno de pruebas y ejecutar regresión; recién entonces considerar merge y despliegue.
+
+## Validación adicional (2026-11-24) — consultas SELECT sin aplicar función
+
+Se evaluó el cuerpo SQL de la propuesta como subconsulta SELECT contra datos existentes, comparando su JSON con la RPC desplegada. **Esto no instaló la función propuesta ni escribió datos.**
+
+- Comercio 1, noviembre: deuda actual RPC 14.924.199,00; propuesta 12.684.199,00. Stock valor costo actual 250.437.488,00; propuesta 250.443.492,94. Unidades mezcladas actual 22.561; propuesta 22.562,434.
+- Comercio 1, octubre: deuda RPC 1.419.999,00 (2 clientes); propuesta 12.684.199,00 (5 clientes). Confirma que la propuesta mantiene deuda actual sin depender del período. El capital inmovilizado sí varía por período porque su definición depende de ventas del rango.
+- Comercio 3, noviembre: deuda RPC 1.500.000,03 (2 clientes); propuesta 166.666,67 (1 cliente).
+- Se mantuvieron sin diferencias en estas comparaciones los otros campos JSON no listados.
+- Se ejecutaron 7/7 casos SQL sintéticos de solo lectura, todos true.
+
+**Limitación:** esta comparación evalúa el SELECT propuesto, pero no valida la creación de función, sus permisos, rendimiento, seguridad o pruebas transaccionales end-to-end. Se necesita un entorno aislado para cerrar la auditoría. No desplegar todavía.
+
+**Pendiente de autorización:** la creación de rama Supabase solicitó confirmación de costos; no se creó ninguna rama de base de datos.
