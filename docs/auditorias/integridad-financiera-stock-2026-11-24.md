@@ -73,3 +73,14 @@ Se consultaron registros existentes de los comercios 1 y 3 (solo lectura):
 - Se identificaron índices sobre clientes(id_comercio,numero_cliente), cobros(id_comercio,id_cliente), ventas(id_comercio,numero_venta) y otros. La estrategia de índices de fechas y movimientos puede revisarse al crecer el volumen.
 
 **Advertencia:** EXPLAIN sin ANALYZE no mide tiempos reales. El contrato SQL no se ha instalado; resta prueba de integración backend/frontend y prueba de la función compilada.
+
+## Despliegue autorizado y pruebas posteriores (2026-11-24)
+
+- Respaldo exacto previo: supabase/backups/dashboard_rpc_pre_integridad_20261124.sql (commit 1acf034).
+- Migración aplicada con éxito: dashboard_integridad_financiera_stock_20261124.
+- Función desplegada revisada: elimina truncamientos, incluye solo ventas COMPLETADA con metodo_pago CUENTA_CORRIENTE y excluye cliente general mediante numero_cliente<>1.
+- Permisos post-despliegue: anon=false, authenticated=false, service_role=true.
+- RPC ejecutada para comercios 1 y 3, octubre y noviembre: comercio 1 deuda 12.684.199,00 y 5 deudores en ambos períodos; comercio 3 deuda 166.666,67 y 1 deudor en ambos períodos.
+- RPC stock comercio 1 noviembre: cantidad 22.562,434 (mezcla unidades y kg, pendiente mejora UI), valor costo 250.443.492,94; valor venta 345.006.659,79; ganancia potencial 94.563.166,85.
+- Advisor seguridad: 19 tablas con RLS habilitado sin políticas (INFO), consistente con diseño backend service_role; revisar como auditoría de seguridad separada antes de exponer acceso directo. Referencia https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy
+- PENDIENTE: pruebas endpoint Flask con JWT y visualización React, no verificadas desde esta sesión. No declarar cierre E2E aún.
