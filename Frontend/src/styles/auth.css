@@ -1,0 +1,277 @@
+.aionix-auth-page { display:grid; grid-template-columns:1fr 1fr; min-height:100vh; width:100%; font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#17273a; }
+.aionix-brand { background:linear-gradient(145deg,#103e6b 0%,#092f59 100%); color:white; display:flex; align-items:center; justify-content:center; padding:48px 36px; }
+.aionix-brand-inner { width:min(100%,460px); }
+.aionix-brand-logo { display:flex; align-items:center; gap:18px; font-size:clamp(38px,4vw,56px); font-weight:400; margin-bottom:40px; letter-spacing:-1.5px; }
+.aionix-brand-mark { color:#bce6fa; font-weight:800; font-style:italic; letter-spacing:-7px; padding-right:8px; }
+.aionix-brand-items { display:grid; gap:32px; }
+.aionix-info-item { display:flex; gap:16px; align-items:flex-start; }
+.aionix-info-icon { width:74px; height:74px; flex:none; border-radius:9px; background:white; color:#103e6b; display:grid; place-items:center; box-shadow:0 2px 8px #0002; }
+.aionix-info-item h2 { color:white; font-size:20px; line-height:1.3; margin:1px 0 8px; font-weight:650; }
+.aionix-info-item p { color:white; font-size:15px; line-height:1.5; margin:0; }
+.aionix-auth-side { background:#eff2f5; display:flex; justify-content:center; align-items:center; padding:36px 24px; }
+.aionix-auth-card { background:#fff; width:min(100%,390px); border-radius:10px; overflow:hidden; box-shadow:0 7px 24px #17273a22; }
+.aionix-auth-tabs { display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid #d8dfe6; }
+.aionix-auth-tabs button { border:0; border-bottom:2px solid transparent; background:#fff; color:#5b6571; font:inherit; padding:16px 8px 13px; cursor:pointer; }
+.aionix-auth-tabs button.is-active { color:#0b315b; border-bottom-color:#0b315b; font-weight:600; }
+.aionix-auth-body { padding:24px 22px 26px; }
+.aionix-login-form { display:flex; flex-direction:column; gap:10px; }
+.aionix-login-form label { font-size:14px; font-weight:550; color:#17273a; }
+.aionix-login-form input { width:100%; min-height:40px; padding:10px; border:1px solid #b9c3cc; border-radius:5px; background:white; color:#17273a; font:inherit; margin-bottom:6px; }
+.aionix-login-form input:focus-visible, .aionix-auth-page button:focus-visible { outline:2px solid #087e9e; outline-offset:2px; }
+.aionix-primary-button { display:block; width:100%; border:0; border-radius:5px; min-height:42px; padding:10px 12px; background:#0b315b; color:white; font:inherit; cursor:pointer; margin-top:8px; }
+.aionix-primary-button:hover:not(:disabled) { background:#154775; }
+.aionix-primary-button:disabled { opacity:.7; cursor:wait; }
+.aionix-error { color:#ad2430; font-size:14px; margin:4px 0; }
+.aionix-message { color:#285d72; font-size:14px; margin:0 0 8px; }
+.aionix-register-preview h2 { font-size:20px; margin:0 0 14px; color:#0b315b; }
+.aionix-register-preview p { font-size:14px; line-height:1.5; color:#475569; }
+@media(max-width:800px) { .aionix-auth-page { grid-template-columns:1fr; } .aionix-brand { padding:32px 24px; } .aionix-brand-logo { margin-bottom:22px; } .aionix-brand-items { gap:18px; } .aionix-info-icon { width:54px; height:54px; } .aionix-info-item h2 { font-size:17px; } .aionix-info-item p { font-size:14px; } .aionix-auth-side { padding:30px 16px 44px; } }
+@media(max-width:420px) { .aionix-brand-items { gap:15px; } .aionix-brand { padding:26px 18px; } .aionix-info-item { gap:12px; } }
+
+/* Navegación informativa del acceso */
+.aionix-info-button { border:2px solid transparent; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+.aionix-info-button:hover { transform:translateY(-2px); box-shadow:0 5px 14px #0004; }
+.aionix-info-button[aria-pressed="true"] { border-color:#6bd1ef; box-shadow:0 0 0 3px #6bd1ef55; }
+.aionix-section-card { background:#fff; width:min(100%,490px); border-radius:10px; padding:28px; box-shadow:0 7px 24px #17273a22; }
+.aionix-section-card h1 { color:#0b315b; font-size:clamp(24px,3vw,30px); margin:18px 0; }
+.aionix-section-card p, .aionix-section-card li { color:#334155; line-height:1.65; font-size:15px; }
+.aionix-section-card ul { padding-left:22px; }
+.aionix-section-card li { margin-bottom:8px; }
+.aionix-back-button { display:inline-flex; align-items:center; gap:8px; border:0; background:transparent; color:#0b315b; padding:6px 0; cursor:pointer; font:inherit; font-size:14px; }
+.aionix-back-button:hover { text-decoration:underline; }
+
+/* La pantalla de acceso debe ocupar todo el viewport sin estilos del login anterior. */
+#root:has(> .aionix-auth-page) { display:block; padding:0; }
+#root > .aionix-auth-page { max-width:none; padding:0; border:0; border-radius:0; background:transparent; }
+.aionix-info-icon span { font-size:2rem; line-height:1; }
+
+/* Corrección de integración: aislar AuthPage de los estilos globales del login V1. */
+#root:has(> main.aionix-auth-page) {
+  display: block;
+  padding: 0;
+  min-height: 100vh;
+}
+#root > main.aionix-auth-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+#root > main.aionix-auth-page h1 { margin: 18px 0; }
+#root > main.aionix-auth-page input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #b9c3cc;
+  border-radius: 6px;
+  background: #fff;
+  color: #17273a;
+}
+#root > main.aionix-auth-page button.aionix-primary-button {
+  min-height: 44px;
+  background: #0b315b;
+  color: #fff;
+  border-radius: 6px;
+}
+#root > main.aionix-auth-page button.aionix-primary-button:hover:not(:disabled) { background: #154775; }
+#root > main.aionix-auth-page .aionix-auth-tabs button {
+  min-height: 52px;
+  border-radius: 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: #fff;
+  color: #5b6571;
+}
+#root > main.aionix-auth-page .aionix-auth-tabs button.is-active {
+  border-bottom-color: #0b315b;
+  color: #0b315b;
+}
+#root > main.aionix-auth-page .aionix-info-button {
+  background: #fff;
+  color: #103e6b;
+  border: 2px solid transparent;
+}
+#root > main.aionix-auth-page .aionix-info-button[aria-pressed='true'] { border-color: #6bd1ef; }
+#root > main.aionix-auth-page .aionix-back-button {
+  background: transparent;
+  color: #0b315b;
+  border: 0;
+}
+@media (max-width: 800px) {
+  #root > main.aionix-auth-page { grid-template-columns: minmax(0, 1fr); }
+  #root > main.aionix-auth-page .aionix-brand { padding: 32px 24px; }
+}
+
+
+/* AIOnix Login V3 — refinamiento visual. Aislado del resto de la aplicación. */
+.aionix-auth-page {
+  background: #f3f6fb;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.aionix-auth-page .aionix-brand {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 12% 8%, #205b91 0%, transparent 48%),
+    linear-gradient(155deg, #123e6b 0%, #0b2d52 58%, #071f3c 100%);
+}
+.aionix-auth-page .aionix-brand::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  opacity: .18;
+  background-image: linear-gradient(#a6dff5 1px, transparent 1px),
+    linear-gradient(90deg, #a6dff5 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 80%);
+  pointer-events: none;
+}
+.aionix-auth-page .aionix-brand::after {
+  content: "";
+  position: absolute;
+  width: 340px;
+  height: 340px;
+  right: -190px;
+  bottom: -180px;
+  border: 1px solid #8dd9f744;
+  border-radius: 50%;
+  box-shadow: 0 0 0 75px #8dd9f70a, 0 0 0 150px #8dd9f706;
+  pointer-events: none;
+}
+.aionix-auth-page .aionix-brand-inner { width: min(100%, 485px); }
+.aionix-auth-page .aionix-brand-logo {
+  font-weight: 600;
+  letter-spacing: -2px;
+  margin-bottom: 48px;
+}
+.aionix-auth-page .aionix-brand-mark { color: #8ddcf7; }
+.aionix-auth-page .aionix-brand-items { gap: 30px; }
+.aionix-auth-page .aionix-info-item { align-items: center; gap: 18px; }
+.aionix-auth-page .aionix-info-item h2 { font-size: 19px; letter-spacing: -.35px; }
+.aionix-auth-page .aionix-info-item p { color: #d0e2f1; line-height: 1.6; }
+.aionix-auth-page .aionix-info-icon {
+  width: 68px;
+  height: 68px;
+  border-radius: 16px;
+  background: #ffffffed;
+  box-shadow: 0 10px 24px #001c3950;
+}
+.aionix-auth-page .aionix-info-button {
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.aionix-auth-page .aionix-info-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 26px #001c3966;
+}
+.aionix-auth-page .aionix-auth-side {
+  background: radial-gradient(ellipse at 75% 20%, #ffffff 0%, #f2f5fa 58%, #e9eef6 100%);
+  padding: 44px 28px;
+}
+.aionix-auth-page .aionix-auth-card,
+.aionix-auth-page .aionix-section-card {
+  border: 1px solid #e2e9f1;
+  border-radius: 18px;
+  box-shadow: 0 22px 60px #153b6518, 0 4px 14px #153b650c;
+}
+.aionix-auth-page .aionix-auth-card { width: min(100%, 430px); }
+.aionix-auth-page .aionix-auth-tabs button {
+  font-weight: 600;
+  letter-spacing: -.15px;
+}
+.aionix-auth-page .aionix-auth-body { padding: 30px 30px 34px; }
+.aionix-auth-page .aionix-login-form { gap: 12px; }
+.aionix-auth-page .aionix-login-form label { color: #22364b; font-weight: 650; }
+#root > main.aionix-auth-page .aionix-login-form input {
+  min-height: 48px;
+  border: 1px solid #cad6e2;
+  border-radius: 9px;
+  padding: 12px 14px;
+  background: #fbfdff;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+#root > main.aionix-auth-page .aionix-login-form input:focus {
+  border-color: #1488bc;
+  box-shadow: 0 0 0 4px #1488bc1a;
+  outline: none;
+}
+#root > main.aionix-auth-page button.aionix-primary-button {
+  min-height: 49px;
+  border-radius: 9px;
+  font-weight: 700;
+  letter-spacing: .1px;
+  box-shadow: 0 7px 16px #0b315b24;
+  transition: background .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+#root > main.aionix-auth-page button.aionix-primary-button:hover:not(:disabled) {
+  background: #174a7b;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px #0b315b30;
+}
+.aionix-auth-page .aionix-section-card { width: min(100%, 520px); }
+@media (max-width: 800px) {
+  .aionix-auth-page .aionix-brand { padding: 30px 24px; }
+  .aionix-auth-page .aionix-brand-logo { margin-bottom: 24px; }
+  .aionix-auth-page .aionix-brand-items { gap: 18px; }
+  .aionix-auth-page .aionix-info-icon { width: 54px; height: 54px; border-radius: 12px; }
+  .aionix-auth-page .aionix-auth-side { padding: 32px 16px 48px; }
+}
+@media (max-width: 420px) {
+  .aionix-auth-page .aionix-auth-body { padding: 24px 20px 28px; }
+  .aionix-auth-page .aionix-brand-logo { font-size: 38px; }
+  .aionix-auth-page .aionix-info-item h2 { font-size: 16px; }
+  .aionix-auth-page .aionix-info-item p { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aionix-auth-page .aionix-info-button,
+  .aionix-auth-page .aionix-login-form input,
+  .aionix-auth-page button.aionix-primary-button { transition: none; }
+}
+
+
+/* AIOnix V3: detalles finales de identidad y accesibilidad del formulario */
+.aionix-auth-page .aionix-brand-header { margin-bottom: 44px; }
+.aionix-auth-page .aionix-brand-header .aionix-brand-logo { margin-bottom: 4px; }
+.aionix-auth-page .aionix-brand-tagline {
+  margin: 0 0 0 5px;
+  color: #b8d8ee;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: .25px;
+}
+.aionix-auth-page .aionix-info-icon svg { display: block; }
+.aionix-auth-page .aionix-password-field { position: relative; }
+#root > main.aionix-auth-page .aionix-password-field input {
+  width: 100%;
+  padding-right: 92px;
+  margin-bottom: 6px;
+}
+#root > main.aionix-auth-page .aionix-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(calc(-50% - 3px));
+  min-height: 34px;
+  padding: 4px 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #164c78;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+#root > main.aionix-auth-page .aionix-password-toggle:hover { background: #eaf2fa; }
+#root > main.aionix-auth-page .aionix-password-toggle:focus-visible {
+  outline: 2px solid #087e9e;
+  outline-offset: 2px;
+}
+@media (max-width: 800px) {
+  .aionix-auth-page .aionix-brand-header { margin-bottom: 26px; }
+}
