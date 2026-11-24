@@ -55,3 +55,18 @@
 .favor{color:#059669}
 .neutro{color:var(--color-text-muted)}
 :global([data-theme='dark']) .favor{color:#29c58f}
+
+/* La tabla mantiene columnas legibles; el desplazamiento es horizontal en pantallas estrechas. */
+.scroll table{min-width:1250px;table-layout:auto}
+.scroll th,.scroll td{overflow-wrap:normal;word-break:normal}
+.scroll th:nth-child(1),.scroll td:nth-child(1){min-width:48px;white-space:nowrap}
+.scroll th:nth-child(2),.scroll td:nth-child(2){min-width:160px;max-width:220px}
+.scroll th:nth-child(3),.scroll td:nth-child(3){min-width:105px;white-space:nowrap}
+.scroll th:nth-child(4),.scroll td:nth-child(4){min-width:190px;max-width:250px;overflow-wrap:anywhere}
+.scroll th:nth-child(5),.scroll td:nth-child(5){min-width:85px;white-space:nowrap}
+.scroll th:nth-child(6),.scroll td:nth-child(6){min-width:170px;white-space:nowrap}
+.scroll th:nth-child(7),.scroll td:nth-child(7){min-width:425px}
+.scroll .actions{flex-wrap:nowrap;gap:.4rem;min-width:max-content}
+.scroll .actions .primary,.scroll .actions .secondary{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:.4rem .65rem;font-size:.76rem;white-space:nowrap;word-break:normal;overflow-wrap:normal;flex:0 0 auto}
+.scroll td{height:auto;min-height:48px;padding:.75rem .8rem}
+.active,.inactive{white-space:nowrap}
