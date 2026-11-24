@@ -131,14 +131,10 @@ export default function ComprobanteVenta() {
       <section className={styles.estadoCuenta}>
         <h2>ESTADO ACTUAL DE CUENTA</h2>
         <div className={styles.resumenSaldo}>
-          <span>Importe de esta compra</span>
-          <strong>{formatoMoneda(venta.total)}</strong>
-        </div>
-        <div className={styles.resumenSaldo}>
-          <span>{saldoCliente === null ? 'Saldo total del cliente' : saldoCliente > 0 ? 'TOTAL QUE DEBE EL CLIENTE' : saldoCliente < 0 ? 'SALDO A FAVOR DEL CLIENTE' : 'ESTADO DE CUENTA'}</span>
+          <span>{saldoCliente === null ? 'SALDO TOTAL DEL CLIENTE' : saldoCliente > 0 ? 'TOTAL QUE DEBE EL CLIENTE' : saldoCliente < 0 ? 'SALDO A FAVOR DEL CLIENTE' : 'ESTADO DE CUENTA'}</span>
           <strong>{saldoCliente === null ? 'No disponible' : saldoCliente === 0 ? 'AL DÍA · ' + formatoMoneda(0) : formatoMoneda(Math.abs(saldoCliente))}</strong>
         </div>
-        <p>{fechaConsultaSaldo ? `Saldo actualizado al ${fechaConsultaSaldo.toLocaleString('es-AR')}. Incluye esta venta si fue a cuenta corriente y sigue pendiente, así como otras operaciones y pagos registrados. El importe de la compra se informa por separado y no se suma otra vez al saldo.` : 'No se pudo consultar la deuda actual. El importe de la compra no representa necesariamente la deuda del cliente.'}</p>
+        <p>{fechaConsultaSaldo ? `Saldo actualizado al ${fechaConsultaSaldo.toLocaleString('es-AR')}` : 'Saldo no disponible al generar este comprobante.'}</p>
       </section>
       {venta.observaciones && <p className={styles.observaciones}><strong>Observaciones:</strong> {venta.observaciones}</p>}
       <footer className={styles.pie}>Documento comercial interno · No constituye factura fiscal.</footer>
