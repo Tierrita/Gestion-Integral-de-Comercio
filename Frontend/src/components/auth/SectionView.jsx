@@ -10,8 +10,6 @@ const sections = {
   contacto: { title: 'Contacto', Component: ContactSection },
 }
 
-export const sectionSlugs = Object.keys(sections)
-
 export default function SectionView({ section, onBack }) {
   const entry = sections[section]
   if (!entry) return null
