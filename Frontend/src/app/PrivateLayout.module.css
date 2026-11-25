@@ -68,3 +68,54 @@
 @media(max-width:900px){.layout,.layout[data-pinned='true']{grid-template-columns:minmax(0,1fr)}.sidebar,.sidebar:hover,.sidebar:focus-within,.layout[data-pinned='true'] .sidebar{position:fixed;inset:0 auto 0 0;width:min(85vw,270px);height:100dvh;min-height:0;transform:translateX(-105%);z-index:45}.sidebar[data-open='true']{transform:translateX(0)}.sidebar .brandText,.sidebar .navCaption,.sidebar .navLabel,.sidebar .footerText{opacity:1}.sidebar .pinButton{display:none}.menuToggle{display:flex}.backdrop{z-index:40}}
 @media(max-width:650px){.identity{display:none}}
 @media(prefers-reduced-motion:reduce){.layout,.sidebar{transition:none}}
+
+/* AIOnix V2.1 — identidad del sidebar independiente del tema */
+.sidebar {
+  --color-surface:#0b1729;
+  --color-background:#07101f;
+  --color-surface-raised:#172a43;
+  --color-border:#25415d;
+  --color-text:#eef9ff;
+  --color-text-muted:#a3bcd2;
+  --color-primary:#67e8f9;
+  --color-success:#34d399;
+  background:radial-gradient(ellipse at 0 0,#143452 0%,transparent 52%),linear-gradient(180deg,#0b1729,#07101f);
+  border-right-color:#25415d;
+  box-shadow:inset -1px 0 #12334b;
+}
+.sidebar .brandMark {
+  position:relative;
+  border-radius:14px;
+  color:#e0fbff;
+  background:linear-gradient(145deg,#0e6589,#102c4d 60%,#091a2f);
+  border:1px solid #36c9e8;
+  box-shadow:0 0 0 3px #22d3ee12,0 0 22px #22d3ee40,inset 0 1px #ffffff35;
+  font-family:system-ui,sans-serif;
+  font-size:1.4rem;
+  letter-spacing:-.08em;
+}
+.sidebar .brandText strong { color:#f2fbff;letter-spacing:.025em }
+.sidebar .brandText small { color:#75b9d3 }
+.sidebar .navCaption { color:#7c9fb9 }
+.sidebar .navigation a { color:#9eb9d2;border-radius:12px }
+.sidebar .navigation a:hover { color:#f0fcff;background:#18304a }
+.sidebar .navigation a.active {
+  color:#8ceeff;
+  background:linear-gradient(90deg,#0e526c99,#123049);
+  border-color:#2a8399;
+  box-shadow:inset 3px 0 #42e3ff,0 0 16px #22d3ee18;
+}
+.sidebar .navigation a span.navLabel { width:auto;text-align:left;font-size:.9rem; }
+.sidebar .pinButton { color:#9eb9d2;background:#172a43;border-color:#35516b }
+.sidebar .pinButton[aria-pressed='true'] { color:#8ceeff;border-color:#36c9e8 }
+.sidebar .sidebarFooter { color:#9eb9d2 }
+.sidebar .statusDot { background:#34d399;box-shadow:0 0 12px #34d39977 }
+.sidebar .brand { padding-bottom:.8rem;border-bottom:1px solid #27435a;margin-bottom:1rem }
+.sidebar .navigation a .icon { width:21px;height:21px; }
+.menuToggle { display:none; }
+@media(max-width:900px) {
+  .menuToggle { display:flex; }
+  .sidebar,.sidebar:hover,.sidebar:focus-within,.layout[data-pinned='true'] .sidebar {
+    background:radial-gradient(ellipse at 0 0,#143452 0%,transparent 52%),linear-gradient(180deg,#0b1729,#07101f);
+  }
+}
