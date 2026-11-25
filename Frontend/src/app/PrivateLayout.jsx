@@ -55,7 +55,7 @@ export default function PrivateLayout({ profile, onLogout }) {
     try { localStorage.setItem(SIDEBAR_KEY, String(pinned)) } catch { /* Storage may be unavailable. */ }
   }, [pinned])
 
-  useEffect(() => { setAccountOpen(false) }, [location.pathname])
+  // El menú se cierra al seleccionar una acción; no requiere efecto de sincronización.
 
   useEffect(() => {
     if (!menuOpen) return undefined
