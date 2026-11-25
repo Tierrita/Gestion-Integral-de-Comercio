@@ -87,7 +87,7 @@ export default function Productos() {
     <MercaderiaNav />
     <header className={styles.heading}>
       <div><p className={styles.eyebrow}>CATÁLOGO COMERCIAL</p><h1>Productos</h1><p className={styles.muted}>Administrá tu catálogo, precios y estado de los productos.</p></div>
-      <Link className={styles.primary} to="/productos/nuevo">+ Nuevo producto</Link>
+      <ActionButton as={Link} variant="primary" to="/productos/nuevo">+ Nuevo producto</ActionButton>
     </header>
     <div className={styles.metrics}>
       <div><span>Total de productos</span><strong>{productos.length}</strong></div>
@@ -120,7 +120,7 @@ export default function Productos() {
         <td><strong className={p.estado !== false && Number(p.stock) <= Number(p.stock_minimo) ? styles.lowStock : ''}>{formatStock(p.stock, p.unidad_de_medida)}</strong></td>
         <td>{p.unidad_de_medida || '—'}</td>
         <td><span className={p.estado === false ? styles.inactive : styles.active}>{p.estado === false ? 'Inactivo' : 'Activo'}</span></td>
-        <td><div className={styles.actions}><Link className={styles.secondary} to={`/productos/${p.id_producto}/editar`}>Editar</Link><Link className={styles.secondary} to={`/inventario?producto=${p.id_producto}`}>Ver inventario</Link><ActionButton size="compact" variant={p.estado === false ? "secondary" : "danger"} disabled={changingId === p.id_producto} onClick={() => { setStatusError(''); setPendingStatus(p) }}>{changingId === p.id_producto ? 'Guardando…' : p.estado === false ? 'Activar' : 'Desactivar'}</ActionButton></div></td>
+        <td><div className={styles.actions}><ActionButton as={Link} size="compact" variant="secondary" to={`/productos/${p.id_producto}/editar`}>Editar</ActionButton><ActionButton as={Link} size="compact" variant="secondary" to={`/inventario?producto=${p.id_producto}`}>Ver inventario</ActionButton><ActionButton size="compact" variant={p.estado === false ? "secondary" : "danger"} disabled={changingId === p.id_producto} onClick={() => { setStatusError(''); setPendingStatus(p) }}>{changingId === p.id_producto ? 'Guardando…' : p.estado === false ? 'Activar' : 'Desactivar'}</ActionButton></div></td>
       </tr>)}</tbody></table></div>}
       {!loading && !error && visible.length > 0 && <div className={styles.pagination}>
         <span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, visible.length)} de {visible.length}</span>
