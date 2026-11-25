@@ -5,6 +5,7 @@ import styles from './Productos.module.css'
 import MercaderiaNav from './MercaderiaNav.jsx'
 import { formatoMoneda } from '../../shared/utils/formatters.js'
 import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
+import ActionButton from '../../shared/components/ActionButton.jsx'
 
 const numeric = (value) => value == null || value === '' ? null : Number(value)
 const PAGE_SIZES = [10, 25, 50]
@@ -99,7 +100,7 @@ export default function Productos() {
       <div className={styles.toolbar}>
         <label>Buscar producto<input type="search" placeholder="Nombre o número de producto" value={query} onChange={(event) => { setQuery(event.target.value); resetPage() }} /></label>
         <label>Estado<select value={filter} onChange={(event) => { setFilter(event.target.value); resetPage() }}><option value="todos">Todos</option><option value="activos">Activos</option><option value="inactivos">Inactivos</option></select></label>
-        <button type="button" className={styles.secondary} onClick={load} disabled={loading}>Actualizar</button>
+        <ActionButton variant="secondary" onClick={load} disabled={loading}>Actualizar</ActionButton>
       </div>
       <div className={styles.tableControls}>
         <label>Mostrar<select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); resetPage() }}>{PAGE_SIZES.map((size) => <option key={size} value={size}>{size} registros</option>)}</select></label>
@@ -119,11 +120,11 @@ export default function Productos() {
         <td><strong className={p.estado !== false && Number(p.stock) <= Number(p.stock_minimo) ? styles.lowStock : ''}>{formatStock(p.stock, p.unidad_de_medida)}</strong></td>
         <td>{p.unidad_de_medida || '—'}</td>
         <td><span className={p.estado === false ? styles.inactive : styles.active}>{p.estado === false ? 'Inactivo' : 'Activo'}</span></td>
-        <td><div className={styles.actions}><Link className={styles.secondary} to={`/productos/${p.id_producto}/editar`}>Editar</Link><Link className={styles.secondary} to={`/inventario?producto=${p.id_producto}`}>Ver inventario</Link><button type="button" className={styles.secondary} disabled={changingId === p.id_producto} onClick={() => { setStatusError(''); setPendingStatus(p) }}>{changingId === p.id_producto ? 'Guardando…' : p.estado === false ? 'Activar' : 'Desactivar'}</button></div></td>
+        <td><div className={styles.actions}><Link className={styles.secondary} to={`/productos/${p.id_producto}/editar`}>Editar</Link><Link className={styles.secondary} to={`/inventario?producto=${p.id_producto}`}>Ver inventario</Link><ActionButton size="compact" variant={p.estado === false ? "secondary" : "danger"} disabled={changingId === p.id_producto} onClick={() => { setStatusError(''); setPendingStatus(p) }}>{changingId === p.id_producto ? 'Guardando…' : p.estado === false ? 'Activar' : 'Desactivar'}</ActionButton></div></td>
       </tr>)}</tbody></table></div>}
       {!loading && !error && visible.length > 0 && <div className={styles.pagination}>
         <span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, visible.length)} de {visible.length}</span>
-        <div className={styles.pageActions}><button type="button" className={styles.secondary} disabled={currentPage === 1} onClick={() => setPage((n) => Math.max(1, n - 1))}>Anterior</button><span>Página {currentPage} de {totalPages}</span><button type="button" className={styles.secondary} disabled={currentPage === totalPages} onClick={() => setPage((n) => Math.min(totalPages, n + 1))}>Siguiente</button></div>
+        <div className={styles.pageActions}><ActionButton variant="secondary" disabled={currentPage === 1} onClick={() => setPage((n) => Math.max(1, n - 1))}>Anterior</ActionButton><span>Página {currentPage} de {totalPages}</span><ActionButton variant="secondary" disabled={currentPage === totalPages} onClick={() => setPage((n) => Math.min(totalPages, n + 1))}>Siguiente</ActionButton></div>
       </div>}
     </div>
     <ConfirmDialog
