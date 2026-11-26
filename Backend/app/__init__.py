@@ -12,7 +12,9 @@ mantener una separación clara entre la API, la lógica de negocio y
 los datos.
 """
 
+import os
 from flask import Flask
+from flask_cors import CORS
 from config import init_app as init_config
 
 
@@ -29,6 +31,11 @@ def create_app():
 
     # Cargar configuración y variables de entorno
     init_config(app)
+
+    # Allow only explicitly configured browser origins.
+    origins = [origin.strip() for origin in os.getenv('CORS_ALLOWED_ORIGINS', '').split(',') if origin.strip()]
+    if origins:
+        CORS(app, origins=origins, allow_headers=['Content-Type', 'Authorization'], supports_credentials=False)
 
     # Inicializar cliente de Supabase
     from core.supabase_client import init_supabase
