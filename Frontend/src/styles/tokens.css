@@ -1,11 +1,33 @@
+/* AIOnix V2 — fuente central de tokens. Los valores actuales preservan la interfaz aprobada. */
 :root {
-  /* Identidad visual: cambiá estos valores para personalizar toda la aplicación. */
+  --color-background: #0b1220;
+  --color-surface: #142136;
+  --color-surface-raised: #1b2c45;
+  --color-border: #2c405b;
+  --color-text: #eff6ff;
+  --color-text-muted: #a9bed4;
+  --color-primary: #16b7d4;
+  --color-primary-hover: #0b91b0;
+  --color-focus: #67e8f9;
+  --sidebar-width: 16rem;
+  --radius-panel: 1rem;
+  --radius-control: .65rem;
+  --radius-card: .9rem;
+  --space-1: .25rem;
+  --space-2: .5rem;
+  --space-3: .75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --control-min-height: 44px;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #fb7185;
   --brand-primary: #22d3ee;
   --brand-primary-hover: #06b6d4;
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
-  --sidebar-width: 15rem;
   --content-max-width: 90rem;
   --space-page: clamp(1rem, 3vw, 2rem);
   --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
