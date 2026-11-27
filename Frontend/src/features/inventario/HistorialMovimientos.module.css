@@ -290,3 +290,17 @@
     min-width: 950px;
   }
 }
+
+/* Detalle de movimiento: lectura rápida del impacto en existencias */
+.movementDetail{display:grid;gap:1.1rem;padding-top:.4rem}
+.movementHeading{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap}
+.movementHeading>div{display:grid;gap:.2rem}
+.detailLabel,.detailSubtle{font-size:.78rem;color:var(--color-text-muted)}
+.movementProduct{font-size:1.12rem;font-weight:800}
+.stockFlow{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) minmax(0,1fr);align-items:stretch;gap:.65rem}
+.stockStep,.stockDelta{display:grid;align-content:center;gap:.35rem;padding:1rem;border:1px solid var(--color-border);border-radius:var(--radius-panel);background:var(--color-surface-raised);min-width:0}
+.stockStep span,.stockDelta span{color:var(--color-text-muted);font-size:.76rem}
+.stockStep strong,.stockDelta strong{font-size:1.45rem;font-weight:800;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.stockArrow{display:flex;align-items:center;font-size:1.5rem;color:var(--color-text-muted)}
+.movementDetail .detailGrid{margin:0;border-top:1px solid var(--color-border);padding-top:1rem}
+@media(max-width:650px){.stockFlow{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}.stockDelta{grid-column:1/-1}.stockStep strong,.stockDelta strong{font-size:1.2rem}}
