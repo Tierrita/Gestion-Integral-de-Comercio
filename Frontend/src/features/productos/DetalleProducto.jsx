@@ -105,13 +105,10 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
         <ActionButton variant="primary" disabled={producto.estado === false || stockLoading || Boolean(stockError) || !stock} onClick={() => { setAdjusting(true); setError(''); setNotice('') }}>Ajustar stock</ActionButton>
         <ActionButton variant="secondary" type="button" onClick={() => { if (!historyOpen) void loadHistory(); setHistoryOpen(!historyOpen) }}>{historyOpen ? 'Ocultar movimientos' : 'Ver movimientos'}</ActionButton>
         <ActionButton as={Link} variant="secondary" to={`/productos/${producto.id_producto}/editar`}>Editar producto</ActionButton>
-        <details className={styles.moreActions}>
-          <summary aria-label="Más opciones del producto">Más opciones ···</summary>
-          <div className={styles.moreMenu}>
-            <button type="button" onClick={() => onStatus(producto)}>{producto.estado === false ? 'Activar producto' : 'Desactivar producto'}</button>
-          </div>
-        </details>
       </div> : <StockAdjustmentFields unit={unit} currentStock={current.stock} type={type} onTypeChange={(value) => { setType(value); setError('') }} amount={amount} onAmountChange={(value) => { setAmount(value); setError('') }} onSubmit={submit} onCancel={() => { setAdjusting(false); setError('') }} saving={saving} error={error} />}
+      {!adjusting && <div className={styles.statusAction}>
+        <button type="button" onClick={() => onStatus(producto)}>{producto.estado === false ? 'Activar producto' : 'Desactivar producto'}</button>
+      </div>}
       {historyOpen && <section className={styles.history} aria-label="Historial de movimientos del producto">
         <div className={styles.historyHead}><h3>Movimientos recientes</h3><ActionButton variant="secondary" size="compact" type="button" disabled={historyLoading} onClick={() => void loadHistory()}>Actualizar</ActionButton></div>
         {historyError && <Alert type="error">{historyError}</Alert>}
