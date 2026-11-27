@@ -1,4 +1,5 @@
 import actionMenuStyles from '../../shared/components/ActionMenu.module.css'
+import tableStyles from '../../shared/components/CommerceTable.module.css'
 import ActionButton from '../../shared/components/ActionButton.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -154,14 +155,14 @@ export default function Clientes({ esPropietario = false }) {
         <ActionButton variant="secondary" type="button" disabled={loading} onClick={() => void load()}>Actualizar</ActionButton>
       </div>
       <p className={styles.muted}>{filtered.length} clientes encontrados</p>
-      {loading ? <p role="status">Cargando clientes…</p> : error && clientes.length === 0 ? <p>No se pudo cargar el listado.</p> : filtered.length === 0 ? <p>No hay clientes para mostrar.</p> : <div className={styles.scroll}><table><thead><tr>
+      {loading ? <p role="status">Cargando clientes…</p> : error && clientes.length === 0 ? <p>No se pudo cargar el listado.</p> : filtered.length === 0 ? <p>No hay clientes para mostrar.</p> : <div className={tableStyles.scroll}><table className={tableStyles.table}><thead><tr>
         <th><button type="button" onClick={() => changeSort('numero_cliente')}>N.º{sortMark('numero_cliente')}</button></th>
         <th><button type="button" onClick={() => changeSort('nombre_completo')}>Cliente{sortMark('nombre_completo')}</button></th>
         <th>Teléfono</th><th>Estado</th><th>Saldo</th><th>Acciones</th>
       </tr></thead><tbody>{rows.map((c) => <tr key={c.id_cliente}>
         <td>#{c.numero_cliente}</td><td><strong>{c.nombre_completo}</strong></td><td>{c.telefono || '—'}</td>
-        <td><span className={c.estado === false ? styles.inactive : styles.active}>{c.estado === false ? 'Inactivo' : 'Activo'}</span></td>
-        <td>{saldos[c.id_cliente] ? <span className={saldos[c.id_cliente].saldo > 0 ? styles.deuda : saldos[c.id_cliente].saldo < 0 ? styles.favor : styles.neutro}>{money(Math.abs(saldos[c.id_cliente].saldo))} · {saldos[c.id_cliente].saldo > 0 ? 'Debe' : saldos[c.id_cliente].saldo < 0 ? 'A favor' : 'Al día'}</span> : '—'}</td>
+        <td><span className={c.estado === false ? tableStyles.inactive : tableStyles.active}>{c.estado === false ? 'Inactivo' : 'Activo'}</span></td>
+        <td>{saldos[c.id_cliente] ? <span className={saldos[c.id_cliente].saldo > 0 ? tableStyles.deuda : saldos[c.id_cliente].saldo < 0 ? tableStyles.favor : tableStyles.neutro}>{money(Math.abs(saldos[c.id_cliente].saldo))} · {saldos[c.id_cliente].saldo > 0 ? 'Debe' : saldos[c.id_cliente].saldo < 0 ? 'A favor' : 'Al día'}</span> : '—'}</td>
         <td><div className={styles.actions}>
           {Number(c.numero_cliente) !== 1 && c.estado !== false && <ActionButton size="compact" variant="primary" type="button" onClick={() => setCobroClient(c)}>Cobrar</ActionButton>}
           <ActionButton size="compact" variant="secondary" type="button" onClick={() => setAccountClient(c)}>Ver detalle</ActionButton>
