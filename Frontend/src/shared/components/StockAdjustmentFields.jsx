@@ -4,17 +4,23 @@ import styles from './StockAdjustmentFields.module.css'
 
 export const formatStockQuantity = (value, unit) => new Intl.NumberFormat('es-AR', { maximumFractionDigits: unit === 'KG' ? 3 : 0 }).format(Number(value ?? 0))
 
+export function parseStockQuantity(value) {
+  const normalized = String(value ?? '').trim().replace(',', '.')
+  if (!/^[0-9]+([.][0-9]+)?$/.test(normalized)) return null
+  const number = Number(normalized)
+  return Number.isFinite(number) ? number : null
+}
+
 export function validStockQuantity(value, unit) {
-  if (!/^\\d+(?:\\.\\d+)?$/.test(String(value))) return false
-  const number = Number(value)
-  if (!Number.isFinite(number) || number <= 0) return false
+  const number = parseStockQuantity(value)
+  if (number === null || number <= 0) return false
   if (unit === 'KG') return Number.isSafeInteger(Math.round(number * 1000)) && Math.abs(number * 1000 - Math.round(number * 1000)) < 1e-7
   return unit === 'UNIDAD' && Number.isSafeInteger(number)
 }
 
 export default function StockAdjustmentFields({ unit, currentStock, type, onTypeChange, amount, onAmountChange, onSubmit, onCancel, saving = false, error = '' }) {
   const valid = validStockQuantity(amount, unit)
-  const quantity = Number(amount)
+  const quantity = parseStockQuantity(amount)
   const exceeds = type === 'DISMINUIR' && valid && quantity > Number(currentStock)
   const projected = valid && !exceeds && Number.isFinite(Number(currentStock))
     ? Math.round((Number(currentStock) + (type === 'AUMENTAR' ? quantity : -quantity)) * 1000) / 1000
@@ -34,7 +40,7 @@ export default function StockAdjustmentFields({ unit, currentStock, type, onType
         </select>
       </label>
       <label>Cantidad ({suffix})
-        <input autoFocus type="number" min={unit === 'KG' ? '0.001' : '1'} step={unit === 'KG' ? '0.001' : '1'} required disabled={saving} value={amount} onChange={(event) => onAmountChange(event.target.value)} placeholder={unit === 'KG' ? 'Ej. 1.250' : 'Ej. 5'} />
+        <input autoFocus type="text" inputMode={unit === 'KG' ? 'decimal' : 'numeric'} required disabled={saving} value={amount} onChange={(event) => onAmountChange(event.target.value)} placeholder={unit === 'KG' ? 'Ej. 1.250' : 'Ej. 5'} />
       </label>
     </div>
     {projected !== null && <div className={styles.balance}><span>Stock resultante</span><strong>{formatStockQuantity(projected, unit)} {suffix}</strong></div>}
