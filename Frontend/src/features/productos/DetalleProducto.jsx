@@ -7,9 +7,8 @@ import ActionButton from '../../shared/components/ActionButton.jsx'
 import { formatoMoneda } from '../../shared/utils/formatters.js'
 import styles from './DetalleProducto.module.css'
 import StockAdjustmentFields from '../../shared/components/StockAdjustmentFields.jsx'
-import { parseStockQuantity, validStockQuantity } from '../../shared/utils/stockQuantity.js'
+import { formatStockQuantity, parseStockQuantity, validStockQuantity } from '../../shared/utils/stockQuantity.js'
 
-const formatStock = (value, unit) => new Intl.NumberFormat('es-AR', { maximumFractionDigits: unit === 'KG' ? 3 : 0 }).format(Number(value ?? 0))
 const errorOf = (error) => error.response?.data?.error || (error.response?.status === 403 ? 'No tenés permiso para ajustar el stock.' : 'No se pudo completar la operación.')
 export default function DetalleProducto({ producto, onClose, onUpdated, onStatus }) {
   const [type, setType] = useState('AUMENTAR')
@@ -77,7 +76,7 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
       setAmount('')
       setAdjusting(false)
       try { await onUpdated?.() } catch { setError('El ajuste se guardó, pero no se pudo actualizar el listado. Usá Actualizar para sincronizarlo.') }
-      if (historyOpen) await loadHistory()
+      if (historyOpen) void loadHistory()
     } catch (err) {
       setError(errorOf(err))
     } finally {
@@ -92,7 +91,7 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
       {stockLoading && <Alert type="info">Consultando el stock actualizado…</Alert>}
       {stockError && <Alert type="error">{stockError} Cerrá y volvé a abrir el detalle para reintentar.</Alert>}
       <div className={styles.metrics}>
-        <article><span>Stock actual</span><strong>{formatStock(current.stock, unit)}</strong><small>Mínimo: {formatStock(producto.stock_minimo, unit)} {unit === 'KG' ? 'kg' : 'un.'}</small></article>
+        <article><span>Stock actual</span><strong>{formatStockQuantity(current.stock, unit)}</strong><small>Mínimo: {formatStockQuantity(producto.stock_minimo, unit)} {unit === 'KG' ? 'kg' : 'un.'}</small></article>
         <article><span>Precio de venta</span><strong>{formatoMoneda(producto.precio_venta)}</strong><small>Precio vigente</small></article>
         <article><span>Precio de costo</span><strong>{producto.precio_costo == null ? 'Sin acceso' : formatoMoneda(producto.precio_costo)}</strong><small>Según permisos</small></article>
       </div>
@@ -119,7 +118,7 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
           const rawDate = row.fecha_movimiento ?? row.fecha ?? row.created_at
           const date = rawDate ? new Date(rawDate) : null
           const dateLabel = date && !Number.isNaN(date.getTime()) ? new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', dateStyle: 'short', timeStyle: 'short' }).format(date) : '—'
-          return <tr key={row.id_movimiento ?? index}><td>{dateLabel}</td><td>{String(row.tipo_movimiento ?? 'Sin tipo').replaceAll('_', ' ')}</td><td className={difference > 0 ? styles.positive : difference < 0 ? styles.negative : ''}>{difference == null ? '—' : `${difference > 0 ? '+' : ''}${formatStock(difference, unit)}`}</td><td>{row.stock_nuevo == null ? '—' : formatStock(row.stock_nuevo, unit)}</td></tr>
+          return <tr key={row.id_movimiento ?? index}><td>{dateLabel}</td><td>{String(row.tipo_movimiento ?? 'Sin tipo').replaceAll('_', ' ')}</td><td className={difference > 0 ? styles.positive : difference < 0 ? styles.negative : ''}>{difference == null ? '—' : `${difference > 0 ? '+' : ''}${formatStockQuantity(difference, unit)}`}</td><td>{row.stock_nuevo == null ? '—' : formatStockQuantity(row.stock_nuevo, unit)}</td></tr>
         })}</tbody></table></div>}
         {!historyLoading && !historyError && history.length > 10 && <p className={styles.historyFoot}>Mostrando los últimos 10 de {history.length} movimientos. El historial completo sigue disponible en Mercadería → Movimientos.</p>}
       </section>}
