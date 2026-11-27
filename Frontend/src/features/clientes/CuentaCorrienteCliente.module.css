@@ -70,3 +70,8 @@
 .cobroRevision strong{color:var(--color-primary)}
 .cobroAcciones{display:flex;justify-content:flex-end;gap:.65rem;flex-wrap:wrap}
 @media(max-width:550px){.cobroSaldos{grid-template-columns:1fr}.cobroAcciones>*{flex:1 1 auto}}
+
+/* Semántica financiera uniforme con Proveedores */
+.cobroSaldos .deuda{color:#e9787f}
+.cobroSaldos .favor{color:#27bc8a}
+.cobroSaldos .neutro{color:var(--color-text)}
