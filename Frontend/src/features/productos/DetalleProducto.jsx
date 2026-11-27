@@ -6,17 +6,10 @@ import Alert from '../../shared/components/Alert.jsx'
 import ActionButton from '../../shared/components/ActionButton.jsx'
 import { formatoMoneda } from '../../shared/utils/formatters.js'
 import styles from './DetalleProducto.module.css'
+import StockAdjustmentFields, { validStockQuantity } from '../../shared/components/StockAdjustmentFields.jsx'
 
 const formatStock = (value, unit) => new Intl.NumberFormat('es-AR', { maximumFractionDigits: unit === 'KG' ? 3 : 0 }).format(Number(value ?? 0))
 const errorOf = (error) => error.response?.data?.error || (error.response?.status === 403 ? 'No tenés permiso para ajustar el stock.' : 'No se pudo completar la operación.')
-const validAmount = (value, unit) => {
-  if (!/^\d+(?:\.\d+)?$/.test(value)) return false
-  const number = Number(value)
-  if (!Number.isFinite(number) || number <= 0) return false
-  if (unit === 'KG') return Math.abs(number * 1000 - Math.round(number * 1000)) < 1e-7
-  return Number.isSafeInteger(number)
-}
-
 export default function DetalleProducto({ producto, onClose, onUpdated, onStatus }) {
   const [type, setType] = useState('AUMENTAR')
   const [amount, setAmount] = useState('')
@@ -58,7 +51,7 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
   const current = stock ?? producto
   const unit = producto.unidad_de_medida
   const quantity = Number(amount)
-  const valid = validAmount(amount, unit)
+  const valid = validStockQuantity(amount, unit)
   const exceeds = type === 'DISMINUIR' && valid && quantity > Number(current.stock)
   const projected = valid && !exceeds ? Math.round((Number(current.stock) + (type === 'AUMENTAR' ? quantity : -quantity)) * 1000) / 1000 : null
 
@@ -102,16 +95,7 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
         <ActionButton variant="secondary" type="button" onClick={() => { if (!historyOpen) void loadHistory(); setHistoryOpen(!historyOpen) }}>{historyOpen ? 'Ocultar movimientos' : 'Ver movimientos'}</ActionButton>
         <ActionButton as={Link} variant="secondary" to={`/productos/${producto.id_producto}/editar`}>Editar producto</ActionButton>
         <ActionButton variant="secondary" onClick={() => onStatus(producto)}>{producto.estado === false ? 'Activar' : 'Desactivar'}</ActionButton>
-      </div> : <form className={styles.form} onSubmit={submit}>
-        <h3>Ajustar existencias</h3>
-        <div className={styles.fields}>
-          <label>Tipo de movimiento<select disabled={saving} value={type} onChange={(e) => setType(e.target.value)}><option value="AUMENTAR">Entrada (+)</option><option value="DISMINUIR">Salida (−)</option></select></label>
-          <label>Cantidad ({unit === 'KG' ? 'kg' : 'un.'})<input autoFocus type="number" min={unit === 'KG' ? '0.001' : '1'} step={unit === 'KG' ? '0.001' : '1'} value={amount} onChange={(e) => setAmount(e.target.value)} disabled={saving} required /></label>
-        </div>
-        {exceeds && <Alert type="error">La salida supera las existencias disponibles.</Alert>}
-        {projected !== null && <p className={styles.preview}>Stock resultante: <strong>{formatStock(projected, unit)} {unit === 'KG' ? 'kg' : 'un.'}</strong></p>}
-        <div className={styles.actions}><ActionButton variant="secondary" type="button" disabled={saving} onClick={() => { setAdjusting(false); setError('') }}>Cancelar</ActionButton><ActionButton variant="primary" type="submit" disabled={saving || !valid || exceeds}>{saving ? 'Guardando…' : 'Confirmar ajuste'}</ActionButton></div>
-      </form>}
+      </div> : <StockAdjustmentFields unit={unit} currentStock={current.stock} type={type} onTypeChange={(value) => { setType(value); setError('') }} amount={amount} onAmountChange={(value) => { setAmount(value); setError('') }} onSubmit={submit} onCancel={() => { setAdjusting(false); setError('') }} saving={saving} error={error} />}
       {historyOpen && <section className={styles.history} aria-label="Historial de movimientos del producto">
         <div className={styles.historyHead}><h3>Movimientos recientes</h3><ActionButton variant="secondary" size="compact" type="button" disabled={historyLoading} onClick={() => void loadHistory()}>Actualizar</ActionButton></div>
         {historyError && <Alert type="error">{historyError}</Alert>}
