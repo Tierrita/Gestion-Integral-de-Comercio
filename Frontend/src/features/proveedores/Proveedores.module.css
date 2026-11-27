@@ -43,11 +43,10 @@
 .detailList dt{color:var(--color-text-muted);font-size:.85rem}.detailList dd{margin:0;overflow-wrap:anywhere}
 @media(max-width:500px){.detailList>div{grid-template-columns:1fr;gap:.25rem}}
 
-.deuda,.favor,.neutro{font-weight:700;font-size:.8rem;white-space:nowrap}
-.deuda{color:var(--color-text)}
-.favor{color:#059669}
-.neutro{color:var(--color-text-muted)}
-:global([data-theme='dark']) .favor{color:#29c58f}
+.deuda,.favor,.neutro{white-space:nowrap}
+.deuda{color:#f17b82;font-weight:750}
+.favor{color:#29c58f;font-weight:750}
+.neutro{color:var(--color-text-muted);font-weight:650}
 
 /* La tabla mantiene columnas legibles; el desplazamiento es horizontal en pantallas estrechas. */
 .scroll table{min-width:1250px;table-layout:auto}
