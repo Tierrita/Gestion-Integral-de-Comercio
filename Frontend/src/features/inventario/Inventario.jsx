@@ -1,6 +1,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import tableStyles from '../../shared/components/CommerceTable.module.css'
+import StockAdjustmentFields, { validStockQuantity } from '../../shared/components/StockAdjustmentFields.jsx'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import MercaderiaNav from '../productos/MercaderiaNav.jsx'
@@ -38,30 +39,6 @@ const formatQuantity = (value, unit = 'UNIDAD') => {
 
 const unitLabel = (unit) => unit === 'KG' ? 'kg' : 'un.'
 
-const validQuantity = (value, unit) => {
-  if (value === '' || value === null || value === undefined) {
-    return false
-  }
-
-  const number = Number(value)
-
-  if (!Number.isFinite(number) || number <= 0) {
-    return false
-  }
-
-  if (unit === 'UNIDAD') {
-    return Number.isSafeInteger(number)
-  }
-
-  if (unit === 'KG') {
-    const scaled = number * 1000
-
-    return Number.isSafeInteger(Math.round(scaled)) &&
-      Math.abs(scaled - Math.round(scaled)) < 1e-7
-  }
-
-  return false
-}
 
 export default function Inventario() {
   const [searchParams] = useSearchParams()
@@ -205,28 +182,7 @@ export default function Inventario() {
     setAdjustError('')
   }
 
-  const quantityValid = selected
-    ? validQuantity(amount, selected.unidad_de_medida)
-    : false
-
-  const currentStock = Number(selected?.stock ?? 0)
   const quantity = Number(amount)
-
-  const exceedsStock =
-    selected !== null &&
-    adjustType === 'DISMINUIR' &&
-    quantityValid &&
-    quantity > currentStock
-
-  const resultingStock =
-    selected && quantityValid && !exceedsStock
-      ? Math.round(
-          (
-            currentStock +
-            (adjustType === 'AUMENTAR' ? quantity : -quantity)
-          ) * 1000
-        ) / 1000
-      : null
 
   async function submit(event) {
     event.preventDefault()
@@ -542,104 +498,7 @@ export default function Inventario() {
               <strong>{selected.nombre_producto}</strong>
             </p>
 
-            <p className={styles.muted}>
-              Stock actual:{' '}
-              <strong>
-                {formatQuantity(
-                  selected.stock,
-                  selected.unidad_de_medida
-                )}
-              </strong>{' '}
-              {unitLabel(selected.unidad_de_medida)}
-            </p>
-
-            <form
-              className={styles.form}
-              onSubmit={submit}
-            >
-              <label>
-                Tipo de movimiento
-                <select
-                  value={adjustType}
-                  disabled={saving}
-                  onChange={(event) => {
-                    setAdjustType(event.target.value)
-                    setAdjustError('')
-                  }}
-                >
-                  <option value="AUMENTAR">
-                    Entrada (+)
-                  </option>
-                  <option value="DISMINUIR">
-                    Salida (−)
-                  </option>
-                </select>
-              </label>
-
-              <label>
-                Cantidad ({unitLabel(selected.unidad_de_medida)})
-                <input
-                  autoFocus
-                  type="number"
-                  min={isKg(selected) ? '0.001' : '1'}
-                  step={isKg(selected) ? '0.001' : '1'}
-                  required
-                  disabled={saving}
-                  value={amount}
-                  onChange={(event) => {
-                    setAmount(event.target.value)
-                    setAdjustError('')
-                  }}
-                  placeholder={
-                    isKg(selected) ? 'Ej. 1.250' : 'Ej. 5'
-                  }
-                />
-              </label>
-
-              {resultingStock !== null && (
-                <p className={styles.preview}>
-                  Stock resultante:{' '}
-                  <strong>
-                    {formatQuantity(
-                      resultingStock,
-                      selected.unidad_de_medida
-                    )}{' '}
-                    {unitLabel(selected.unidad_de_medida)}
-                  </strong>
-                </p>
-              )}
-
-              {exceedsStock && (
-                <Alert type="error">La salida supera el stock disponible.</Alert>
-              )}
-
-              {adjustError && <Alert type="error">{adjustError}</Alert>}
-
-              <div className={styles.actions}>
-                <ActionButton
-                  variant="secondary"
-                  type="button"
-                  disabled={saving}
-                  onClick={closeAdjustment}
-                >
-                  Cancelar
-                </ActionButton>
-
-                <ActionButton
-                  variant="primary"
-                  type="submit"
-                  disabled={
-                    saving ||
-                    !quantityValid ||
-                    exceedsStock
-                  }
-                >
-                  {saving
-                    ? 'Guardando…'
-                    : 'Confirmar ajuste'}
-                </ActionButton>
-              </div>
-            </form>
+            <StockAdjustmentFields unit={selected.unidad_de_medida} currentStock={selected.stock} type={adjustType} onTypeChange={(value) => { setAdjustType(value); setAdjustError('') }} amount={amount} onAmountChange={(value) => { setAmount(value); setAdjustError('') }} onSubmit={submit} onCancel={closeAdjustment} saving={saving} error={adjustError} />
           </>
         )}
       </Modal>
