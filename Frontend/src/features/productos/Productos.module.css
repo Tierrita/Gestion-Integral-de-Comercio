@@ -14,15 +14,8 @@
 .toolbar label { min-width: 140px; }
 .page label { display: grid; gap: .4rem; color: var(--color-text-muted); font-size: .85rem; font-weight: 600; }
 .page input, .page select { width: 100%; min-height: 43px; padding: .6rem .75rem; border: 1px solid var(--color-border); border-radius: .6rem; background: var(--color-background); color: var(--color-text); }
-.tableScroll { overflow-x: auto; }
-.tableScroll table { width: 100%; border-collapse: collapse; text-align: left; }
-.tableScroll th, .tableScroll td { padding: 1rem 1.1rem; border-bottom: 1px solid var(--color-border); white-space: nowrap; }
-.tableScroll th { font-size: .75rem; color: var(--color-text-muted); }
 .tableScroll td small { display: block; margin-top: .25rem; color: var(--color-text-muted); }
 .actions { display: flex; gap: .5rem; }
-.active, .inactive { display: inline-block; padding: .35rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 700; }
-.active { color: #1caa76; background: rgb(35 190 133 / .12); }
-.inactive { color: #e6a45b; background: rgb(230 164 91 / .12); }
 .empty { padding: 2rem; text-align: center; color: var(--color-text-muted); }
 .error, .success { padding: .85rem 1rem; border-radius: .6rem; margin: 0; }
 .error { color: #ffb4b4; background: rgb(240 65 65 / .12); }
@@ -42,78 +35,8 @@
 
 
 
-/* =========================================
-   MERCADERÍA — TABLA COMPACTA V2
-   ========================================= */
 
-.tableScroll {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.tableScroll table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.83rem;
-}
-
-.tableScroll th,
-.tableScroll td {
-  padding: 0.55rem 0.75rem;
-  border-bottom: 1px solid var(--color-border);
-  vertical-align: middle;
-  white-space: nowrap;
-}
-
-.tableScroll th {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--color-text-muted);
-}
-
-.tableScroll tbody tr {
-  height: 48px;
-}
-
-.tableScroll tbody tr:nth-child(even) {
-  background: var(--color-background);
-}
-
-.tableScroll tbody tr:hover {
-  background: var(--color-surface-raised);
-}
-
-.tableScroll td:nth-child(2) {
-  min-width: 180px;
-  white-space: normal;
-}
-
-.tableScroll td:nth-child(3),
-.tableScroll td:nth-child(4),
-.tableScroll td:nth-child(5) {
-  font-variant-numeric: tabular-nums;
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-}
-
-
-.active,
-.inactive {
-  padding: 0.2rem 0.45rem;
-  font-size: 0.7rem;
-}
-
-.tableControls,
-.pagination {
-  padding: 0.7rem 1rem;
-}
-
-.sortButton {
-  padding: 0;
-  font-size: inherit;
-}
+/* Ajustes específicos del catálogo sobre la tabla comercial compartida. */
+.tableScroll td:nth-child(2){min-width:180px;white-space:normal}
+.tableScroll td:nth-child(3),.tableScroll td:nth-child(4),.tableScroll td:nth-child(5){font-variant-numeric:tabular-nums}
+.tableScroll td:last-child{min-width:280px}
