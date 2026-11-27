@@ -107,7 +107,7 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
         <ActionButton as={Link} variant="secondary" to={`/productos/${producto.id_producto}/editar`}>Editar producto</ActionButton>
       </div> : <StockAdjustmentFields unit={unit} currentStock={current.stock} type={type} onTypeChange={(value) => { setType(value); setError('') }} amount={amount} onAmountChange={(value) => { setAmount(value); setError('') }} onSubmit={submit} onCancel={() => { setAdjusting(false); setError('') }} saving={saving} error={error} />}
       {!adjusting && <div className={styles.statusAction}>
-        <button type="button" onClick={() => onStatus(producto)}>{producto.estado === false ? 'Activar producto' : 'Desactivar producto'}</button>
+        <button type="button" onClick={() => onStatus(producto)}><span aria-hidden="true">{producto.estado === false ? '↻' : '⊘'}</span>{producto.estado === false ? 'Activar' : 'Desactivar'}</button>
       </div>}
       {historyOpen && <section className={styles.history} aria-label="Historial de movimientos del producto">
         <div className={styles.historyHead}><h3>Movimientos recientes</h3><ActionButton variant="secondary" size="compact" type="button" disabled={historyLoading} onClick={() => void loadHistory()}>Actualizar</ActionButton></div>
