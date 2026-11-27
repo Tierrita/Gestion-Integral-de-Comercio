@@ -155,7 +155,7 @@ export default function Clientes({ esPropietario = false }) {
         <ActionButton variant="secondary" type="button" disabled={loading} onClick={() => void load()}>Actualizar</ActionButton>
       </div>
       <p className={styles.muted}>{filtered.length} clientes encontrados</p>
-      {loading ? <p role="status">Cargando clientes…</p> : error && clientes.length === 0 ? <p>No se pudo cargar el listado.</p> : filtered.length === 0 ? <p>No hay clientes para mostrar.</p> : <div className={tableStyles.scroll}><table className={tableStyles.table}><thead><tr>
+      {loading ? <p role="status">Cargando clientes…</p> : error && clientes.length === 0 ? <p>No se pudo cargar el listado.</p> : filtered.length === 0 ? <p>No hay clientes para mostrar.</p> : <div className={`${styles.scroll} ${tableStyles.scroll}`}><table className={tableStyles.table}><thead><tr>
         <th><button type="button" onClick={() => changeSort('numero_cliente')}>N.º{sortMark('numero_cliente')}</button></th>
         <th><button type="button" onClick={() => changeSort('nombre_completo')}>Cliente{sortMark('nombre_completo')}</button></th>
         <th>Teléfono</th><th>Estado</th><th>Saldo</th><th>Acciones</th>
