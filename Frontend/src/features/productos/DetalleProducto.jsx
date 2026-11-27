@@ -1,0 +1,96 @@
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { api } from '../../shared/api/client.js'
+import Modal from '../../shared/components/Modal.jsx'
+import Alert from '../../shared/components/Alert.jsx'
+import ActionButton from '../../shared/components/ActionButton.jsx'
+import { formatoMoneda } from '../../shared/utils/formatters.js'
+import styles from './DetalleProducto.module.css'
+
+const formatStock = (value, unit) => new Intl.NumberFormat('es-AR', { maximumFractionDigits: unit === 'KG' ? 3 : 0 }).format(Number(value ?? 0))
+const errorOf = (error) => error.response?.data?.error || (error.response?.status === 403 ? 'No tenés permiso para ajustar el stock.' : 'No se pudo completar la operación.')
+const validAmount = (value, unit) => {
+  if (!/^\d+(?:\.\d+)?$/.test(value)) return false
+  const number = Number(value)
+  if (!Number.isFinite(number) || number <= 0) return false
+  if (unit === 'KG') return Math.abs(number * 1000 - Math.round(number * 1000)) < 1e-7
+  return Number.isSafeInteger(number)
+}
+
+export default function DetalleProducto({ producto, onClose, onUpdated, onStatus }) {
+  const [type, setType] = useState('AUMENTAR')
+  const [amount, setAmount] = useState('')
+  const [adjusting, setAdjusting] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [stock, setStock] = useState(null)
+
+  useEffect(() => {
+    if (!producto) return
+    let active = true
+    api.get('/stock').then(({ data }) => {
+      if (active && Array.isArray(data)) setStock(data.find((item) => item.id_producto === producto.id_producto) ?? null)
+    }).catch(() => { if (active) setStock(null) })
+    return () => { active = false }
+  }, [producto])
+
+  if (!producto) return null
+  const current = stock ?? producto
+  const unit = producto.unidad_de_medida
+  const quantity = Number(amount)
+  const valid = validAmount(amount, unit)
+  const exceeds = type === 'DISMINUIR' && valid && quantity > Number(current.stock)
+  const projected = valid && !exceeds ? Math.round((Number(current.stock) + (type === 'AUMENTAR' ? quantity : -quantity)) * 1000) / 1000 : null
+
+  async function submit(event) {
+    event.preventDefault()
+    if (saving || producto.estado === false || !valid || exceeds) return
+    setSaving(true)
+    setError('')
+    setNotice('')
+    try {
+      const { data } = await api.patch(`/stock/${producto.id_producto}/ajustar`, { cantidad: quantity, tipo_ajuste: type })
+      setNotice(data.message || 'Stock actualizado correctamente.')
+      setStock((previous) => ({ ...current, ...previous, stock: data.data?.stock_nuevo ?? projected }))
+      setAmount('')
+      setAdjusting(false)
+      await onUpdated?.()
+    } catch (err) {
+      setError(errorOf(err))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return <Modal open={Boolean(producto)} onClose={onClose} busy={saving} size="large" title={producto.nombre_producto} description={`Detalle comercial · Producto N.º ${producto.numero_producto ?? '—'}`}>
+    <div className={styles.content}>
+      {notice && <Alert type="success">{notice}</Alert>}
+      {error && <Alert type="error">{error}</Alert>}
+      <div className={styles.metrics}>
+        <article><span>Stock actual</span><strong>{formatStock(current.stock, unit)}</strong><small>Mínimo: {formatStock(producto.stock_minimo, unit)} {unit === 'KG' ? 'kg' : 'un.'}</small></article>
+        <article><span>Precio de venta</span><strong>{formatoMoneda(producto.precio_venta)}</strong><small>Precio vigente</small></article>
+        <article><span>Precio de costo</span><strong>{producto.precio_costo == null ? 'Sin acceso' : formatoMoneda(producto.precio_costo)}</strong><small>Según permisos</small></article>
+      </div>
+      <div className={styles.meta}>
+        <div><span>Estado</span><strong>{producto.estado === false ? 'Inactivo' : 'Activo'}</strong></div>
+        <div><span>Unidad</span><strong>{unit || '—'}</strong></div>
+        <div><span>Situación</span><strong>{producto.estado === false ? 'Inactivo' : Number(current.stock) <= Number(producto.stock_minimo) ? 'Stock bajo' : 'Normal'}</strong></div>
+      </div>
+      {!adjusting ? <div className={styles.actions}>
+        <ActionButton variant="primary" disabled={producto.estado === false} onClick={() => { setAdjusting(true); setError(''); setNotice('') }}>Ajustar stock</ActionButton>
+        <ActionButton as={Link} variant="secondary" to={`/productos/${producto.id_producto}/editar`}>Editar producto</ActionButton>
+        <ActionButton variant="secondary" onClick={() => onStatus(producto)}>{producto.estado === false ? 'Activar' : 'Desactivar'}</ActionButton>
+      </div> : <form className={styles.form} onSubmit={submit}>
+        <h3>Ajustar existencias</h3>
+        <div className={styles.fields}>
+          <label>Tipo de movimiento<select disabled={saving} value={type} onChange={(e) => setType(e.target.value)}><option value="AUMENTAR">Entrada (+)</option><option value="DISMINUIR">Salida (−)</option></select></label>
+          <label>Cantidad ({unit === 'KG' ? 'kg' : 'un.'})<input autoFocus type="number" min={unit === 'KG' ? '0.001' : '1'} step={unit === 'KG' ? '0.001' : '1'} value={amount} onChange={(e) => setAmount(e.target.value)} disabled={saving} required /></label>
+        </div>
+        {exceeds && <Alert type="error">La salida supera las existencias disponibles.</Alert>}
+        {projected !== null && <p className={styles.preview}>Stock resultante: <strong>{formatStock(projected, unit)} {unit === 'KG' ? 'kg' : 'un.'}</strong></p>}
+        <div className={styles.actions}><ActionButton variant="secondary" type="button" disabled={saving} onClick={() => { setAdjusting(false); setError('') }}>Cancelar</ActionButton><ActionButton variant="primary" type="submit" disabled={saving || !valid || exceeds}>{saving ? 'Guardando…' : 'Confirmar ajuste'}</ActionButton></div>
+      </form>}
+    </div>
+  </Modal>
+}
