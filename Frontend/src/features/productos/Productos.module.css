@@ -3,11 +3,6 @@
 .heading h1 { margin: .25rem 0; font-size: clamp(1.7rem, 3vw, 2.3rem); }
 .eyebrow { margin: 0; font-size: .7rem; letter-spacing: .16em; color: var(--color-primary); font-weight: 800; }
 .muted { color: var(--color-text-muted); margin: .4rem 0; }
-.primary, .secondary { border-radius: .65rem; padding: .65rem 1rem; min-height: 42px; font-weight: 700; }
-.primary { border: 1px solid var(--color-primary); color: #061b26; background: var(--color-primary); }
-.primary:hover:not(:disabled) { background: var(--color-primary-hover); }
-.secondary { border: 1px solid var(--color-border); color: var(--color-text); background: var(--color-surface-raised); }
-.secondary:hover:not(:disabled) { border-color: var(--color-primary); }
 .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
 .metrics > div, .panel { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-panel); }
 .metrics > div { display: grid; gap: .55rem; padding: 1.2rem; }
@@ -19,15 +14,8 @@
 .toolbar label { min-width: 140px; }
 .page label { display: grid; gap: .4rem; color: var(--color-text-muted); font-size: .85rem; font-weight: 600; }
 .page input, .page select { width: 100%; min-height: 43px; padding: .6rem .75rem; border: 1px solid var(--color-border); border-radius: .6rem; background: var(--color-background); color: var(--color-text); }
-.tableScroll { overflow-x: auto; }
-.tableScroll table { width: 100%; border-collapse: collapse; text-align: left; }
-.tableScroll th, .tableScroll td { padding: 1rem 1.1rem; border-bottom: 1px solid var(--color-border); white-space: nowrap; }
-.tableScroll th { font-size: .75rem; color: var(--color-text-muted); }
 .tableScroll td small { display: block; margin-top: .25rem; color: var(--color-text-muted); }
 .actions { display: flex; gap: .5rem; }
-.active, .inactive { display: inline-block; padding: .35rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 700; }
-.active { color: #1caa76; background: rgb(35 190 133 / .12); }
-.inactive { color: #e6a45b; background: rgb(230 164 91 / .12); }
 .empty { padding: 2rem; text-align: center; color: var(--color-text-muted); }
 .error, .success { padding: .85rem 1rem; border-radius: .6rem; margin: 0; }
 .error { color: #ffb4b4; background: rgb(240 65 65 / .12); }
@@ -41,92 +29,15 @@
 .formActions { justify-content: flex-end; border-top: 1px solid var(--color-border); padding-top: 1rem; }
 @media (max-width: 600px) { .metrics { grid-template-columns: 1fr; } .fields { grid-template-columns: 1fr; } .dialog { padding: 1rem; } }
 
-.heading a.primary,.actions a.secondary { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
 
 .tableControls,.pagination{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;padding:1rem 1.2rem;color:var(--color-text-muted);font-size:.85rem}.tableControls{border-bottom:1px solid var(--color-border)}.tableControls label{display:flex;align-items:center;gap:.6rem}.tableControls select{width:auto;min-width:130px}.sortButton{border:0;background:transparent;color:inherit;font:inherit;font-weight:800;cursor:pointer;text-align:left;white-space:nowrap}.sortButton:hover{color:var(--color-primary)}.pageActions{display:flex;align-items:center;gap:.75rem}.pageActions button:disabled{opacity:.45;cursor:not-allowed}.lowStock{color:#e6a45b}.actions{flex-wrap:wrap}.pagination{border-top:1px solid var(--color-border)}
 
 
 
 
-/* =========================================
-   MERCADERÍA — TABLA COMPACTA V2
-   ========================================= */
 
-.tableScroll {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.tableScroll table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.83rem;
-}
-
-.tableScroll th,
-.tableScroll td {
-  padding: 0.55rem 0.75rem;
-  border-bottom: 1px solid var(--color-border);
-  vertical-align: middle;
-  white-space: nowrap;
-}
-
-.tableScroll th {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--color-text-muted);
-}
-
-.tableScroll tbody tr {
-  height: 48px;
-}
-
-.tableScroll tbody tr:nth-child(even) {
-  background: var(--color-background);
-}
-
-.tableScroll tbody tr:hover {
-  background: var(--color-surface-raised);
-}
-
-.tableScroll td:nth-child(2) {
-  min-width: 180px;
-  white-space: normal;
-}
-
-.tableScroll td:nth-child(3),
-.tableScroll td:nth-child(4),
-.tableScroll td:nth-child(5) {
-  font-variant-numeric: tabular-nums;
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-}
-
-.actions .secondary {
-  min-height: 30px;
-  padding: 0.3rem 0.5rem;
-  border-radius: 0.35rem;
-  font-size: 0.72rem;
-  white-space: nowrap;
-}
-
-.active,
-.inactive {
-  padding: 0.2rem 0.45rem;
-  font-size: 0.7rem;
-}
-
-.tableControls,
-.pagination {
-  padding: 0.7rem 1rem;
-}
-
-.sortButton {
-  padding: 0;
-  font-size: inherit;
-}
+/* Ajustes específicos del catálogo sobre la tabla comercial compartida. */
+.tableScroll td:nth-child(2){min-width:180px;white-space:normal}
+.tableScroll td:nth-child(3),.tableScroll td:nth-child(4),.tableScroll td:nth-child(5){font-variant-numeric:tabular-nums}
+.tableScroll td:last-child{min-width:115px;white-space:nowrap}
+.actions{flex-wrap:nowrap}

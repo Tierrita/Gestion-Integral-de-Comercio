@@ -56,3 +56,22 @@
 .ventasAdicionales summary{cursor:pointer;font-weight:650;font-size:.85rem}
 .ventasAdicionales .scroll{margin-top:.8rem}
 @media(max-width:650px){.movimientoFila{align-items:flex-start}.movimientoDerecha{white-space:normal}.filtros{align-items:stretch}.buscar{max-width:none;width:100%}}
+
+/* Cobros V2: resumen financiero y revisión previa */
+.cobroEncabezado{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.cobroEncabezado h3{margin:.3rem 0 0}
+.cobroEyebrow{color:var(--color-primary);font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.cobroEstado{padding:.35rem .65rem;border:1px solid var(--color-border);border-radius:999px;color:var(--color-text-muted);font-size:.75rem;font-weight:700}
+.cobroSaldos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}
+.cobroSaldos>div{display:grid;gap:.4rem;min-width:0;padding:1rem;border:1px solid var(--color-border);border-radius:.75rem;background:var(--color-surface)}
+.cobroSaldos span,.cobroSaldos small{font-size:.78rem;color:var(--color-text-muted)}
+.cobroSaldos strong{font-size:clamp(1.1rem,2.5vw,1.55rem);overflow-wrap:anywhere}
+.cobroRevision{display:grid;gap:.5rem;padding:1rem;border:1px solid var(--color-primary);border-radius:.75rem;background:var(--color-surface);font-size:.86rem}
+.cobroRevision strong{color:var(--color-primary)}
+.cobroAcciones{display:flex;justify-content:flex-end;gap:.65rem;flex-wrap:wrap}
+@media(max-width:550px){.cobroSaldos{grid-template-columns:1fr}.cobroAcciones>*{flex:1 1 auto}}
+
+/* Semántica financiera uniforme con Proveedores */
+.cobroSaldos .deuda{color:#f17b82}
+.cobroSaldos .favor{color:#29c58f}
+.cobroSaldos .neutro{color:var(--color-text)}

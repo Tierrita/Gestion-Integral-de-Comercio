@@ -150,43 +150,6 @@
   overflow-x: auto;
 }
 
-.scroll table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-  font-size: .83rem;
-}
-
-.scroll th,
-.scroll td {
-  padding: .55rem .75rem;
-  border-bottom: 1px solid var(--color-border);
-  vertical-align: middle;
-  white-space: nowrap;
-}
-
-.scroll th {
-  color: var(--color-text-muted);
-  font-size: .72rem;
-  font-weight: 700;
-}
-
-.scroll tbody tr {
-  height: 48px;
-}
-
-.scroll tbody tr:nth-child(even) {
-  background: var(--color-background);
-}
-
-.scroll tbody tr:hover {
-  background: var(--color-surface-raised);
-}
-
-.scroll tbody tr:last-child td {
-  border-bottom: 0;
-}
-
 .productNumber {
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;

@@ -1,4 +1,5 @@
 import actionMenuStyles from '../../shared/components/ActionMenu.module.css'
+import tableStyles from '../../shared/components/CommerceTable.module.css'
 import ActionButton from '../../shared/components/ActionButton.jsx'
 import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -160,15 +161,15 @@ export default function Proveedores({ esPropietario = false }) {
         <ActionButton type="button" variant="secondary" disabled={loading} onClick={() => void load()}>Actualizar</ActionButton>
       </div>
       <p className={styles.muted}>{filtered.length} proveedores encontrados</p>
-      {loading ? <p role="status">Cargando proveedores…</p> : error && proveedores.length === 0 ? <p>No se pudo cargar el listado.</p> : filtered.length === 0 ? <p>No hay proveedores para mostrar.</p> : <div className={styles.scroll}>
-        <table><thead><tr>
+      {loading ? <p role="status">Cargando proveedores…</p> : error && proveedores.length === 0 ? <p>No se pudo cargar el listado.</p> : filtered.length === 0 ? <p>No hay proveedores para mostrar.</p> : <div className={`${styles.scroll} ${tableStyles.scroll}`}>
+        <table className={tableStyles.table}><thead><tr>
           <th><button type="button" onClick={() => changeSort('numero_proveedor')}>N.º{sortMark('numero_proveedor')}</button></th>
           <th><button type="button" onClick={() => changeSort('nombre_proveedor')}>Proveedor{sortMark('nombre_proveedor')}</button></th>
           <th>Teléfono</th><th>Estado</th><th>Saldo</th><th>Acciones</th>
         </tr></thead><tbody>{rows.map((p) => <tr key={p.id_proveedor}>
           <td>#{p.numero_proveedor}</td><td><strong>{p.nombre_proveedor}</strong></td><td>{p.telefono || '—'}</td>
-          <td><span className={p.estado === true ? styles.active : styles.inactive}>{p.estado === true ? 'Activo' : 'Inactivo'}</span></td>
-          <td>{saldos[p.id_proveedor] ? <span className={saldos[p.id_proveedor].saldo > 0 ? styles.deuda : saldos[p.id_proveedor].saldo < 0 ? styles.favor : styles.neutro}>{money(Math.abs(saldos[p.id_proveedor].saldo))} · {saldos[p.id_proveedor].saldo > 0 ? 'Deuda' : saldos[p.id_proveedor].saldo < 0 ? 'A favor' : 'Al día'}</span> : '—'}</td>
+          <td><span className={p.estado === true ? tableStyles.active : tableStyles.inactive}>{p.estado === true ? 'Activo' : 'Inactivo'}</span></td>
+          <td>{saldos[p.id_proveedor] ? <span className={saldos[p.id_proveedor].saldo > 0 ? tableStyles.deuda : saldos[p.id_proveedor].saldo < 0 ? tableStyles.favor : tableStyles.neutro}>{money(Math.abs(saldos[p.id_proveedor].saldo))} · {saldos[p.id_proveedor].saldo > 0 ? 'Deuda' : saldos[p.id_proveedor].saldo < 0 ? 'A favor' : 'Al día'}</span> : '—'}</td>
           <td><div className={styles.actions}>
             {p.estado === true && <ActionButton size="compact" type="button" variant="primary" onClick={() => setPayment(p)}>Pagar</ActionButton>}
             <ActionButton size="compact" type="button" variant="secondary" onClick={() => setAccount(p)}>Ver detalle</ActionButton>

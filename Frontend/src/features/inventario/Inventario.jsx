@@ -1,8 +1,13 @@
 
 import { useEffect, useMemo, useState } from 'react'
+import tableStyles from '../../shared/components/CommerceTable.module.css'
+import StockAdjustmentFields from '../../shared/components/StockAdjustmentFields.jsx'
+import { formatStockQuantity, parseStockQuantity, validStockQuantity } from '../../shared/utils/stockQuantity.js'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import MercaderiaNav from '../productos/MercaderiaNav.jsx'
+import ActionButton from '../../shared/components/ActionButton.jsx'
+import Modal from '../../shared/components/Modal.jsx'
 import styles from './Inventario.module.css'
 
 const errorText = (error) =>
@@ -21,43 +26,10 @@ const classify = (product) => {
 
 const isKg = (product) => product.unidad_de_medida === 'KG'
 
-const formatQuantity = (value, unit = 'UNIDAD') => {
-  const number = Number(value)
-
-  if (!Number.isFinite(number)) return '—'
-
-  return new Intl.NumberFormat('es-AR', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: unit === 'KG' ? 3 : 0,
-  }).format(number)
-}
+const formatQuantity = (value, unit = 'UNIDAD') => value == null || !Number.isFinite(Number(value)) ? '—' : formatStockQuantity(value, unit)
 
 const unitLabel = (unit) => unit === 'KG' ? 'kg' : 'un.'
 
-const validQuantity = (value, unit) => {
-  if (value === '' || value === null || value === undefined) {
-    return false
-  }
-
-  const number = Number(value)
-
-  if (!Number.isFinite(number) || number <= 0) {
-    return false
-  }
-
-  if (unit === 'UNIDAD') {
-    return Number.isSafeInteger(number)
-  }
-
-  if (unit === 'KG') {
-    const scaled = number * 1000
-
-    return Number.isSafeInteger(Math.round(scaled)) &&
-      Math.abs(scaled - Math.round(scaled)) < 1e-7
-  }
-
-  return false
-}
 
 export default function Inventario() {
   const [searchParams] = useSearchParams()
@@ -156,7 +128,6 @@ export default function Inventario() {
       const matchesSearch = [
         product.nombre_producto,
         product.numero_producto,
-        product.id_producto,
       ].some((value) =>
         String(value ?? '')
           .toLocaleLowerCase('es-AR')
@@ -201,35 +172,14 @@ export default function Inventario() {
     setAdjustError('')
   }
 
-  const quantityValid = selected
-    ? validQuantity(amount, selected.unidad_de_medida)
-    : false
-
-  const currentStock = Number(selected?.stock ?? 0)
-  const quantity = Number(amount)
-
-  const exceedsStock =
-    selected !== null &&
-    adjustType === 'DISMINUIR' &&
-    quantityValid &&
-    quantity > currentStock
-
-  const resultingStock =
-    selected && quantityValid && !exceedsStock
-      ? Math.round(
-          (
-            currentStock +
-            (adjustType === 'AUMENTAR' ? quantity : -quantity)
-          ) * 1000
-        ) / 1000
-      : null
+  const quantity = parseStockQuantity(amount)
 
   async function submit(event) {
     event.preventDefault()
 
     if (!selected || saving) return
 
-    if (!validQuantity(amount, selected.unidad_de_medida)) {
+    if (!validStockQuantity(amount, selected.unidad_de_medida)) {
       setAdjustError(
         isKg(selected)
           ? 'Ingresá una cantidad mayor a cero, con un máximo de 3 decimales.'
@@ -277,7 +227,7 @@ export default function Inventario() {
         `${data.message || 'Stock actualizado correctamente.'}${detail}`
       )
 
-      await reload()
+      try { await reload() } catch { setLoadError('El ajuste se guardó, pero no se pudo actualizar el listado. Volvé a intentar con Actualizar.') }
     } catch (error) {
       setAdjustError(errorText(error))
     } finally {
@@ -303,21 +253,18 @@ export default function Inventario() {
         </div>
 
         <div className={styles.headingActions}>
-          <Link
-            className={styles.secondary}
-            to="/inventario/historial"
-          >
+          <ActionButton as={Link} to="/inventario/historial">
             Ver historial
-          </Link>
+          </ActionButton>
 
-          <button
-            className={styles.secondary}
+          <ActionButton
+            variant="secondary"
             type="button"
             disabled={loading}
             onClick={() => void reload()}
           >
             ↻ Actualizar
-          </button>
+          </ActionButton>
         </div>
       </header>
 
@@ -443,8 +390,8 @@ export default function Inventario() {
             No hay productos que coincidan con los filtros.
           </p>
         ) : (
-          <div className={styles.scroll}>
-            <table>
+          <div className={`${styles.scroll} ${tableStyles.scroll}`}>
+            <table className={tableStyles.table}>
               <thead>
                 <tr>
                   <th>N.º</th>
@@ -464,7 +411,7 @@ export default function Inventario() {
                   return (
                     <tr key={product.id_producto}>
                       <td className={styles.productNumber}>
-                        #{product.numero_producto ?? product.id_producto}
+                        {product.numero_producto != null ? `#${product.numero_producto}` : '—'}
                       </td>
 
                       <td className={styles.productCell}>
@@ -496,7 +443,7 @@ export default function Inventario() {
                             situation === 'alerta'
                               ? styles.alert
                               : situation === 'inactivo'
-                                ? styles.inactive
+                                ? tableStyles.inactive
                                 : styles.ok
                           }
                         >
@@ -509,14 +456,14 @@ export default function Inventario() {
                       </td>
 
                       <td>
-                        <button
-                          className={styles.tableButton}
+                        <ActionButton
+                          size="compact"
                           type="button"
                           disabled={product.estado === false}
                           onClick={() => openAdjustment(product)}
                         >
                           Ajustar stock
-                        </button>
+                        </ActionButton>
                       </td>
                     </tr>
                   )
@@ -527,154 +474,24 @@ export default function Inventario() {
         )}
       </section>
 
-      {selected && (
-        <div
-          className={styles.overlay}
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              closeAdjustment()
-            }
-          }}
-        >
-          <section
-            className={styles.dialog}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="adjust-title"
-          >
-            <div className={styles.dialogHead}>
-              <div>
-                <p className={styles.eyebrow}>
-                  MOVIMIENTO MANUAL
-                </p>
-
-                <h2 id="adjust-title">
-                  Ajustar stock
-                </h2>
-              </div>
-
-              <button
-                type="button"
-                className={styles.secondary}
-                disabled={saving}
-                onClick={closeAdjustment}
-                aria-label="Cerrar"
-              >
-                ✕
-              </button>
-            </div>
-
+      <Modal
+        open={Boolean(selected)}
+        onClose={closeAdjustment}
+        title="Ajustar stock"
+        description="Movimiento manual"
+        busy={saving}
+        size="medium"
+      >
+        {selected && (
+          <>
             <p>
               <strong>{selected.nombre_producto}</strong>
             </p>
 
-            <p className={styles.muted}>
-              Stock actual:{' '}
-              <strong>
-                {formatQuantity(
-                  selected.stock,
-                  selected.unidad_de_medida
-                )}
-              </strong>{' '}
-              {unitLabel(selected.unidad_de_medida)}
-            </p>
-
-            <form
-              className={styles.form}
-              onSubmit={submit}
-            >
-              <label>
-                Tipo de movimiento
-                <select
-                  value={adjustType}
-                  disabled={saving}
-                  onChange={(event) => {
-                    setAdjustType(event.target.value)
-                    setAdjustError('')
-                  }}
-                >
-                  <option value="AUMENTAR">
-                    Entrada (+)
-                  </option>
-                  <option value="DISMINUIR">
-                    Salida (−)
-                  </option>
-                </select>
-              </label>
-
-              <label>
-                Cantidad ({unitLabel(selected.unidad_de_medida)})
-                <input
-                  autoFocus
-                  type="number"
-                  min={isKg(selected) ? '0.001' : '1'}
-                  step={isKg(selected) ? '0.001' : '1'}
-                  required
-                  disabled={saving}
-                  value={amount}
-                  onChange={(event) => {
-                    setAmount(event.target.value)
-                    setAdjustError('')
-                  }}
-                  placeholder={
-                    isKg(selected) ? 'Ej. 1.250' : 'Ej. 5'
-                  }
-                />
-              </label>
-
-              {resultingStock !== null && (
-                <p className={styles.preview}>
-                  Stock resultante:{' '}
-                  <strong>
-                    {formatQuantity(
-                      resultingStock,
-                      selected.unidad_de_medida
-                    )}{' '}
-                    {unitLabel(selected.unidad_de_medida)}
-                  </strong>
-                </p>
-              )}
-
-              {exceedsStock && (
-                <p className={styles.error} role="alert">
-                  La salida supera el stock disponible.
-                </p>
-              )}
-
-              {adjustError && (
-                <p className={styles.error} role="alert">
-                  {adjustError}
-                </p>
-              )}
-
-              <div className={styles.actions}>
-                <button
-                  className={styles.secondary}
-                  type="button"
-                  disabled={saving}
-                  onClick={closeAdjustment}
-                >
-                  Cancelar
-                </button>
-
-                <button
-                  className={styles.primary}
-                  type="submit"
-                  disabled={
-                    saving ||
-                    !quantityValid ||
-                    exceedsStock
-                  }
-                >
-                  {saving
-                    ? 'Guardando…'
-                    : 'Confirmar ajuste'}
-                </button>
-              </div>
-            </form>
-          </section>
-        </div>
-      )}
+            <StockAdjustmentFields unit={selected.unidad_de_medida} currentStock={selected.stock} type={adjustType} onTypeChange={(value) => { setAdjustType(value); setAdjustError('') }} amount={amount} onAmountChange={(value) => { setAmount(value); setAdjustError('') }} onSubmit={submit} onCancel={closeAdjustment} saving={saving} error={adjustError} />
+          </>
+        )}
+      </Modal>
     </section>
   )
 }

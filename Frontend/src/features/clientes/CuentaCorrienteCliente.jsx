@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import Alert from '../../shared/components/Alert.jsx'
 import Modal from '../../shared/components/Modal.jsx'
+import ActionButton from '../../shared/components/ActionButton.jsx'
 import styles from './CuentaCorrienteCliente.module.css'
 
 const dinero = (n) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(Number(n || 0))
@@ -28,6 +29,7 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
   const [cuenta, setCuenta] = useState('')
   const [observaciones, setObservaciones] = useState('')
   const [guardando, setGuardando] = useState(false)
+  const [revisandoCobro, setRevisandoCobro] = useState(false)
   const [errorCobro, setErrorCobro] = useState('')
   const [exitoCobro, setExitoCobro] = useState('')
   const [cobroAnular, setCobroAnular] = useState(null)
@@ -53,9 +55,33 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
   const cobrosPorId = useMemo(() => new Map((cobros || []).map((c) => [Number(c.id_cobro), c])), [cobros])
   const ventasPorId = useMemo(() => new Map((ventas || []).map(({ venta }) => [Number(venta.id_venta), venta])), [ventas])
 
-  async function registrarCobro(event) {
+  const importeCobro = Number(monto.trim().replace(',', '.'))
+  const importeValido = /^\d+(?:[.,]\d{1,2})?$/.test(monto.trim()) && Number.isFinite(importeCobro) && importeCobro > 0
+  const saldoActual = typeof saldo?.saldo === 'number' ? saldo.saldo : null
+  const saldoPosterior = saldoActual === null || !importeValido ? null : Math.round((saldoActual - importeCobro) * 100) / 100
+  const cuentaSeleccionada = cuentas.find((item) => item.id_cuenta === Number(cuenta))
+
+  function revisarCobro(event) {
     event.preventDefault()
-    if (guardando || !cliente) return
+    if (guardando || !cliente || cargando) return
+    if (!importeValido) {
+      setErrorCobro('Ingresá un importe positivo con hasta dos decimales.')
+      return
+    }
+    if (!cuentaSeleccionada) {
+      setErrorCobro('Seleccioná una cuenta válida.')
+      return
+    }
+    if (saldoActual === null) {
+      setErrorCobro('No se pudo consultar el saldo actualizado. Reintentá antes de registrar el cobro.')
+      return
+    }
+    setErrorCobro('')
+    setRevisandoCobro(true)
+  }
+
+  async function registrarCobro() {
+    if (guardando || !cliente || !revisandoCobro || !importeValido || !cuentaSeleccionada || saldoActual === null) return
     const limpio = monto.trim().replace(',', '.')
     const importe = Number(limpio)
     if (!/^\d+(?:\.\d{1,2})?$/.test(limpio) || !Number.isFinite(importe) || importe <= 0) {
@@ -77,6 +103,7 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
       })
       setMonto('')
       setObservaciones('')
+      setRevisandoCobro(false)
       setExitoCobro('Cobro registrado correctamente.')
       onCobroRegistrado?.()
       if (modo === 'cobro') onClose?.()
@@ -215,19 +242,40 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
           <button type="submit" className={styles.anularConfirmar} disabled={anulando || motivoAnulacion.trim().length < 5}>{anulando ? 'Anulando…' : 'Confirmar anulación'}</button>
         </div>
       </form>}
-      {mostrarCobro && <form className={styles.formulario} onSubmit={(event) => void registrarCobro(event)}>
-        <h3>Registrar cobro</h3>
+      {modo === 'cobro' && errores.saldo && <Alert type="error">Saldo: {errores.saldo}</Alert>}
+      {modo === 'cobro' && cargando && <p role="status">Consultando saldo actualizado…</p>}
+      {mostrarCobro && <form className={styles.formulario} onSubmit={revisarCobro}>
+        <div className={styles.cobroEncabezado}>
+          <div><span className={styles.cobroEyebrow}>AIOnix · Gestión financiera</span><h3>Registrar cobro</h3></div>
+          <span className={styles.cobroEstado}>Cobro manual</span>
+        </div>
+        <div className={styles.cobroSaldos}>
+          <div><span>Saldo actual</span><strong className={saldoActual > 0 ? styles.deuda : saldoActual < 0 ? styles.favor : styles.neutro}>{saldoActual === null ? 'Consultando…' : dinero(Math.abs(saldoActual))}</strong><small>{saldoActual === null ? 'Pendiente de consulta' : saldoActual > 0 ? 'Deuda pendiente' : saldoActual < 0 ? 'Saldo a favor' : 'Al día'}</small></div>
+          <div><span>Saldo después del cobro</span><strong className={saldoPosterior > 0 ? styles.deuda : saldoPosterior < 0 ? styles.favor : styles.neutro}>{saldoPosterior === null ? '—' : dinero(Math.abs(saldoPosterior))}</strong><small>{saldoPosterior === null ? 'Ingresá un importe válido' : saldoPosterior > 0 ? 'Deuda pendiente' : saldoPosterior < 0 ? 'Saldo a favor' : 'Al día'}</small></div>
+        </div>
         <p className={styles.aclaracion}>Se permiten cobros parciales y anticipos con saldo a favor.</p>
-        <label>Importe recibido (ARS)<input required inputMode="decimal" value={monto} onChange={(event) => setMonto(event.target.value)} placeholder="15000,50" disabled={guardando} /></label>
-        <label>Cuenta de destino<select required value={cuenta} onChange={(event) => setCuenta(event.target.value)} disabled={guardando}>
+        <label>Importe recibido (ARS)<input required inputMode="decimal" value={monto} onChange={(event) => { setMonto(event.target.value); setRevisandoCobro(false) }} placeholder="15000,50" disabled={guardando || revisandoCobro} /></label>
+        <label>Cuenta de destino<select required value={cuenta} onChange={(event) => { setCuenta(event.target.value); setRevisandoCobro(false) }} disabled={guardando || revisandoCobro}>
           {cuentas.map((item) => <option key={item.id_cuenta} value={item.id_cuenta}>{item.nombre_cuenta}</option>)}
         </select></label>
-        <label>Observaciones (opcional)<textarea rows={2} maxLength={500} value={observaciones} onChange={(event) => setObservaciones(event.target.value)} disabled={guardando} /></label>
-        <button className={styles.principal} type="submit" disabled={guardando}>{guardando ? 'Registrando…' : 'Confirmar cobro'}</button>
+        <label>Observaciones (opcional)<textarea rows={2} maxLength={500} value={observaciones} onChange={(event) => { setObservaciones(event.target.value); setRevisandoCobro(false) }} disabled={guardando || revisandoCobro} /></label>
+        {revisandoCobro && <div className={styles.cobroRevision} role="status">
+          <strong>Revisá antes de confirmar</strong>
+          <span>Cliente: {cliente?.nombre_completo}</span>
+          <span>Importe: {dinero(importeCobro)}</span>
+          <span>Cuenta: {cuentaSeleccionada?.nombre_cuenta}</span>
+          <span>Saldo posterior: {saldoPosterior === null ? '—' : dinero(Math.abs(saldoPosterior))} · {saldoPosterior > 0 ? 'Deuda' : saldoPosterior < 0 ? 'A favor' : 'Al día'}</span>
+        </div>}
+        <div className={styles.cobroAcciones}>
+          <ActionButton variant="secondary" type="button" disabled={guardando} onClick={() => revisandoCobro ? setRevisandoCobro(false) : onClose?.()}>{revisandoCobro ? 'Modificar datos' : 'Cancelar'}</ActionButton>
+          {revisandoCobro
+            ? <ActionButton variant="primary" type="button" disabled={guardando} onClick={() => void registrarCobro()}>{guardando ? 'Registrando…' : 'Confirmar cobro'}</ActionButton>
+            : <ActionButton variant="primary" type="submit" disabled={guardando || cargando || saldoActual === null || !importeValido || !cuentaSeleccionada}>Revisar cobro</ActionButton>}
+        </div>
       </form>}
       {modo !== "cobro" && cargando && <p role="status">Consultando movimientos…</p>}
       {modo !== "cobro" && errores.saldo && <Alert type="error">Saldo: {errores.saldo}</Alert>}
-      {saldo && <div className={styles.resumen}>
+      {modo !== 'cobro' && saldo && <div className={styles.resumen}>
         <article><span>Saldo actual</span><strong className={saldo.situacion === 'DEUDA' ? styles.deuda : styles.saldo}>{dinero(Math.abs(saldo.saldo))}</strong><small>{etiquetas[saldo.situacion] || saldo.situacion}</small></article>
         <article><span>Ventas vigentes</span><strong>{dinero(saldo.total_ventas)}</strong></article>
         <article><span>Cobros completados</span><strong>{dinero(saldo.total_cobros)}</strong></article>

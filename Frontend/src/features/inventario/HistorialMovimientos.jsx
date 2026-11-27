@@ -5,6 +5,8 @@ import { api } from '../../shared/api/client.js'
 import styles from './Inventario.module.css'
 import h from './HistorialMovimientos.module.css'
 import MercaderiaNav from '../productos/MercaderiaNav.jsx'
+import ActionButton from '../../shared/components/ActionButton.jsx'
+import Modal from '../../shared/components/Modal.jsx'
 
 const TIME_ZONE = 'America/Argentina/Buenos_Aires'
 
@@ -94,7 +96,15 @@ function responsibleLabel(row) {
   return row.nombre_responsable ||
     (row.id_usuario == null
       ? 'Sin identificar'
-      : `Usuario #${row.id_usuario}`)
+      : 'Usuario sin nombre disponible')
+}
+
+function commercialNotes(value) {
+  if (value == null || String(value).trim() === '') return 'Sin observaciones'
+  // El ID global se conserva en la base de datos para auditoría interna.
+  return String(value)
+    .replace(/\s*\(\s*ID\s+global\s*#?\s*\d+\s*\)/gi, '')
+    .trim()
 }
 
 function movementLabel(value) {
@@ -102,6 +112,8 @@ function movementLabel(value) {
 }
 
 function exportCell(value) {
+  // Los valores numéricos generados por el sistema se exportan como números.
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value)
   const text = String(value ?? '')
 
   // Evita que Excel interprete contenido externo como una fórmula.
@@ -245,7 +257,6 @@ export default function HistorialMovimientos() {
       'Stock anterior',
       'Stock nuevo',
       'Responsable',
-      'Usuario ID',
       'Observaciones',
     ]
 
@@ -258,8 +269,7 @@ export default function HistorialMovimientos() {
       row.stock_anterior,
       row.stock_nuevo,
       responsibleLabel(row),
-      row.id_usuario,
-      row.observaciones,
+      commercialNotes(row.observaciones),
     ])
 
     const csv =
@@ -298,27 +308,27 @@ export default function HistorialMovimientos() {
         </div>
 
         <div className={h.headerActions}>
-          <Link className={styles.secondary} to="/inventario">
+          <ActionButton as={Link} to="/inventario">
             ← Volver a inventario
-          </Link>
+          </ActionButton>
 
-          <button
+          <ActionButton
             type="button"
-            className={styles.secondary}
+            variant="secondary"
             disabled={loading}
             onClick={reload}
           >
             ↻ Actualizar
-          </button>
+          </ActionButton>
 
-          <button
+          <ActionButton
             type="button"
-            className={styles.primary}
+            variant="primary"
             disabled={loading || !filtered.length || Boolean(error)}
             onClick={exportCsv}
           >
             Exportar CSV
-          </button>
+          </ActionButton>
         </div>
       </header>
 
@@ -429,13 +439,13 @@ export default function HistorialMovimientos() {
           </label>
 
           {hasFilters && (
-            <button
+            <ActionButton
               type="button"
-              className={styles.secondary}
+              variant="secondary"
               onClick={clearFilters}
             >
               Limpiar filtros
-            </button>
+            </ActionButton>
           )}
         </div>
 
@@ -497,11 +507,10 @@ export default function HistorialMovimientos() {
 
                       <td className={h.productCell}>
                         <strong>
-                          {row.nombre_producto ??
-                            `Producto #${row.id_producto}`}
+                          {row.nombre_producto ?? 'Producto sin nombre'}
                         </strong>
                         <small>
-                          #{row.numero_producto ?? row.id_producto}
+                          {row.numero_producto != null ? `N.º ${row.numero_producto}` : ''}
                         </small>
                       </td>
 
@@ -532,13 +541,13 @@ export default function HistorialMovimientos() {
                       </td>
 
                       <td>
-                        <button
+                        <ActionButton
                           type="button"
-                          className={h.detailButton}
+                          size="compact"
                           onClick={() => setSelected(row)}
                         >
                           Ver detalle
-                        </button>
+                        </ActionButton>
                       </td>
                     </tr>
                   )
@@ -556,96 +565,49 @@ export default function HistorialMovimientos() {
         )}
       </section>
 
-      {selected && (
-        <div
-          className={styles.overlay}
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setSelected(null)
-            }
-          }}
-        >
-          <section
-            className={styles.dialog}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="movement-title"
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') setSelected(null)
-            }}
-          >
-            <div className={styles.dialogHead}>
-              <h2 id="movement-title">Detalle del movimiento</h2>
-
-              <button
-                type="button"
-                className={styles.secondary}
-                onClick={() => setSelected(null)}
-                aria-label="Cerrar detalle"
-              >
-                ✕
-              </button>
+      <Modal
+        open={Boolean(selected)}
+        onClose={() => setSelected(null)}
+        title="Detalle del movimiento"
+        size="large"
+      >
+        {selected && (
+          <div className={h.movementDetail}>
+            <div className={h.movementHeading}>
+              <div>
+                <span className={h.detailLabel}>Producto</span>
+                <strong className={h.movementProduct}>{selected.nombre_producto ?? 'Producto sin nombre'}</strong>
+                {selected.numero_producto != null && <span className={h.detailSubtle}>Producto N.º {selected.numero_producto}</span>}
+              </div>
+              <span className={signedChange(selected) > 0 ? h.entryBadge : signedChange(selected) < 0 ? h.exitBadge : h.neutralBadge}>
+                {movementLabel(selected.tipo_movimiento)}
+              </span>
             </div>
-
+            <div className={h.stockFlow}>
+              <div className={h.stockStep}>
+                <span>Stock anterior</span>
+                <strong>{formatQuantity(selected.stock_anterior)}</strong>
+              </div>
+              <span className={h.stockArrow} aria-hidden="true">→</span>
+              <div className={h.stockStep}>
+                <span>Stock nuevo</span>
+                <strong>{formatQuantity(selected.stock_nuevo)}</strong>
+              </div>
+              <div className={h.stockDelta}>
+                <span>Variación real</span>
+                <strong className={signedChange(selected) > 0 ? h.positive : signedChange(selected) < 0 ? h.negative : ''}>{formatChange(signedChange(selected))}</strong>
+              </div>
+            </div>
             <dl className={h.detailGrid}>
-              <div>
-                <dt>Producto</dt>
-                <dd>
-                  {selected.nombre_producto ??
-                    `Producto #${selected.id_producto}`}
-                </dd>
-              </div>
-
-              <div>
-                <dt>Fecha</dt>
-                <dd>{formatDate(stamp(selected))}</dd>
-              </div>
-
-              <div>
-                <dt>Operación</dt>
-                <dd>{movementLabel(selected.tipo_movimiento)}</dd>
-              </div>
-
-              <div>
-                <dt>Responsable</dt>
-                <dd>
-                  {responsibleLabel(selected)}
-                  {selected.id_usuario != null
-                    ? ` (#${selected.id_usuario})`
-                    : ''}
-                </dd>
-              </div>
-
-              <div>
-                <dt>Cantidad registrada</dt>
-                <dd>{formatQuantity(selected.cantidad)}</dd>
-              </div>
-
-              <div>
-                <dt>Variación real</dt>
-                <dd>{formatChange(signedChange(selected))}</dd>
-              </div>
-
-              <div>
-                <dt>Stock anterior</dt>
-                <dd>{formatQuantity(selected.stock_anterior)}</dd>
-              </div>
-
-              <div>
-                <dt>Stock nuevo</dt>
-                <dd>{formatQuantity(selected.stock_nuevo)}</dd>
-              </div>
-
-              <div className={h.fullWidth}>
-                <dt>Observaciones</dt>
-                <dd className={h.notes}>
-                  {selected.observaciones || 'Sin observaciones'}
-                </dd>
-              </div>
+              <div><dt>Fecha</dt><dd>{formatDate(stamp(selected))}</dd></div>
+              <div><dt>Responsable</dt><dd>{responsibleLabel(selected)}</dd></div>
+              <div><dt>Cantidad registrada</dt><dd>{formatQuantity(selected.cantidad)}</dd></div>
+              <div><dt>Operación</dt><dd>{movementLabel(selected.tipo_movimiento)}</dd></div>
+              <div className={h.fullWidth}><dt>Observaciones</dt><dd className={h.notes}>{commercialNotes(selected.observaciones)}</dd></div>
             </dl>
-          </section>
-        </div>
-      )}
+          </div>
+        )}
+      </Modal>
     </section>
   )
 }

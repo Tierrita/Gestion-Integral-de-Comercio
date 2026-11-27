@@ -16,12 +16,6 @@
 .toolbar input::placeholder,.form input::placeholder{color:var(--color-text-muted)}
 .toolbar input:focus-visible,.toolbar select:focus-visible,.form input:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
 .form{display:grid;gap:1.15rem}
-.primary,.secondary{min-height:42px;padding:.65rem .9rem;border-radius:.6rem;cursor:pointer;font:inherit;font-weight:700;transition:background .15s ease,border-color .15s ease}
-.primary{background:var(--color-primary);color:#071c2a;border:1px solid transparent}
-.primary:hover:not(:disabled){background:var(--color-primary-hover)}
-.secondary{background:var(--color-surface-raised);border:1px solid var(--color-border);color:var(--color-text)}
-.secondary:hover:not(:disabled){border-color:var(--color-primary)}
-.primary:disabled,.secondary:disabled{opacity:.55;cursor:not-allowed}
 .scroll{width:100%;overflow-x:auto}
 .scroll table{width:100%;min-width:780px;border-collapse:collapse;text-align:left}
 .scroll th,.scroll td{border-bottom:1px solid var(--color-border);color:var(--color-text)}
@@ -32,7 +26,6 @@
 .scroll th button{background:none;border:0;color:inherit;cursor:pointer;font:inherit;font-weight:750}
 .actions,.pagination{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap}
 .scroll .actions{flex-wrap:nowrap}
-.scroll .actions .secondary{min-height:32px;padding:.35rem .65rem;font-size:.78rem;white-space:nowrap}
 .active,.inactive{display:inline-block;padding:.3rem .55rem;border-radius:999px;font-size:.71rem;font-weight:750}
 .active{color:#047857;background:rgb(39 188 138 / .13)}
 .inactive{color:#b91c1c;background:rgb(241 123 130 / .13)}

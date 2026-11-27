@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api } from '../../shared/api/client.js'
 import Alert from '../../shared/components/Alert.jsx'
+import ActionButton from '../../shared/components/ActionButton.jsx'
 import Modal from '../../shared/components/Modal.jsx'
 import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
 import styles from './Categorias.module.css'
@@ -109,7 +110,7 @@ export default function Categorias() {
   return <section className={styles.page}>
     <header className={styles.header}>
       <div><p className={styles.eyebrow}>GESTIÓN DE MERCADERÍA</p><h1>Categorías</h1><p className={styles.muted}>Organizá los productos de tu comercio.</p></div>
-      <button type="button" className={styles.primary} onClick={() => openForm()}>+ Nueva categoría</button>
+      <ActionButton variant="primary" onClick={() => openForm()}>+ Nueva categoría</ActionButton>
     </header>
     <div className={styles.metrics}>
       <article><span>Total de categorías</span><strong>{categorias.length}</strong></article>
@@ -123,7 +124,7 @@ export default function Categorias() {
         <label>Buscar categoría<input type="search" placeholder="Nombre, descripción o ID" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1) }} /></label>
         <label>Estado<select value={filter} onChange={(e) => { setFilter(e.target.value); setPage(1) }}><option value="todos">Todas</option><option value="activos">Activas</option><option value="inactivos">Inactivas</option></select></label>
         <label>Mostrar<select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1) }}>{PAGE_SIZES.map((n) => <option key={n} value={n}>{n} registros</option>)}</select></label>
-        <button type="button" className={styles.secondary} disabled={loading} onClick={() => void load()}>Actualizar</button>
+        <ActionButton variant="secondary" disabled={loading} onClick={() => void load()}>Actualizar</ActionButton>
       </div>
       <p key={`resultados-${filter}-${query}-${filtered.length}`} className={styles.muted}>{`${filtered.length} ${filtered.length === 1 ? "categoría encontrada" : "categorías encontradas"}`}</p>
       {loading ? <p role="status">Cargando categorías…</p> : error && categorias.length === 0 ? <p>No se pudo cargar el listado.</p> : filtered.length === 0 ? <p>No hay categorías para mostrar.</p> : <div className={styles.scroll}>
@@ -135,15 +136,15 @@ export default function Categorias() {
           <td>#{c.id_categoria}</td><td><strong>{c.nombre_categoria}</strong></td><td>{c.descripcion || '—'}</td>
           <td><span className={c.estado === true ? styles.active : styles.inactive}>{c.estado === true ? 'Activa' : 'Inactiva'}</span></td>
           <td><div className={styles.actions}>
-            <button type="button" className={styles.secondary} onClick={() => setDetails(c)}>Ver detalle</button>
-            <button type="button" className={styles.secondary} onClick={() => openForm(c)}>Editar</button>
-            <button type="button" className={styles.secondary} onClick={() => { setPending(c); setStatusError('') }}>{c.estado === true ? 'Desactivar' : 'Activar'}</button>
+            <ActionButton size="compact" variant="secondary" onClick={() => setDetails(c)}>Ver detalle</ActionButton>
+            <ActionButton size="compact" variant="secondary" onClick={() => openForm(c)}>Editar</ActionButton>
+            <ActionButton size="compact" variant={c.estado === true ? "danger" : "secondary"} onClick={() => { setPending(c); setStatusError('') }}>{c.estado === true ? 'Desactivar' : 'Activar'}</ActionButton>
           </div></td>
         </tr>)}</tbody></table>
       </div>}
       {!loading && filtered.length > 0 && <div className={styles.pagination}>
         <span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} de {filtered.length}</span>
-        <div className={styles.actions}><button type="button" className={styles.secondary} disabled={currentPage === 1} onClick={() => setPage((n) => n - 1)}>Anterior</button><span>Página {currentPage} de {pages}</span><button type="button" className={styles.secondary} disabled={currentPage === pages} onClick={() => setPage((n) => n + 1)}>Siguiente</button></div>
+        <div className={styles.actions}><ActionButton variant="secondary" disabled={currentPage === 1} onClick={() => setPage((n) => n - 1)}>Anterior</ActionButton><span>Página {currentPage} de {pages}</span><ActionButton variant="secondary" disabled={currentPage === pages} onClick={() => setPage((n) => n + 1)}>Siguiente</ActionButton></div>
       </div>}
     </div>
     <Modal open={editing !== null} onClose={() => { if (!saving) setEditing(null) }} busy={saving} title={editing === 'new' ? 'Nueva categoría' : 'Editar categoría'} description="Completá los datos de la categoría." size="medium">
@@ -151,7 +152,7 @@ export default function Categorias() {
         <label>Nombre de categoría<input required maxLength={150} value={form.nombre_categoria} onChange={(e) => setForm((f) => ({ ...f, nombre_categoria: e.target.value }))} /></label>
         <label>Descripción (opcional)<textarea className={styles.textarea} rows={3} value={form.descripcion} onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))} /></label>
         {formError && <Alert type="error">{formError}</Alert>}
-        <div className={styles.actions}><button type="button" className={styles.secondary} disabled={saving} onClick={() => setEditing(null)}>Cancelar</button><button type="submit" className={styles.primary} disabled={saving}>{saving ? 'Guardando…' : 'Guardar categoría'}</button></div>
+        <div className={styles.actions}><ActionButton variant="secondary" disabled={saving} onClick={() => setEditing(null)}>Cancelar</ActionButton><ActionButton type="submit" variant="primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar categoría'}</ActionButton></div>
       </form>
     </Modal>
     <ConfirmDialog open={Boolean(pending)} onClose={() => { if (!changing) { setPending(null); setStatusError('') } }} onConfirm={() => void changeStatus()} title={pending?.estado === true ? 'Desactivar categoría' : 'Activar categoría'} description="No se puede desactivar una categoría con productos activos asociados." details={pending ? [{ label: 'Categoría', value: pending.nombre_categoria }] : []} error={statusError} busy={changing} destructive={pending?.estado === true} confirmLabel={pending?.estado === true ? 'Desactivar' : 'Activar'} />

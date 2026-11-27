@@ -1,14 +1,17 @@
+import tableStyles from '../../shared/components/CommerceTable.module.css'
+import DetalleProducto from './DetalleProducto.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import styles from './Productos.module.css'
 import MercaderiaNav from './MercaderiaNav.jsx'
 import { formatoMoneda } from '../../shared/utils/formatters.js'
+import { formatStockQuantity } from '../../shared/utils/stockQuantity.js'
 import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
+import ActionButton from '../../shared/components/ActionButton.jsx'
 
 const numeric = (value) => value == null || value === '' ? null : Number(value)
 const PAGE_SIZES = [10, 25, 50]
-const formatStock = (value, unit) => value == null ? '—' : new Intl.NumberFormat('es-AR', { maximumFractionDigits: unit === 'KG' ? 3 : 0 }).format(Number(value))
 const messageOf = (error) => error.response?.data?.error || (error.response?.status === 403 ? 'No tenés permiso para realizar esta operación.' : 'No se pudo completar la operación. Revisá la conexión con Flask.')
 
 export default function Productos() {
@@ -21,6 +24,7 @@ export default function Productos() {
   const [filter, setFilter] = useState('todos')
   const [changingId, setChangingId] = useState(null)
   const [pendingStatus, setPendingStatus] = useState(null)
+  const [detail, setDetail] = useState(null)
   const [statusError, setStatusError] = useState('')
   const [sortBy, setSortBy] = useState('numero_producto')
   const [sortDirection, setSortDirection] = useState('asc')
@@ -45,7 +49,7 @@ export default function Productos() {
 
   const visible = useMemo(() => productos.filter((p) => {
     const matchesState = filter === 'todos' || (filter === 'activos' ? p.estado !== false : p.estado === false)
-    return matchesState && [p.nombre_producto, p.numero_producto, p.id_producto].some((v) => String(v ?? '').toLowerCase().includes(query.trim().toLowerCase()))
+    return matchesState && [p.nombre_producto, p.numero_producto].some((v) => String(v ?? '').toLowerCase().includes(query.trim().toLowerCase()))
   }).sort((a, b) => {
     const av = a[sortBy]
     const bv = b[sortBy]
@@ -86,7 +90,7 @@ export default function Productos() {
     <MercaderiaNav />
     <header className={styles.heading}>
       <div><p className={styles.eyebrow}>CATÁLOGO COMERCIAL</p><h1>Productos</h1><p className={styles.muted}>Administrá tu catálogo, precios y estado de los productos.</p></div>
-      <Link className={styles.primary} to="/productos/nuevo">+ Nuevo producto</Link>
+      <ActionButton as={Link} variant="primary" to="/productos/nuevo">+ Nuevo producto</ActionButton>
     </header>
     <div className={styles.metrics}>
       <div><span>Total de productos</span><strong>{productos.length}</strong></div>
@@ -99,13 +103,13 @@ export default function Productos() {
       <div className={styles.toolbar}>
         <label>Buscar producto<input type="search" placeholder="Nombre o número de producto" value={query} onChange={(event) => { setQuery(event.target.value); resetPage() }} /></label>
         <label>Estado<select value={filter} onChange={(event) => { setFilter(event.target.value); resetPage() }}><option value="todos">Todos</option><option value="activos">Activos</option><option value="inactivos">Inactivos</option></select></label>
-        <button type="button" className={styles.secondary} onClick={load} disabled={loading}>Actualizar</button>
+        <ActionButton variant="secondary" onClick={load} disabled={loading}>Actualizar</ActionButton>
       </div>
       <div className={styles.tableControls}>
         <label>Mostrar<select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); resetPage() }}>{PAGE_SIZES.map((size) => <option key={size} value={size}>{size} registros</option>)}</select></label>
         <span>{visible.length} productos encontrados</span>
       </div>
-      {loading ? <p role="status" className={styles.empty}>Cargando productos…</p> : error && productos.length === 0 ? <p className={styles.empty}>No se pudo cargar el listado.</p> : visible.length === 0 ? <p className={styles.empty}>No hay productos para mostrar.</p> : <div className={styles.tableScroll}><table><thead><tr>
+      {loading ? <p role="status" className={styles.empty}>Cargando productos…</p> : error && productos.length === 0 ? <p className={styles.empty}>No se pudo cargar el listado.</p> : visible.length === 0 ? <p className={styles.empty}>No hay productos para mostrar.</p> : <div className={`${styles.tableScroll} ${tableStyles.scroll}`}><table className={tableStyles.table}><thead><tr>
         <th><button className={styles.sortButton} type="button" onClick={() => sort('numero_producto')}>N.º{sortMark('numero_producto')}</button></th>
         <th><button className={styles.sortButton} type="button" onClick={() => sort('nombre_producto')}>Producto{sortMark('nombre_producto')}</button></th>
         <th><button className={styles.sortButton} type="button" onClick={() => sort('precio_costo')}>Precio de costo{sortMark('precio_costo')}</button></th>
@@ -113,19 +117,20 @@ export default function Productos() {
         <th><button className={styles.sortButton} type="button" onClick={() => sort('stock')}>Stock{sortMark('stock')}</button></th>
         <th>Unidad</th><th>Estado</th><th>Acciones</th>
       </tr></thead><tbody>{pageRows.map((p) => <tr key={p.id_producto}>
-        <td>#{p.numero_producto ?? p.id_producto}</td><td><strong>{p.nombre_producto}</strong></td>
+        <td>{p.numero_producto != null ? `#${p.numero_producto}` : '—'}</td><td><strong>{p.nombre_producto}</strong></td>
         <td>{p.precio_costo == null ? 'Sin acceso' : formatoMoneda(p.precio_costo)}</td>
         <td>{formatoMoneda(p.precio_venta)}</td>
-        <td><strong className={p.estado !== false && Number(p.stock) <= Number(p.stock_minimo) ? styles.lowStock : ''}>{formatStock(p.stock, p.unidad_de_medida)}</strong></td>
+        <td><strong className={p.estado !== false && Number(p.stock) <= Number(p.stock_minimo) ? styles.lowStock : ''}>{p.stock == null ? '—' : formatStockQuantity(p.stock, p.unidad_de_medida)}</strong></td>
         <td>{p.unidad_de_medida || '—'}</td>
-        <td><span className={p.estado === false ? styles.inactive : styles.active}>{p.estado === false ? 'Inactivo' : 'Activo'}</span></td>
-        <td><div className={styles.actions}><Link className={styles.secondary} to={`/productos/${p.id_producto}/editar`}>Editar</Link><Link className={styles.secondary} to={`/inventario?producto=${p.id_producto}`}>Ver inventario</Link><button type="button" className={styles.secondary} disabled={changingId === p.id_producto} onClick={() => { setStatusError(''); setPendingStatus(p) }}>{changingId === p.id_producto ? 'Guardando…' : p.estado === false ? 'Activar' : 'Desactivar'}</button></div></td>
+        <td><span className={p.estado === false ? tableStyles.inactive : tableStyles.active}>{p.estado === false ? 'Inactivo' : 'Activo'}</span></td>
+        <td><div className={styles.actions}><ActionButton size="compact" variant="primary" onClick={() => setDetail(p)}>Ver detalle</ActionButton></div></td>
       </tr>)}</tbody></table></div>}
       {!loading && !error && visible.length > 0 && <div className={styles.pagination}>
         <span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, visible.length)} de {visible.length}</span>
-        <div className={styles.pageActions}><button type="button" className={styles.secondary} disabled={currentPage === 1} onClick={() => setPage((n) => Math.max(1, n - 1))}>Anterior</button><span>Página {currentPage} de {totalPages}</span><button type="button" className={styles.secondary} disabled={currentPage === totalPages} onClick={() => setPage((n) => Math.min(totalPages, n + 1))}>Siguiente</button></div>
+        <div className={styles.pageActions}><ActionButton variant="secondary" disabled={currentPage === 1} onClick={() => setPage((n) => Math.max(1, n - 1))}>Anterior</ActionButton><span>Página {currentPage} de {totalPages}</span><ActionButton variant="secondary" disabled={currentPage === totalPages} onClick={() => setPage((n) => Math.min(totalPages, n + 1))}>Siguiente</ActionButton></div>
       </div>}
     </div>
+    <DetalleProducto key={detail?.id_producto ?? "closed"} producto={detail} onClose={() => setDetail(null)} onUpdated={async () => { await load() }} onStatus={(p) => { setDetail(null); setStatusError(""); setPendingStatus(p) }} />
     <ConfirmDialog
       open={Boolean(pendingStatus)}
       onClose={() => { if (changingId === null) { setPendingStatus(null); setStatusError('') } }}

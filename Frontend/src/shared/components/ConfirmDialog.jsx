@@ -10,8 +10,16 @@ export default function ConfirmDialog({
   confirmLabel = 'Confirmar', cancelLabel = 'Cancelar',
   destructive = false,
 }) {
+  const handleClose = () => {
+    if (!busy) onClose?.()
+  }
+
+  const handleConfirm = () => {
+    if (!busy) onConfirm?.()
+  }
+
   return (
-    <Modal open={open} onClose={onClose} title={title} description={description}
+    <Modal open={open} onClose={handleClose} title={title} description={description}
       busy={busy} closeOnBackdrop={false} role="alertdialog" size="small">
       {details.length > 0 && (
         <dl className={styles.datos}>
@@ -23,9 +31,9 @@ export default function ConfirmDialog({
       {warning && <Alert type="warning" title="Antes de continuar">{warning}</Alert>}
       {error && <Alert type="error">{error}</Alert>}
       <div className={styles.acciones}>
-        <ActionButton variant="secondary" onClick={onClose} disabled={busy}>{cancelLabel}</ActionButton>
+        <ActionButton type="button" variant="secondary" onClick={handleClose} disabled={busy}>{cancelLabel}</ActionButton>
         <ActionButton variant={destructive ? 'danger' : 'primary'}
-          onClick={onConfirm} disabled={busy} aria-busy={busy}>
+          type="button" onClick={handleConfirm} disabled={busy} aria-busy={busy}>
           {busy ? 'Procesando…' : confirmLabel}
         </ActionButton>
       </div>
