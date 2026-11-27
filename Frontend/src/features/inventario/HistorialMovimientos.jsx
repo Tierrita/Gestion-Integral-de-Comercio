@@ -103,7 +103,7 @@ function commercialNotes(value) {
   if (value == null || String(value).trim() === '') return 'Sin observaciones'
   // El ID global se conserva en la base de datos para auditoría interna.
   return String(value)
-    .replace(/\\s*\\(\\s*ID\\s+global\\s*#?\\s*\\d+\\s*\\)/gi, '')
+    .replace(/\s*\(\s*ID\s+global\s*#?\s*\d+\s*\)/gi, '')
     .trim()
 }
 
