@@ -29,6 +29,6 @@
 .negative{color:#f17b82;font-weight:750}
 .historyFoot{margin:0;font-size:.8rem;color:var(--color-text-muted)}
 
-.statusAction{display:flex;justify-content:flex-end;border-top:1px solid var(--color-border);padding-top:.65rem}
-.statusAction button{border:0;background:transparent;color:var(--color-text-muted);font:inherit;font-size:.8rem;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:.4rem .2rem}
+.statusAction{display:flex;justify-content:flex-end;align-items:center;border-top:1px solid var(--color-border);padding-top:.35rem}
+.statusAction button{display:inline-flex;align-items:center;gap:.35rem;border:0;background:transparent;color:var(--color-text-muted);font:inherit;font-size:.8rem;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:.3rem .2rem}
 .statusAction button:hover,.statusAction button:focus-visible{color:var(--color-text)}
