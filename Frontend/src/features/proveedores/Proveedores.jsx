@@ -161,7 +161,7 @@ export default function Proveedores({ esPropietario = false }) {
         <ActionButton type="button" variant="secondary" disabled={loading} onClick={() => void load()}>Actualizar</ActionButton>
       </div>
       <p className={styles.muted}>{filtered.length} proveedores encontrados</p>
-      {loading ? <p role="status">Cargando proveedores…</p> : error && proveedores.length === 0 ? <p>No se pudo cargar el listado.</p> : filtered.length === 0 ? <p>No hay proveedores para mostrar.</p> : <div className={tableStyles.scroll}>
+      {loading ? <p role="status">Cargando proveedores…</p> : error && proveedores.length === 0 ? <p>No se pudo cargar el listado.</p> : filtered.length === 0 ? <p>No hay proveedores para mostrar.</p> : <div className={`${styles.scroll} ${tableStyles.scroll}`}>
         <table className={tableStyles.table}><thead><tr>
           <th><button type="button" onClick={() => changeSort('numero_proveedor')}>N.º{sortMark('numero_proveedor')}</button></th>
           <th><button type="button" onClick={() => changeSort('nombre_proveedor')}>Proveedor{sortMark('nombre_proveedor')}</button></th>
