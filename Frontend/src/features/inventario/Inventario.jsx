@@ -4,6 +4,8 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import MercaderiaNav from '../productos/MercaderiaNav.jsx'
 import ActionButton from '../../shared/components/ActionButton.jsx'
+import Modal from '../../shared/components/Modal.jsx'
+import Alert from '../../shared/components/Alert.jsx'
 import styles from './Inventario.module.css'
 
 const errorText = (error) =>
@@ -525,43 +527,16 @@ export default function Inventario() {
         )}
       </section>
 
-      {selected && (
-        <div
-          className={styles.overlay}
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              closeAdjustment()
-            }
-          }}
-        >
-          <section
-            className={styles.dialog}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="adjust-title"
-          >
-            <div className={styles.dialogHead}>
-              <div>
-                <p className={styles.eyebrow}>
-                  MOVIMIENTO MANUAL
-                </p>
-
-                <h2 id="adjust-title">
-                  Ajustar stock
-                </h2>
-              </div>
-
-              <ActionButton
-                type="button"
-                variant="secondary"
-                disabled={saving}
-                onClick={closeAdjustment}
-                aria-label="Cerrar"
-              >
-                ✕
-              </ActionButton>
-            </div>
-
+      <Modal
+        open={Boolean(selected)}
+        onClose={closeAdjustment}
+        title="Ajustar stock"
+        description="Movimiento manual"
+        busy={saving}
+        size="medium"
+      >
+        {selected && (
+          <>
             <p>
               <strong>{selected.nombre_producto}</strong>
             </p>
@@ -634,16 +609,10 @@ export default function Inventario() {
               )}
 
               {exceedsStock && (
-                <p className={styles.error} role="alert">
-                  La salida supera el stock disponible.
-                </p>
+                <Alert type="error">La salida supera el stock disponible.</Alert>
               )}
 
-              {adjustError && (
-                <p className={styles.error} role="alert">
-                  {adjustError}
-                </p>
-              )}
+              {adjustError && <Alert type="error">{adjustError}</Alert>}
 
               <div className={styles.actions}>
                 <ActionButton
@@ -670,9 +639,9 @@ export default function Inventario() {
                 </ActionButton>
               </div>
             </form>
-          </section>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
     </section>
   )
 }
