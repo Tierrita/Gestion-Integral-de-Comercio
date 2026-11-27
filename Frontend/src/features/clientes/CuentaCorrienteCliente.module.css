@@ -72,6 +72,6 @@
 @media(max-width:550px){.cobroSaldos{grid-template-columns:1fr}.cobroAcciones>*{flex:1 1 auto}}
 
 /* Semántica financiera uniforme con Proveedores */
-.cobroSaldos .deuda{color:#e9787f}
-.cobroSaldos .favor{color:#27bc8a}
+.cobroSaldos .deuda{color:#f17b82}
+.cobroSaldos .favor{color:#29c58f}
 .cobroSaldos .neutro{color:var(--color-text)}
