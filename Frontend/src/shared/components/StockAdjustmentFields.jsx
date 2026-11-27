@@ -25,7 +25,7 @@ export default function StockAdjustmentFields({ unit, currentStock, type, onType
         </select>
       </label>
       <label>Cantidad ({suffix})
-        <input autoFocus type="text" inputMode={unit === 'KG' ? 'decimal' : 'numeric'} required disabled={saving} value={amount} onChange={(event) => onAmountChange(event.target.value)} placeholder={unit === 'KG' ? 'Ej. 1.250' : 'Ej. 5'} />
+        <input autoFocus type="text" inputMode={unit === 'KG' ? 'decimal' : 'numeric'} required disabled={saving} value={amount} onChange={(event) => onAmountChange(event.target.value)} placeholder={unit === 'KG' ? 'Ej. 1,250' : 'Ej. 5'} />
       </label>
     </div>
     {projected !== null && <div className={styles.balance}><span>Stock resultante</span><strong>{formatStockQuantity(projected, unit)} {suffix}</strong></div>}
