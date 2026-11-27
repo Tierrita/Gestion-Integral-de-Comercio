@@ -8,7 +8,7 @@
 .paymentBalances>div{display:grid;gap:.4rem;min-width:0;padding:1rem;border:1px solid var(--color-border);border-radius:.75rem;background:var(--color-surface)}
 .paymentBalances span,.paymentBalances small{font-size:.78rem;color:var(--color-text-muted)}
 .paymentBalances strong{font-size:clamp(1.1rem,2.5vw,1.55rem);overflow-wrap:anywhere}
-.deuda{color:#e9787f}.favor{color:#27bc8a}.neutro{color:var(--color-text)}
+.deuda{color:#f17b82}.favor{color:#29c58f}.neutro{color:var(--color-text)}
 .paymentReview{display:grid;gap:.5rem;padding:1rem;border:1px solid var(--color-primary);border-radius:.75rem;background:var(--color-surface);font-size:.86rem}
 .paymentReview strong{color:var(--color-primary)}
 .paymentActions{display:flex;justify-content:flex-end;gap:.65rem;flex-wrap:wrap}
