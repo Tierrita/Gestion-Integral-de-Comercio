@@ -6,7 +6,8 @@ import Alert from '../../shared/components/Alert.jsx'
 import ActionButton from '../../shared/components/ActionButton.jsx'
 import { formatoMoneda } from '../../shared/utils/formatters.js'
 import styles from './DetalleProducto.module.css'
-import StockAdjustmentFields, { parseStockQuantity, validStockQuantity } from '../../shared/components/StockAdjustmentFields.jsx'
+import StockAdjustmentFields from '../../shared/components/StockAdjustmentFields.jsx'
+import { parseStockQuantity, validStockQuantity } from '../../shared/utils/stockQuantity.js'
 
 const formatStock = (value, unit) => new Intl.NumberFormat('es-AR', { maximumFractionDigits: unit === 'KG' ? 3 : 0 }).format(Number(value ?? 0))
 const errorOf = (error) => error.response?.data?.error || (error.response?.status === 403 ? 'No tenés permiso para ajustar el stock.' : 'No se pudo completar la operación.')
@@ -28,9 +29,6 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
   useEffect(() => {
     if (!producto) return
     let active = true
-    setStockLoading(true)
-    setStockError('')
-    setStock(null)
     api.get('/stock').then(({ data }) => {
       if (!active) return
       if (!Array.isArray(data)) throw new Error('Formato de existencias inválido')
