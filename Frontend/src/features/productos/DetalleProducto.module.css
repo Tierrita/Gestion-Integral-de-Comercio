@@ -15,3 +15,16 @@
 .fields :is(input,select){width:100%;min-height:42px;padding:.6rem .7rem;border:1px solid var(--color-border);border-radius:.6rem;background:var(--color-background);color:var(--color-text);font:inherit}
 .preview{padding:.75rem;background:var(--color-surface-raised);border-radius:.6rem;margin:0}
 @media(max-width:650px){.metrics,.meta,.fields{grid-template-columns:1fr}.actions>*{flex:1}}
+
+.history{display:grid;gap:.75rem;border-top:1px solid var(--color-border);padding-top:1rem}
+.historyHead{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap}
+.historyHead h3{font-size:1rem;margin:0}
+.historyScroll{width:100%;overflow-x:auto;border:1px solid var(--color-border);border-radius:var(--radius-panel)}
+.historyScroll table{width:100%;min-width:510px;border-collapse:collapse;text-align:left}
+.historyScroll th,.historyScroll td{padding:.7rem .8rem;border-bottom:1px solid var(--color-border);font-size:.82rem;white-space:nowrap}
+.historyScroll th{color:var(--color-text-muted);font-size:.73rem}
+.historyScroll tr:last-child td{border-bottom:0}
+.historyScroll tbody tr:nth-child(even){background:var(--color-surface-raised)}
+.positive{color:#29c58f;font-weight:750}
+.negative{color:#f17b82;font-weight:750}
+.historyFoot{margin:0;font-size:.8rem;color:var(--color-text-muted)}
