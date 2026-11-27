@@ -30,7 +30,7 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
     if (!producto) return
     let active = true
     api.get('/stock').then(({ data }) => {
-      if (active && Array.isArray(data)) setStock(data.find((item) => item.id_producto === producto.id_producto) ?? null)
+      if (active && Array.isArray(data)) setStock(data.find((item) => String(item.id_producto) === String(producto.id_producto)) ?? null)
     }).catch(() => { if (active) setStock(null) })
     return () => { active = false }
   }, [producto])
@@ -45,7 +45,7 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
 
   async function submit(event) {
     event.preventDefault()
-    if (saving || producto.estado === false || !valid || exceeds) return
+    if (saving || producto.estado === false || !valid || exceeds || stock === undefined) return
     setSaving(true)
     setError('')
     setNotice('')
