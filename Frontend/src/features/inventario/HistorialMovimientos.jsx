@@ -112,6 +112,8 @@ function movementLabel(value) {
 }
 
 function exportCell(value) {
+  // Los valores numéricos generados por el sistema se exportan como números.
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value)
   const text = String(value ?? '')
 
   // Evita que Excel interprete contenido externo como una fórmula.
