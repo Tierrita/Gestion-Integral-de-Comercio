@@ -96,7 +96,15 @@ function responsibleLabel(row) {
   return row.nombre_responsable ||
     (row.id_usuario == null
       ? 'Sin identificar'
-      : `Usuario #${row.id_usuario}`)
+      : 'Usuario sin nombre disponible')
+}
+
+function commercialNotes(value) {
+  if (value == null || String(value).trim() === '') return 'Sin observaciones'
+  // El ID global se conserva en la base de datos para auditoría interna.
+  return String(value)
+    .replace(/\\s*\\(\\s*ID\\s+global\\s*#?\\s*\\d+\\s*\\)/gi, '')
+    .trim()
 }
 
 function movementLabel(value) {
@@ -247,7 +255,6 @@ export default function HistorialMovimientos() {
       'Stock anterior',
       'Stock nuevo',
       'Responsable',
-      'Usuario ID',
       'Observaciones',
     ]
 
@@ -260,8 +267,7 @@ export default function HistorialMovimientos() {
       row.stock_anterior,
       row.stock_nuevo,
       responsibleLabel(row),
-      row.id_usuario,
-      row.observaciones,
+      commercialNotes(row.observaciones),
     ])
 
     const csv =
@@ -499,11 +505,10 @@ export default function HistorialMovimientos() {
 
                       <td className={h.productCell}>
                         <strong>
-                          {row.nombre_producto ??
-                            `Producto #${row.id_producto}`}
+                          {row.nombre_producto ?? 'Producto sin nombre'}
                         </strong>
                         <small>
-                          #{row.numero_producto ?? row.id_producto}
+                          {row.numero_producto != null ? `N.º ${row.numero_producto}` : ''}
                         </small>
                       </td>
 
@@ -569,8 +574,7 @@ export default function HistorialMovimientos() {
               <div>
                 <dt>Producto</dt>
                 <dd>
-                  {selected.nombre_producto ??
-                    `Producto #${selected.id_producto}`}
+                  {selected.nombre_producto ?? 'Producto sin nombre'}
                 </dd>
               </div>
 
@@ -588,9 +592,6 @@ export default function HistorialMovimientos() {
                 <dt>Responsable</dt>
                 <dd>
                   {responsibleLabel(selected)}
-                  {selected.id_usuario != null
-                    ? ` (#${selected.id_usuario})`
-                    : ''}
                 </dd>
               </div>
 
@@ -617,7 +618,7 @@ export default function HistorialMovimientos() {
               <div className={h.fullWidth}>
                 <dt>Observaciones</dt>
                 <dd className={h.notes}>
-                  {selected.observaciones || 'Sin observaciones'}
+                  {commercialNotes(selected.observaciones)}
                 </dd>
               </div>
             </dl>
