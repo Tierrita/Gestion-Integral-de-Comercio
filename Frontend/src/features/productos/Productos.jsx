@@ -1,4 +1,5 @@
 import tableStyles from '../../shared/components/CommerceTable.module.css'
+import DetalleProducto from './DetalleProducto.jsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
@@ -23,6 +24,7 @@ export default function Productos() {
   const [filter, setFilter] = useState('todos')
   const [changingId, setChangingId] = useState(null)
   const [pendingStatus, setPendingStatus] = useState(null)
+  const [detail, setDetail] = useState(null)
   const [statusError, setStatusError] = useState('')
   const [sortBy, setSortBy] = useState('numero_producto')
   const [sortDirection, setSortDirection] = useState('asc')
@@ -121,13 +123,14 @@ export default function Productos() {
         <td><strong className={p.estado !== false && Number(p.stock) <= Number(p.stock_minimo) ? styles.lowStock : ''}>{formatStock(p.stock, p.unidad_de_medida)}</strong></td>
         <td>{p.unidad_de_medida || '—'}</td>
         <td><span className={p.estado === false ? tableStyles.inactive : tableStyles.active}>{p.estado === false ? 'Inactivo' : 'Activo'}</span></td>
-        <td><div className={styles.actions}><ActionButton as={Link} size="compact" variant="secondary" to={`/productos/${p.id_producto}/editar`}>Editar</ActionButton><ActionButton as={Link} size="compact" variant="secondary" to={`/inventario?producto=${p.id_producto}`}>Ver inventario</ActionButton><ActionButton size="compact" variant={p.estado === false ? "secondary" : "danger"} disabled={changingId === p.id_producto} onClick={() => { setStatusError(''); setPendingStatus(p) }}>{changingId === p.id_producto ? 'Guardando…' : p.estado === false ? 'Activar' : 'Desactivar'}</ActionButton></div></td>
+        <td><div className={styles.actions}><ActionButton size="compact" variant="primary" onClick={() => setDetail(p)}>Ver detalle</ActionButton></div></td>
       </tr>)}</tbody></table></div>}
       {!loading && !error && visible.length > 0 && <div className={styles.pagination}>
         <span>Mostrando {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, visible.length)} de {visible.length}</span>
         <div className={styles.pageActions}><ActionButton variant="secondary" disabled={currentPage === 1} onClick={() => setPage((n) => Math.max(1, n - 1))}>Anterior</ActionButton><span>Página {currentPage} de {totalPages}</span><ActionButton variant="secondary" disabled={currentPage === totalPages} onClick={() => setPage((n) => Math.min(totalPages, n + 1))}>Siguiente</ActionButton></div>
       </div>}
     </div>
+    <DetalleProducto key={detail?.id_producto ?? "closed"} producto={detail} onClose={() => setDetail(null)} onUpdated={async () => { await load() }} onStatus={(p) => { setDetail(null); setStatusError(""); setPendingStatus(p) }} />
     <ConfirmDialog
       open={Boolean(pendingStatus)}
       onClose={() => { if (changingId === null) { setPendingStatus(null); setStatusError('') } }}
