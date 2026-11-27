@@ -1,3 +1,4 @@
+import tableStyles from '../../shared/components/CommerceTable.module.css'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
@@ -106,7 +107,7 @@ export default function Productos() {
         <label>Mostrar<select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); resetPage() }}>{PAGE_SIZES.map((size) => <option key={size} value={size}>{size} registros</option>)}</select></label>
         <span>{visible.length} productos encontrados</span>
       </div>
-      {loading ? <p role="status" className={styles.empty}>Cargando productos…</p> : error && productos.length === 0 ? <p className={styles.empty}>No se pudo cargar el listado.</p> : visible.length === 0 ? <p className={styles.empty}>No hay productos para mostrar.</p> : <div className={styles.tableScroll}><table><thead><tr>
+      {loading ? <p role="status" className={styles.empty}>Cargando productos…</p> : error && productos.length === 0 ? <p className={styles.empty}>No se pudo cargar el listado.</p> : visible.length === 0 ? <p className={styles.empty}>No hay productos para mostrar.</p> : <div className={`${styles.tableScroll} ${tableStyles.scroll}`}><table className={tableStyles.table}><thead><tr>
         <th><button className={styles.sortButton} type="button" onClick={() => sort('numero_producto')}>N.º{sortMark('numero_producto')}</button></th>
         <th><button className={styles.sortButton} type="button" onClick={() => sort('nombre_producto')}>Producto{sortMark('nombre_producto')}</button></th>
         <th><button className={styles.sortButton} type="button" onClick={() => sort('precio_costo')}>Precio de costo{sortMark('precio_costo')}</button></th>
@@ -119,7 +120,7 @@ export default function Productos() {
         <td>{formatoMoneda(p.precio_venta)}</td>
         <td><strong className={p.estado !== false && Number(p.stock) <= Number(p.stock_minimo) ? styles.lowStock : ''}>{formatStock(p.stock, p.unidad_de_medida)}</strong></td>
         <td>{p.unidad_de_medida || '—'}</td>
-        <td><span className={p.estado === false ? styles.inactive : styles.active}>{p.estado === false ? 'Inactivo' : 'Activo'}</span></td>
+        <td><span className={p.estado === false ? tableStyles.inactive : tableStyles.active}>{p.estado === false ? 'Inactivo' : 'Activo'}</span></td>
         <td><div className={styles.actions}><ActionButton as={Link} size="compact" variant="secondary" to={`/productos/${p.id_producto}/editar`}>Editar</ActionButton><ActionButton as={Link} size="compact" variant="secondary" to={`/inventario?producto=${p.id_producto}`}>Ver inventario</ActionButton><ActionButton size="compact" variant={p.estado === false ? "secondary" : "danger"} disabled={changingId === p.id_producto} onClick={() => { setStatusError(''); setPendingStatus(p) }}>{changingId === p.id_producto ? 'Guardando…' : p.estado === false ? 'Activar' : 'Desactivar'}</ActionButton></div></td>
       </tr>)}</tbody></table></div>}
       {!loading && !error && visible.length > 0 && <div className={styles.pagination}>
