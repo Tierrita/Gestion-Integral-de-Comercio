@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import MercaderiaNav from '../productos/MercaderiaNav.jsx'
+import ActionButton from '../../shared/components/ActionButton.jsx'
 import styles from './Inventario.module.css'
 
 const errorText = (error) =>
@@ -303,21 +304,18 @@ export default function Inventario() {
         </div>
 
         <div className={styles.headingActions}>
-          <Link
-            className={styles.secondary}
-            to="/inventario/historial"
-          >
+          <ActionButton as={Link} to="/inventario/historial">
             Ver historial
-          </Link>
+          </ActionButton>
 
-          <button
-            className={styles.secondary}
+          <ActionButton
+            variant="secondary"
             type="button"
             disabled={loading}
             onClick={() => void reload()}
           >
             ↻ Actualizar
-          </button>
+          </ActionButton>
         </div>
       </header>
 
@@ -509,14 +507,14 @@ export default function Inventario() {
                       </td>
 
                       <td>
-                        <button
-                          className={styles.tableButton}
+                        <ActionButton
+                          size="compact"
                           type="button"
                           disabled={product.estado === false}
                           onClick={() => openAdjustment(product)}
                         >
                           Ajustar stock
-                        </button>
+                        </ActionButton>
                       </td>
                     </tr>
                   )
@@ -553,15 +551,15 @@ export default function Inventario() {
                 </h2>
               </div>
 
-              <button
+              <ActionButton
                 type="button"
-                className={styles.secondary}
+                variant="secondary"
                 disabled={saving}
                 onClick={closeAdjustment}
                 aria-label="Cerrar"
               >
                 ✕
-              </button>
+              </ActionButton>
             </div>
 
             <p>
@@ -648,17 +646,17 @@ export default function Inventario() {
               )}
 
               <div className={styles.actions}>
-                <button
-                  className={styles.secondary}
+                <ActionButton
+                  variant="secondary"
                   type="button"
                   disabled={saving}
                   onClick={closeAdjustment}
                 >
                   Cancelar
-                </button>
+                </ActionButton>
 
-                <button
-                  className={styles.primary}
+                <ActionButton
+                  variant="primary"
                   type="submit"
                   disabled={
                     saving ||
@@ -669,7 +667,7 @@ export default function Inventario() {
                   {saving
                     ? 'Guardando…'
                     : 'Confirmar ajuste'}
-                </button>
+                </ActionButton>
               </div>
             </form>
           </section>
