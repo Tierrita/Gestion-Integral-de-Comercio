@@ -1,7 +1,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import tableStyles from '../../shared/components/CommerceTable.module.css'
-import StockAdjustmentFields, { parseStockQuantity, validStockQuantity } from '../../shared/components/StockAdjustmentFields.jsx'
+import StockAdjustmentFields from '../../shared/components/StockAdjustmentFields.jsx'
+import { parseStockQuantity, validStockQuantity } from '../../shared/utils/stockQuantity.js'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import MercaderiaNav from '../productos/MercaderiaNav.jsx'
