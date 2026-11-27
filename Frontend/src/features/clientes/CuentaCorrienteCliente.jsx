@@ -250,8 +250,8 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
           <span className={styles.cobroEstado}>Cobro manual</span>
         </div>
         <div className={styles.cobroSaldos}>
-          <div><span>Saldo actual</span><strong>{saldoActual === null ? 'Consultando…' : dinero(Math.abs(saldoActual))}</strong><small>{saldoActual === null ? 'Pendiente de consulta' : saldoActual > 0 ? 'Deuda pendiente' : saldoActual < 0 ? 'Saldo a favor' : 'Al día'}</small></div>
-          <div><span>Saldo después del cobro</span><strong>{saldoPosterior === null ? '—' : dinero(Math.abs(saldoPosterior))}</strong><small>{saldoPosterior === null ? 'Ingresá un importe válido' : saldoPosterior > 0 ? 'Deuda pendiente' : saldoPosterior < 0 ? 'Saldo a favor' : 'Al día'}</small></div>
+          <div><span>Saldo actual</span><strong className={saldoActual > 0 ? styles.deuda : saldoActual < 0 ? styles.favor : styles.neutro}>{saldoActual === null ? 'Consultando…' : dinero(Math.abs(saldoActual))}</strong><small>{saldoActual === null ? 'Pendiente de consulta' : saldoActual > 0 ? 'Deuda pendiente' : saldoActual < 0 ? 'Saldo a favor' : 'Al día'}</small></div>
+          <div><span>Saldo después del cobro</span><strong className={saldoPosterior > 0 ? styles.deuda : saldoPosterior < 0 ? styles.favor : styles.neutro}>{saldoPosterior === null ? '—' : dinero(Math.abs(saldoPosterior))}</strong><small>{saldoPosterior === null ? 'Ingresá un importe válido' : saldoPosterior > 0 ? 'Deuda pendiente' : saldoPosterior < 0 ? 'Saldo a favor' : 'Al día'}</small></div>
         </div>
         <p className={styles.aclaracion}>Se permiten cobros parciales y anticipos con saldo a favor.</p>
         <label>Importe recibido (ARS)<input required inputMode="decimal" value={monto} onChange={(event) => { setMonto(event.target.value); setRevisandoCobro(false) }} placeholder="15000,50" disabled={guardando || revisandoCobro} /></label>
@@ -275,7 +275,7 @@ export default function CuentaCorrienteCliente({ cliente, onClose, modo = 'detal
       </form>}
       {modo !== "cobro" && cargando && <p role="status">Consultando movimientos…</p>}
       {modo !== "cobro" && errores.saldo && <Alert type="error">Saldo: {errores.saldo}</Alert>}
-      {saldo && <div className={styles.resumen}>
+      {modo !== 'cobro' && saldo && <div className={styles.resumen}>
         <article><span>Saldo actual</span><strong className={saldo.situacion === 'DEUDA' ? styles.deuda : styles.saldo}>{dinero(Math.abs(saldo.saldo))}</strong><small>{etiquetas[saldo.situacion] || saldo.situacion}</small></article>
         <article><span>Ventas vigentes</span><strong>{dinero(saldo.total_ventas)}</strong></article>
         <article><span>Cobros completados</span><strong>{dinero(saldo.total_cobros)}</strong></article>
