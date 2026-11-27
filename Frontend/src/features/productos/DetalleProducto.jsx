@@ -6,7 +6,7 @@ import Alert from '../../shared/components/Alert.jsx'
 import ActionButton from '../../shared/components/ActionButton.jsx'
 import { formatoMoneda } from '../../shared/utils/formatters.js'
 import styles from './DetalleProducto.module.css'
-import StockAdjustmentFields, { validStockQuantity } from '../../shared/components/StockAdjustmentFields.jsx'
+import StockAdjustmentFields, { parseStockQuantity, validStockQuantity } from '../../shared/components/StockAdjustmentFields.jsx'
 
 const formatStock = (value, unit) => new Intl.NumberFormat('es-AR', { maximumFractionDigits: unit === 'KG' ? 3 : 0 }).format(Number(value ?? 0))
 const errorOf = (error) => error.response?.data?.error || (error.response?.status === 403 ? 'No tenés permiso para ajustar el stock.' : 'No se pudo completar la operación.')
@@ -50,7 +50,7 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
   if (!producto) return null
   const current = stock ?? producto
   const unit = producto.unidad_de_medida
-  const quantity = Number(amount)
+  const quantity = parseStockQuantity(amount)
   const valid = validStockQuantity(amount, unit)
   const exceeds = type === 'DISMINUIR' && valid && quantity > Number(current.stock)
   const projected = valid && !exceeds ? Math.round((Number(current.stock) + (type === 'AUMENTAR' ? quantity : -quantity)) * 1000) / 1000 : null
