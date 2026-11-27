@@ -1,0 +1,23 @@
+/* AIOnix V2 · reglas compartidas de tablas comerciales */
+.scroll{width:100%;overflow-x:auto}
+.table{width:100%;min-width:840px;border-collapse:collapse;text-align:left}
+.table th,.table td{border-bottom:1px solid var(--color-border)}
+.table th{padding:.7rem .8rem;font-size:.74rem;font-weight:750;color:var(--color-text-muted);white-space:nowrap}
+.table td{padding:.5rem .8rem;font-size:.84rem;vertical-align:middle;height:48px;color:var(--color-text)}
+.table tbody tr:nth-child(even){background:var(--color-surface-raised)}
+.table tbody tr:hover{background:color-mix(in srgb,var(--color-primary) 8%,var(--color-surface))}
+.table th button{background:none;border:0;color:inherit;cursor:pointer;font:inherit;font-weight:750}
+.table td:nth-child(1){white-space:nowrap}
+.table td:nth-child(3){white-space:nowrap}
+.table td:nth-child(4){white-space:nowrap}
+.table td:nth-child(5){white-space:nowrap}
+.table td:nth-child(6){white-space:nowrap}
+.active,.inactive{display:inline-block;padding:.3rem .55rem;border-radius:999px;font-size:.71rem;font-weight:750;white-space:nowrap}
+.active{color:#047857;background:rgb(39 188 138 / .13)}
+.inactive{color:#b91c1c;background:rgb(241 123 130 / .13)}
+:global([data-theme='dark']) .active{color:#29c58f}
+:global([data-theme='dark']) .inactive{color:#f17b82}
+.deuda,.favor,.neutro{white-space:nowrap}
+.deuda{color:#f17b82;font-weight:750}
+.favor{color:#29c58f;font-weight:750}
+.neutro{color:var(--color-text-muted);font-weight:650}
