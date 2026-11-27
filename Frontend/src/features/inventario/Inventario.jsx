@@ -188,7 +188,7 @@ export default function Inventario() {
 
     if (!selected || saving) return
 
-    if (!validQuantity(amount, selected.unidad_de_medida)) {
+    if (!validStockQuantity(amount, selected.unidad_de_medida)) {
       setAdjustError(
         isKg(selected)
           ? 'Ingresá una cantidad mayor a cero, con un máximo de 3 decimales.'
