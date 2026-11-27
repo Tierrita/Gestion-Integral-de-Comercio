@@ -18,6 +18,8 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [stock, setStock] = useState(null)
+  const [stockLoading, setStockLoading] = useState(true)
+  const [stockError, setStockError] = useState('')
   const [historyOpen, setHistoryOpen] = useState(false)
   const [history, setHistory] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
@@ -26,9 +28,18 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
   useEffect(() => {
     if (!producto) return
     let active = true
+    setStockLoading(true)
+    setStockError('')
+    setStock(null)
     api.get('/stock').then(({ data }) => {
-      if (active && Array.isArray(data)) setStock(data.find((item) => String(item.id_producto) === String(producto.id_producto)) ?? null)
-    }).catch(() => { if (active) setStock(null) })
+      if (!active) return
+      if (!Array.isArray(data)) throw new Error('Formato de existencias inválido')
+      const item = data.find((row) => String(row.id_producto) === String(producto.id_producto))
+      if (!item || item.stock == null || !Number.isFinite(Number(item.stock))) throw new Error('No se pudo obtener el stock actualizado de este producto.')
+      setStock(item)
+    }).catch((err) => {
+      if (active) setStockError(err.response ? errorOf(err) : (err.message || 'No se pudo consultar el stock actualizado.'))
+    }).finally(() => { if (active) setStockLoading(false) })
     return () => { active = false }
   }, [producto])
 
@@ -57,7 +68,7 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
 
   async function submit(event) {
     event.preventDefault()
-    if (saving || producto.estado === false || !valid || exceeds || stock === undefined) return
+    if (saving || producto.estado === false || stockLoading || stockError || !stock || !valid || exceeds) return
     setSaving(true)
     setError('')
     setNotice('')
@@ -67,7 +78,7 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
       setStock((previous) => ({ ...current, ...previous, stock: data.data?.stock_nuevo ?? projected }))
       setAmount('')
       setAdjusting(false)
-      await onUpdated?.()
+      try { await onUpdated?.() } catch { setError('El ajuste se guardó, pero no se pudo actualizar el listado. Usá Actualizar para sincronizarlo.') }
       if (historyOpen) await loadHistory()
     } catch (err) {
       setError(errorOf(err))
@@ -79,7 +90,9 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
   return <Modal open={Boolean(producto)} onClose={onClose} busy={saving} size="large" title={producto.nombre_producto} description={`Detalle comercial · Producto N.º ${producto.numero_producto ?? '—'}`}>
     <div className={styles.content}>
       {notice && <Alert type="success">{notice}</Alert>}
-      {error && <Alert type="error">{error}</Alert>}
+      {error && !adjusting && <Alert type="error">{error}</Alert>}
+      {stockLoading && <Alert type="info">Consultando el stock actualizado…</Alert>}
+      {stockError && <Alert type="error">{stockError} Cerrá y volvé a abrir el detalle para reintentar.</Alert>}
       <div className={styles.metrics}>
         <article><span>Stock actual</span><strong>{formatStock(current.stock, unit)}</strong><small>Mínimo: {formatStock(producto.stock_minimo, unit)} {unit === 'KG' ? 'kg' : 'un.'}</small></article>
         <article><span>Precio de venta</span><strong>{formatoMoneda(producto.precio_venta)}</strong><small>Precio vigente</small></article>
@@ -91,11 +104,11 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
         <div><span>Situación</span><strong>{producto.estado === false ? 'Inactivo' : Number(current.stock) <= Number(producto.stock_minimo) ? 'Stock bajo' : 'Normal'}</strong></div>
       </div>
       {!adjusting ? <div className={styles.actions}>
-        <ActionButton variant="primary" disabled={producto.estado === false} onClick={() => { setAdjusting(true); setError(''); setNotice('') }}>Ajustar stock</ActionButton>
+        <ActionButton variant="primary" disabled={producto.estado === false || stockLoading || Boolean(stockError) || !stock} onClick={() => { setAdjusting(true); setError(''); setNotice('') }}>Ajustar stock</ActionButton>
         <ActionButton variant="secondary" type="button" onClick={() => { if (!historyOpen) void loadHistory(); setHistoryOpen(!historyOpen) }}>{historyOpen ? 'Ocultar movimientos' : 'Ver movimientos'}</ActionButton>
         <ActionButton as={Link} variant="secondary" to={`/productos/${producto.id_producto}/editar`}>Editar producto</ActionButton>
         <ActionButton variant="secondary" onClick={() => onStatus(producto)}>{producto.estado === false ? 'Activar' : 'Desactivar'}</ActionButton>
-      </div> : <StockAdjustmentFields unit={unit} currentStock={current.stock} type={type} onTypeChange={(value) => { setType(value); setError('') }} amount={amount} onAmountChange={(value) => { setAmount(value); setError('') }} onSubmit={submit} onCancel={() => { setAdjusting(false); setError('') }} saving={saving} />}
+      </div> : <StockAdjustmentFields unit={unit} currentStock={current.stock} type={type} onTypeChange={(value) => { setType(value); setError('') }} amount={amount} onAmountChange={(value) => { setAmount(value); setError('') }} onSubmit={submit} onCancel={() => { setAdjusting(false); setError('') }} saving={saving} error={error} />}
       {historyOpen && <section className={styles.history} aria-label="Historial de movimientos del producto">
         <div className={styles.historyHead}><h3>Movimientos recientes</h3><ActionButton variant="secondary" size="compact" type="button" disabled={historyLoading} onClick={() => void loadHistory()}>Actualizar</ActionButton></div>
         {historyError && <Alert type="error">{historyError}</Alert>}
