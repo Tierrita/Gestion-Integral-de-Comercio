@@ -7,7 +7,6 @@ import { api } from '../../shared/api/client.js'
 import MercaderiaNav from '../productos/MercaderiaNav.jsx'
 import ActionButton from '../../shared/components/ActionButton.jsx'
 import Modal from '../../shared/components/Modal.jsx'
-import Alert from '../../shared/components/Alert.jsx'
 import styles from './Inventario.module.css'
 
 const errorText = (error) =>
