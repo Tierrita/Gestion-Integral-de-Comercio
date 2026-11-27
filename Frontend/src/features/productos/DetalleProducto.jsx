@@ -95,7 +95,7 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
         <ActionButton variant="secondary" type="button" onClick={() => { if (!historyOpen) void loadHistory(); setHistoryOpen(!historyOpen) }}>{historyOpen ? 'Ocultar movimientos' : 'Ver movimientos'}</ActionButton>
         <ActionButton as={Link} variant="secondary" to={`/productos/${producto.id_producto}/editar`}>Editar producto</ActionButton>
         <ActionButton variant="secondary" onClick={() => onStatus(producto)}>{producto.estado === false ? 'Activar' : 'Desactivar'}</ActionButton>
-      </div> : <StockAdjustmentFields unit={unit} currentStock={current.stock} type={type} onTypeChange={(value) => { setType(value); setError('') }} amount={amount} onAmountChange={(value) => { setAmount(value); setError('') }} onSubmit={submit} onCancel={() => { setAdjusting(false); setError('') }} saving={saving} error={error} />}
+      </div> : <StockAdjustmentFields unit={unit} currentStock={current.stock} type={type} onTypeChange={(value) => { setType(value); setError('') }} amount={amount} onAmountChange={(value) => { setAmount(value); setError('') }} onSubmit={submit} onCancel={() => { setAdjusting(false); setError('') }} saving={saving} />}
       {historyOpen && <section className={styles.history} aria-label="Historial de movimientos del producto">
         <div className={styles.historyHead}><h3>Movimientos recientes</h3><ActionButton variant="secondary" size="compact" type="button" disabled={historyLoading} onClick={() => void loadHistory()}>Actualizar</ActionButton></div>
         {historyError && <Alert type="error">{historyError}</Alert>}
