@@ -6,6 +6,7 @@ import styles from './Inventario.module.css'
 import h from './HistorialMovimientos.module.css'
 import MercaderiaNav from '../productos/MercaderiaNav.jsx'
 import ActionButton from '../../shared/components/ActionButton.jsx'
+import Modal from '../../shared/components/Modal.jsx'
 
 const TIME_ZONE = 'America/Argentina/Buenos_Aires'
 
@@ -557,37 +558,13 @@ export default function HistorialMovimientos() {
         )}
       </section>
 
-      {selected && (
-        <div
-          className={styles.overlay}
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setSelected(null)
-            }
-          }}
-        >
-          <section
-            className={styles.dialog}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="movement-title"
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') setSelected(null)
-            }}
-          >
-            <div className={styles.dialogHead}>
-              <h2 id="movement-title">Detalle del movimiento</h2>
-
-              <ActionButton
-                type="button"
-                variant="secondary"
-                onClick={() => setSelected(null)}
-                aria-label="Cerrar detalle"
-              >
-                ✕
-              </ActionButton>
-            </div>
-
+      <Modal
+        open={Boolean(selected)}
+        onClose={() => setSelected(null)}
+        title="Detalle del movimiento"
+        size="large"
+      >
+        {selected && (
             <dl className={h.detailGrid}>
               <div>
                 <dt>Producto</dt>
@@ -644,9 +621,8 @@ export default function HistorialMovimientos() {
                 </dd>
               </div>
             </dl>
-          </section>
-        </div>
-      )}
+        )}
+      </Modal>
     </section>
   )
 }
