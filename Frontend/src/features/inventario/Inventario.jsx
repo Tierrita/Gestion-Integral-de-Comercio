@@ -136,7 +136,6 @@ export default function Inventario() {
       const matchesSearch = [
         product.nombre_producto,
         product.numero_producto,
-        product.id_producto,
       ].some((value) =>
         String(value ?? '')
           .toLocaleLowerCase('es-AR')
@@ -420,7 +419,7 @@ export default function Inventario() {
                   return (
                     <tr key={product.id_producto}>
                       <td className={styles.productNumber}>
-                        #{product.numero_producto ?? product.id_producto}
+                        {product.numero_producto != null ? `#${product.numero_producto}` : '—'}
                       </td>
 
                       <td className={styles.productCell}>
