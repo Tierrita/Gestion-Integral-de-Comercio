@@ -49,7 +49,7 @@ export default function Productos() {
 
   const visible = useMemo(() => productos.filter((p) => {
     const matchesState = filter === 'todos' || (filter === 'activos' ? p.estado !== false : p.estado === false)
-    return matchesState && [p.nombre_producto, p.numero_producto, p.id_producto].some((v) => String(v ?? '').toLowerCase().includes(query.trim().toLowerCase()))
+    return matchesState && [p.nombre_producto, p.numero_producto].some((v) => String(v ?? '').toLowerCase().includes(query.trim().toLowerCase()))
   }).sort((a, b) => {
     const av = a[sortBy]
     const bv = b[sortBy]
@@ -117,7 +117,7 @@ export default function Productos() {
         <th><button className={styles.sortButton} type="button" onClick={() => sort('stock')}>Stock{sortMark('stock')}</button></th>
         <th>Unidad</th><th>Estado</th><th>Acciones</th>
       </tr></thead><tbody>{pageRows.map((p) => <tr key={p.id_producto}>
-        <td>#{p.numero_producto ?? p.id_producto}</td><td><strong>{p.nombre_producto}</strong></td>
+        <td>{p.numero_producto != null ? `#${p.numero_producto}` : '—'}</td><td><strong>{p.nombre_producto}</strong></td>
         <td>{p.precio_costo == null ? 'Sin acceso' : formatoMoneda(p.precio_costo)}</td>
         <td>{formatoMoneda(p.precio_venta)}</td>
         <td><strong className={p.estado !== false && Number(p.stock) <= Number(p.stock_minimo) ? styles.lowStock : ''}>{formatStock(p.stock, p.unidad_de_medida)}</strong></td>
