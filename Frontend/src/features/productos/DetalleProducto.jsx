@@ -25,6 +25,10 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [stock, setStock] = useState(null)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [history, setHistory] = useState([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyError, setHistoryError] = useState('')
 
   useEffect(() => {
     if (!producto) return
@@ -34,6 +38,21 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
     }).catch(() => { if (active) setStock(null) })
     return () => { active = false }
   }, [producto])
+
+  async function loadHistory() {
+    if (!producto) return
+    setHistoryLoading(true)
+    setHistoryError('')
+    try {
+      const { data } = await api.get('/stock/historial')
+      if (!Array.isArray(data)) throw new Error('Formato de historial inválido')
+      setHistory(data.filter((row) => String(row.id_producto) === String(producto.id_producto)).sort((a, b) => (Date.parse(b.fecha_movimiento ?? b.fecha ?? b.created_at) || 0) - (Date.parse(a.fecha_movimiento ?? a.fecha ?? a.created_at) || 0)))
+    } catch (err) {
+      setHistoryError(errorOf(err))
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
 
   if (!producto) return null
   const current = stock ?? producto
@@ -56,6 +75,7 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
       setAmount('')
       setAdjusting(false)
       await onUpdated?.()
+      if (historyOpen) await loadHistory()
     } catch (err) {
       setError(errorOf(err))
     } finally {
@@ -79,6 +99,7 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
       </div>
       {!adjusting ? <div className={styles.actions}>
         <ActionButton variant="primary" disabled={producto.estado === false} onClick={() => { setAdjusting(true); setError(''); setNotice('') }}>Ajustar stock</ActionButton>
+        <ActionButton variant="secondary" type="button" onClick={() => { if (!historyOpen) void loadHistory(); setHistoryOpen(!historyOpen) }}>{historyOpen ? 'Ocultar movimientos' : 'Ver movimientos'}</ActionButton>
         <ActionButton as={Link} variant="secondary" to={`/productos/${producto.id_producto}/editar`}>Editar producto</ActionButton>
         <ActionButton variant="secondary" onClick={() => onStatus(producto)}>{producto.estado === false ? 'Activar' : 'Desactivar'}</ActionButton>
       </div> : <form className={styles.form} onSubmit={submit}>
@@ -91,6 +112,20 @@ export default function DetalleProducto({ producto, onClose, onUpdated, onStatus
         {projected !== null && <p className={styles.preview}>Stock resultante: <strong>{formatStock(projected, unit)} {unit === 'KG' ? 'kg' : 'un.'}</strong></p>}
         <div className={styles.actions}><ActionButton variant="secondary" type="button" disabled={saving} onClick={() => { setAdjusting(false); setError('') }}>Cancelar</ActionButton><ActionButton variant="primary" type="submit" disabled={saving || !valid || exceeds}>{saving ? 'Guardando…' : 'Confirmar ajuste'}</ActionButton></div>
       </form>}
+      {historyOpen && <section className={styles.history} aria-label="Historial de movimientos del producto">
+        <div className={styles.historyHead}><h3>Movimientos recientes</h3><ActionButton variant="secondary" size="compact" type="button" disabled={historyLoading} onClick={() => void loadHistory()}>Actualizar</ActionButton></div>
+        {historyError && <Alert type="error">{historyError}</Alert>}
+        {historyLoading ? <p role="status">Consultando movimientos…</p> : !historyError && history.length === 0 ? <p>No hay movimientos registrados para este producto.</p> : !historyError && <div className={styles.historyScroll}><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Variación</th><th>Stock resultante</th></tr></thead><tbody>{history.slice(0, 10).map((row, index) => {
+          const before = Number(row.stock_anterior)
+          const after = Number(row.stock_nuevo)
+          const difference = row.stock_anterior != null && row.stock_nuevo != null && Number.isFinite(before) && Number.isFinite(after) ? Math.round((after - before) * 1000) / 1000 : null
+          const rawDate = row.fecha_movimiento ?? row.fecha ?? row.created_at
+          const date = rawDate ? new Date(rawDate) : null
+          const dateLabel = date && !Number.isNaN(date.getTime()) ? new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', dateStyle: 'short', timeStyle: 'short' }).format(date) : '—'
+          return <tr key={row.id_movimiento ?? index}><td>{dateLabel}</td><td>{String(row.tipo_movimiento ?? 'Sin tipo').replaceAll('_', ' ')}</td><td className={difference > 0 ? styles.positive : difference < 0 ? styles.negative : ''}>{difference == null ? '—' : `${difference > 0 ? '+' : ''}${formatStock(difference, unit)}`}</td><td>{row.stock_nuevo == null ? '—' : formatStock(row.stock_nuevo, unit)}</td></tr>
+        })}</tbody></table></div>}
+        {!historyLoading && !historyError && history.length > 10 && <p className={styles.historyFoot}>Mostrando los últimos 10 de {history.length} movimientos. El historial completo sigue disponible en Mercadería → Movimientos.</p>}
+      </section>}
     </div>
   </Modal>
 }
