@@ -5,6 +5,7 @@ import { api } from '../../shared/api/client.js'
 import styles from './Inventario.module.css'
 import h from './HistorialMovimientos.module.css'
 import MercaderiaNav from '../productos/MercaderiaNav.jsx'
+import ActionButton from '../../shared/components/ActionButton.jsx'
 
 const TIME_ZONE = 'America/Argentina/Buenos_Aires'
 
@@ -298,27 +299,27 @@ export default function HistorialMovimientos() {
         </div>
 
         <div className={h.headerActions}>
-          <Link className={styles.secondary} to="/inventario">
+          <ActionButton as={Link} to="/inventario">
             ← Volver a inventario
-          </Link>
+          </ActionButton>
 
-          <button
+          <ActionButton
             type="button"
-            className={styles.secondary}
+            variant="secondary"
             disabled={loading}
             onClick={reload}
           >
             ↻ Actualizar
-          </button>
+          </ActionButton>
 
-          <button
+          <ActionButton
             type="button"
-            className={styles.primary}
+            variant="primary"
             disabled={loading || !filtered.length || Boolean(error)}
             onClick={exportCsv}
           >
             Exportar CSV
-          </button>
+          </ActionButton>
         </div>
       </header>
 
@@ -429,13 +430,13 @@ export default function HistorialMovimientos() {
           </label>
 
           {hasFilters && (
-            <button
+            <ActionButton
               type="button"
-              className={styles.secondary}
+              variant="secondary"
               onClick={clearFilters}
             >
               Limpiar filtros
-            </button>
+            </ActionButton>
           )}
         </div>
 
@@ -532,13 +533,13 @@ export default function HistorialMovimientos() {
                       </td>
 
                       <td>
-                        <button
+                        <ActionButton
                           type="button"
-                          className={h.detailButton}
+                          size="compact"
                           onClick={() => setSelected(row)}
                         >
                           Ver detalle
-                        </button>
+                        </ActionButton>
                       </td>
                     </tr>
                   )
@@ -577,14 +578,14 @@ export default function HistorialMovimientos() {
             <div className={styles.dialogHead}>
               <h2 id="movement-title">Detalle del movimiento</h2>
 
-              <button
+              <ActionButton
                 type="button"
-                className={styles.secondary}
+                variant="secondary"
                 onClick={() => setSelected(null)}
                 aria-label="Cerrar detalle"
               >
                 ✕
-              </button>
+              </ActionButton>
             </div>
 
             <dl className={h.detailGrid}>
