@@ -1,5 +1,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
+import tableStyles from '../../shared/components/CommerceTable.module.css'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import MercaderiaNav from '../productos/MercaderiaNav.jsx'
@@ -443,8 +444,8 @@ export default function Inventario() {
             No hay productos que coincidan con los filtros.
           </p>
         ) : (
-          <div className={styles.scroll}>
-            <table>
+          <div className={`${styles.scroll} ${tableStyles.scroll}`}>
+            <table className={tableStyles.table}>
               <thead>
                 <tr>
                   <th>N.º</th>
@@ -496,7 +497,7 @@ export default function Inventario() {
                             situation === 'alerta'
                               ? styles.alert
                               : situation === 'inactivo'
-                                ? styles.inactive
+                                ? tableStyles.inactive
                                 : styles.ok
                           }
                         >
