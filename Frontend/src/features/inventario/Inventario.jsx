@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import tableStyles from '../../shared/components/CommerceTable.module.css'
 import StockAdjustmentFields from '../../shared/components/StockAdjustmentFields.jsx'
-import { parseStockQuantity, validStockQuantity } from '../../shared/utils/stockQuantity.js'
+import { formatStockQuantity, parseStockQuantity, validStockQuantity } from '../../shared/utils/stockQuantity.js'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../../shared/api/client.js'
 import MercaderiaNav from '../productos/MercaderiaNav.jsx'
@@ -26,16 +26,7 @@ const classify = (product) => {
 
 const isKg = (product) => product.unidad_de_medida === 'KG'
 
-const formatQuantity = (value, unit = 'UNIDAD') => {
-  const number = Number(value)
-
-  if (!Number.isFinite(number)) return '—'
-
-  return new Intl.NumberFormat('es-AR', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: unit === 'KG' ? 3 : 0,
-  }).format(number)
-}
+const formatQuantity = (value, unit = 'UNIDAD') => value == null || !Number.isFinite(Number(value)) ? '—' : formatStockQuantity(value, unit)
 
 const unitLabel = (unit) => unit === 'KG' ? 'kg' : 'un.'
 
@@ -236,7 +227,7 @@ export default function Inventario() {
         `${data.message || 'Stock actualizado correctamente.'}${detail}`
       )
 
-      await reload()
+      try { await reload() } catch { setLoadError('El ajuste se guardó, pero no se pudo actualizar el listado. Volvé a intentar con Actualizar.') }
     } catch (error) {
       setAdjustError(errorText(error))
     } finally {
