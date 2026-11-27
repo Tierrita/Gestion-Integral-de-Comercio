@@ -570,58 +570,40 @@ export default function HistorialMovimientos() {
         size="large"
       >
         {selected && (
+          <div className={h.movementDetail}>
+            <div className={h.movementHeading}>
+              <div>
+                <span className={h.detailLabel}>Producto</span>
+                <strong className={h.movementProduct}>{selected.nombre_producto ?? 'Producto sin nombre'}</strong>
+                {selected.numero_producto != null && <span className={h.detailSubtle}>Producto N.º {selected.numero_producto}</span>}
+              </div>
+              <span className={signedChange(selected) > 0 ? h.entryBadge : signedChange(selected) < 0 ? h.exitBadge : h.neutralBadge}>
+                {movementLabel(selected.tipo_movimiento)}
+              </span>
+            </div>
+            <div className={h.stockFlow}>
+              <div className={h.stockStep}>
+                <span>Stock anterior</span>
+                <strong>{formatQuantity(selected.stock_anterior)}</strong>
+              </div>
+              <span className={h.stockArrow} aria-hidden="true">→</span>
+              <div className={h.stockStep}>
+                <span>Stock nuevo</span>
+                <strong>{formatQuantity(selected.stock_nuevo)}</strong>
+              </div>
+              <div className={h.stockDelta}>
+                <span>Variación real</span>
+                <strong className={signedChange(selected) > 0 ? h.positive : signedChange(selected) < 0 ? h.negative : ''}>{formatChange(signedChange(selected))}</strong>
+              </div>
+            </div>
             <dl className={h.detailGrid}>
-              <div>
-                <dt>Producto</dt>
-                <dd>
-                  {selected.nombre_producto ?? 'Producto sin nombre'}
-                </dd>
-              </div>
-
-              <div>
-                <dt>Fecha</dt>
-                <dd>{formatDate(stamp(selected))}</dd>
-              </div>
-
-              <div>
-                <dt>Operación</dt>
-                <dd>{movementLabel(selected.tipo_movimiento)}</dd>
-              </div>
-
-              <div>
-                <dt>Responsable</dt>
-                <dd>
-                  {responsibleLabel(selected)}
-                </dd>
-              </div>
-
-              <div>
-                <dt>Cantidad registrada</dt>
-                <dd>{formatQuantity(selected.cantidad)}</dd>
-              </div>
-
-              <div>
-                <dt>Variación real</dt>
-                <dd>{formatChange(signedChange(selected))}</dd>
-              </div>
-
-              <div>
-                <dt>Stock anterior</dt>
-                <dd>{formatQuantity(selected.stock_anterior)}</dd>
-              </div>
-
-              <div>
-                <dt>Stock nuevo</dt>
-                <dd>{formatQuantity(selected.stock_nuevo)}</dd>
-              </div>
-
-              <div className={h.fullWidth}>
-                <dt>Observaciones</dt>
-                <dd className={h.notes}>
-                  {commercialNotes(selected.observaciones)}
-                </dd>
-              </div>
+              <div><dt>Fecha</dt><dd>{formatDate(stamp(selected))}</dd></div>
+              <div><dt>Responsable</dt><dd>{responsibleLabel(selected)}</dd></div>
+              <div><dt>Cantidad registrada</dt><dd>{formatQuantity(selected.cantidad)}</dd></div>
+              <div><dt>Operación</dt><dd>{movementLabel(selected.tipo_movimiento)}</dd></div>
+              <div className={h.fullWidth}><dt>Observaciones</dt><dd className={h.notes}>{commercialNotes(selected.observaciones)}</dd></div>
             </dl>
+          </div>
         )}
       </Modal>
     </section>
