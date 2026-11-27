@@ -29,11 +29,6 @@
 .negative{color:#f17b82;font-weight:750}
 .historyFoot{margin:0;font-size:.8rem;color:var(--color-text-muted)}
 
-.moreActions{position:relative;min-width:150px}
-.moreActions summary{list-style:none;display:flex;align-items:center;justify-content:center;min-height:38px;padding:.55rem .85rem;border:1px solid var(--color-border);border-radius:var(--radius-control);background:var(--color-surface-raised);color:var(--color-text);font:inherit;font-size:.85rem;font-weight:650;cursor:pointer;white-space:nowrap}
-.moreActions summary::-webkit-details-marker{display:none}
-.moreActions summary:hover,.moreActions summary:focus-visible{border-color:var(--color-primary)}
-.moreMenu{position:absolute;right:0;top:calc(100% + .35rem);z-index:5;min-width:190px;padding:.35rem;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-control);box-shadow:0 12px 32px #0005}
-.moreMenu button{width:100%;border:0;border-radius:.4rem;padding:.7rem;text-align:left;background:transparent;color:var(--color-text);font:inherit;cursor:pointer}
-.moreMenu button:hover,.moreMenu button:focus-visible{background:var(--color-surface-raised)}
-@media(max-width:650px){.moreActions{flex:1}.moreMenu{left:0;right:auto}}
+.statusAction{display:flex;justify-content:flex-end;border-top:1px solid var(--color-border);padding-top:.65rem}
+.statusAction button{border:0;background:transparent;color:var(--color-text-muted);font:inherit;font-size:.8rem;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:.4rem .2rem}
+.statusAction button:hover,.statusAction button:focus-visible{color:var(--color-text)}
