@@ -6,12 +6,12 @@ import { api } from '../../shared/api/client.js'
 import styles from './Productos.module.css'
 import MercaderiaNav from './MercaderiaNav.jsx'
 import { formatoMoneda } from '../../shared/utils/formatters.js'
+import { formatStockQuantity } from '../../shared/utils/stockQuantity.js'
 import ConfirmDialog from '../../shared/components/ConfirmDialog.jsx'
 import ActionButton from '../../shared/components/ActionButton.jsx'
 
 const numeric = (value) => value == null || value === '' ? null : Number(value)
 const PAGE_SIZES = [10, 25, 50]
-const formatStock = (value, unit) => value == null ? '—' : new Intl.NumberFormat('es-AR', { maximumFractionDigits: unit === 'KG' ? 3 : 0 }).format(Number(value))
 const messageOf = (error) => error.response?.data?.error || (error.response?.status === 403 ? 'No tenés permiso para realizar esta operación.' : 'No se pudo completar la operación. Revisá la conexión con Flask.')
 
 export default function Productos() {
@@ -120,7 +120,7 @@ export default function Productos() {
         <td>{p.numero_producto != null ? `#${p.numero_producto}` : '—'}</td><td><strong>{p.nombre_producto}</strong></td>
         <td>{p.precio_costo == null ? 'Sin acceso' : formatoMoneda(p.precio_costo)}</td>
         <td>{formatoMoneda(p.precio_venta)}</td>
-        <td><strong className={p.estado !== false && Number(p.stock) <= Number(p.stock_minimo) ? styles.lowStock : ''}>{formatStock(p.stock, p.unidad_de_medida)}</strong></td>
+        <td><strong className={p.estado !== false && Number(p.stock) <= Number(p.stock_minimo) ? styles.lowStock : ''}>{p.stock == null ? '—' : formatStockQuantity(p.stock, p.unidad_de_medida)}</strong></td>
         <td>{p.unidad_de_medida || '—'}</td>
         <td><span className={p.estado === false ? tableStyles.inactive : tableStyles.active}>{p.estado === false ? 'Inactivo' : 'Activo'}</span></td>
         <td><div className={styles.actions}><ActionButton size="compact" variant="primary" onClick={() => setDetail(p)}>Ver detalle</ActionButton></div></td>
